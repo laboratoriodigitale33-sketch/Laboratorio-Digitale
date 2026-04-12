@@ -93,6 +93,27 @@
   ],
   "simulations": [
     {
+      "title": "Campo elettrico",
+      "description": "Visualizzazione del campo elettrico generato da cariche puntiformi, linee di campo, superfici equipotenziali, flusso e circuitazione. Include template per dipolo, condensatore, sfera e cilindro.",
+      "category": "Elettromagnetismo",
+      "icon": "⚡",
+      "order": 10,
+      "tags": [
+        "cariche elettriche",
+        "campo elettrico",
+        "forza elettrica",
+        "legge di Coulomb",
+        "equipotenziali",
+        "dipolo",
+        "condensatore",
+        "flusso elettrico",
+        "teorema di Gauss"
+      ],
+      "level": "intermedio",
+      "file": "elettro-magnetismo/campo-elettrico.html",
+      "isWip": false
+    },
+    {
       "title": "Elettrostatica",
       "description": "Visualizzazione del campo elettrico generato da cariche puntiformi e studio delle forze elettrostatiche.",
       "category": "Elettromagnetismo",
@@ -106,6 +127,35 @@
       ],
       "level": "intermedio",
       "file": "elettro-magnetismo/elettrostatica.html",
+      "isWip": false
+    },
+    {
+      "title": "Magnetismo",
+      "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
+      "category": "Elettromagnetismo",
+      "icon": "🧲",
+      "order": 22,
+      "tags": [
+        "magnetismo",
+        "campo magnetico",
+        "biot-savart",
+        "corrente elettrica",
+        "fili rettilinei",
+        "sovrapposizione dei campi",
+        "forza di Lorentz",
+        "particelle cariche",
+        "deflessione magnetica",
+        "raggio ciclotronico",
+        "periodo ciclotronico",
+        "dipolo magnetico",
+        "spira circolare",
+        "momento magnetico",
+        "moto elicoidale",
+        "campo uniforme",
+        "elettromagnetismo"
+      ],
+      "level": "intermedio",
+      "file": "elettro-magnetismo/magnetismo.html",
       "isWip": false
     },
     {
@@ -809,35 +859,6 @@
       ],
       "level": "avanzato",
       "file": "WIP/termodinamica/trasformazioni cicliche.html",
-      "isWip": true
-    },
-    {
-      "title": "Magnetismo",
-      "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
-      "category": "WIP",
-      "icon": "🧲",
-      "order": 22,
-      "tags": [
-        "magnetismo",
-        "campo magnetico",
-        "biot-savart",
-        "corrente elettrica",
-        "fili rettilinei",
-        "sovrapposizione dei campi",
-        "forza di Lorentz",
-        "particelle cariche",
-        "deflessione magnetica",
-        "raggio ciclotronico",
-        "periodo ciclotronico",
-        "dipolo magnetico",
-        "spira circolare",
-        "momento magnetico",
-        "moto elicoidale",
-        "campo uniforme",
-        "elettromagnetismo"
-      ],
-      "level": "intermedio",
-      "file": "WIP/magnetismo.html",
       "isWip": true
     },
     {

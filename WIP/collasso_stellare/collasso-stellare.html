@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collasso Stellare — Simulazione SPH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.getElementById('teoria'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+<style>
+:root {
+  --bg:        #f5f0e8;
+  --bg2:       #ede7d9;
+  --bg3:       #e2dace;
+  --ink:       #1a1510;
+  --ink2:      #4a3f30;
+  --ink3:      #7a6a55;
+  --accent:    #c0392b;
+  --accent2:   #e67e22;
+  --gold:      #b8860b;
+  --blue:      #2c5282;
+  --green:     #276749;
+  --border:    #c8b89a;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
+  --serif:     'EB Garamond', Georgia, serif;
+  --r:         6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  min-height: 100vh;
+}
+
+header {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 22px 40px 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  border-bottom: 3px solid var(--accent);
+}
+header h1 { font-family: var(--serif); font-size: 1.55rem; font-weight: 500; letter-spacing: 0.01em; }
+header .sub { font-family: var(--mono); font-size: 0.72rem; color: #aaa; font-weight: 300; }
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  align-items: start;
+}
+
+.canvas-wrap {
+  position: relative;
+  width: 760px;
+  height: 760px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: #080510;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+canvas { display: block; width: 100%; height: 100%; }
+
+.phase-badge {
+  position: absolute;
+  top: 14px; left: 14px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.65);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.4s, color 0.4s;
+}
+
+.diag-overlay {
+  position: absolute;
+  bottom: 14px; left: 14px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+  pointer-events: none;
+}
+
+.jeans-panel {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  padding: 8px 12px;
+  line-height: 1.8;
+  pointer-events: none;
+}
+.jeans-panel .jeans-ok   { color: #6fcf97; }
+.jeans-panel .jeans-crit { color: #f2994a; }
+.jeans-panel .jeans-col  { color: #eb5757; }
+
+.sidebar { padding-left: 28px; display: flex; flex-direction: column; gap: 20px; }
+
+.panel { background: var(--bg2); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 18px; }
+.panel-title {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3);
+  margin-bottom: 14px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+}
+
+.slider-row { margin-bottom: 13px; }
+.slider-row:last-child { margin-bottom: 0; }
+.slider-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.slider-name  { font-family: var(--sans); font-size: 0.78rem; color: var(--ink2); }
+.slider-val   { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); font-weight: 500; min-width: 48px; text-align: right; }
+.slider-hint  { font-family: var(--sans); font-size: 0.65rem; color: var(--ink3); margin-top: 2px; font-style: italic; }
+
+input[type=range] {
+  width: 100%; height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--bg3); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--accent); transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+  padding: 7px 14px; border-radius: 4px; border: 1.5px solid var(--border);
+  background: var(--bg); color: var(--ink2); cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.02em;
+}
+button:hover { background: var(--bg3); border-color: var(--ink3); color: var(--ink); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: #a93226; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.stat-item .sl { font-family: var(--sans); font-size: 0.65rem; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-item .sv { font-family: var(--mono); font-size: 0.82rem; color: var(--ink); font-weight: 500; }
+
+.phase-progress { display: flex; gap: 4px; margin-top: 4px; }
+.ph-dot { flex: 1; height: 5px; border-radius: 3px; background: var(--bg3); transition: background 0.5s; }
+.ph-dot.done    { background: var(--green); }
+.ph-dot.current { background: var(--accent); }
+
+.ph-labels { display: flex; gap: 4px; margin-top: 4px; }
+.ph-label { flex: 1; font-family: var(--mono); font-size: 0.55rem; color: var(--ink3); text-align: center; overflow: hidden; white-space: nowrap; }
+
+#teoria { max-width: 1140px; margin: 10px auto 60px; padding: 0 24px; }
+.teoria-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 28px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+.teoria-header h2 { font-family: var(--serif); font-size: 1.6rem; font-weight: 500; color: var(--ink); }
+.teoria-header .tag { font-family: var(--mono); font-size: 0.65rem; color: var(--ink3); background: var(--bg3); padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); }
+
+.teoria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.teoria-section { margin-bottom: 32px; }
+.teoria-section h3 { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.teoria-section h3 .num { font-family: var(--mono); font-size: 0.7rem; color: var(--bg); background: var(--ink3); padding: 1px 7px; border-radius: 3px; font-weight: 400; }
+.teoria-section p { font-family: var(--serif); font-size: 0.97rem; color: var(--ink2); line-height: 1.72; text-align: justify; hyphens: auto; }
+.teoria-section p + p { margin-top: 10px; }
+.eq-box { background: var(--bg2); border-left: 3px solid var(--accent); border-radius: 0 4px 4px 0; padding: 10px 16px; margin: 12px 0; font-size: 0.9rem; }
+.callout { background: var(--bg2); border: 1.5px solid var(--border); border-radius: var(--r); padding: 14px 18px; margin: 16px 0; font-family: var(--serif); font-size: 0.9rem; color: var(--ink2); line-height: 1.65; }
+.callout strong { color: var(--ink); }
+.divider { grid-column: 1 / -1; height: 1px; background: var(--border); margin: 8px 0 24px; }
+
+/* ── Loading overlay ── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 999; gap: 18px;
+}
+#loading h2    { font-family: var(--serif); font-size: 1.3rem; color: var(--ink2); }
+#loading .sub  { font-family: var(--mono); font-size: 0.75rem; color: var(--ink3); }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Caricamento modulo WASM…</h2>
+  <div class="sub" id="loadingMsg">Inizializzazione SimModule</div>
+</div>
+
+<header>
+  <h1>Collasso Stellare &amp; Formazione Stellare</h1>
+  <span class="sub">Simulazione SPH (Smoothed Particle Hydrodynamics) · 2D · Core in WebAssembly</span>
+</header>
+
+<div class="main-grid">
+  <div>
+    <div class="canvas-wrap">
+      <canvas id="c" width="760" height="760"></canvas>
+      <div class="phase-badge" id="phaseBadge">Fase 0 — Nube Molecolare</div>
+      <div class="jeans-panel" id="jeans">
+        <div>M<sub>J</sub>: <span id="jMass">—</span></div>
+        <div>L<sub>J</sub>: <span id="jLen">—</span></div>
+        <div>Stato: <span id="jStatus">—</span></div>
+      </div>
+      <div class="diag-overlay" id="diagOverlay">ρ<sub>max</sub>: — · t: —</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+
+    <div class="panel">
+      <div class="panel-title">Controlli</div>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="primary" id="btnStart">▶ Avvia</button>
+        <button id="btnPause" disabled>⏸ Pausa</button>
+        <button id="btnReset">↺ Reset</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--ink3);line-height:1.6">
+        Modifica i parametri e premi <em>Reset</em> per applicarli.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Nube Iniziale</div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">N particelle</span>
+          <span class="slider-val" id="vN">400</span>
+        </div>
+        <input type="range" id="sN" min="100" max="1000" step="50" value="400">
+        <div class="slider-hint">Costo calcolo ∝ N²</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Raggio nube [px]</span>
+          <span class="slider-val" id="vR">200</span>
+        </div>
+        <input type="range" id="sR" min="80" max="340" step="10" value="200">
+        <div class="slider-hint">Densità superficiale ∝ N/R²</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Vel. angolare ω₀</span>
+          <span class="slider-val" id="vOmega">0.000</span>
+        </div>
+        <input type="range" id="sOmega" min="0" max="0.030" step="0.001" value="0.000">
+        <div class="slider-hint">Rotazione rigida iniziale</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Energia interna u₀</span>
+          <span class="slider-val" id="vU0">0.00</span>
+        </div>
+        <input type="range" id="sU0" min="0" max="0.5" step="0.01" value="0.00">
+        <div class="slider-hint">Temperatura iniziale della nube</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Parametri Fisici</div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Gravità G</span>
+          <span class="slider-val" id="vG">12.0</span>
+        </div>
+        <input type="range" id="sG" min="3" max="40" step="0.5" value="12">
+        <div class="slider-hint">Forza del collasso gravitazionale</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Pressione K</span>
+          <span class="slider-val" id="vK">0.004</span>
+        </div>
+        <input type="range" id="sK" min="0.001" max="0.03" step="0.001" value="0.004">
+        <div class="slider-hint">P = K·ρ<sup>γ</sup>, resistenza al collasso</div>
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span class="slider-name">Raffreddamento</span>
+          <span class="slider-val" id="vCool">0.9980</span>
+        </div>
+        <input type="range" id="sCool" min="0.96" max="0.9999" step="0.0001" value="0.998">
+        <div class="slider-hint">Perdita radiativa per passo (1 = adiabatico)</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Diagnostica</div>
+      <div class="stat-grid">
+        <div class="stat-item"><div class="sl">Fase</div><div class="sv" id="dPhase">0</div></div>
+        <div class="stat-item"><div class="sl">Particelle vive</div><div class="sv" id="dAlive">—</div></div>
+        <div class="stat-item"><div class="sl">ρ<sub>max</sub></div><div class="sv" id="dRho">—</div></div>
+        <div class="stat-item"><div class="sl">u<sub>max</sub></div><div class="sv" id="dU">—</div></div>
+        <div class="stat-item"><div class="sl">Tempo sim.</div><div class="sv" id="dTime">—</div></div>
+        <div class="stat-item"><div class="sl">ρ<sub>media</sub></div><div class="sv" id="dRhoMean">—</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-family:var(--sans);font-size:0.65rem;color:var(--ink3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Progressione fasi</div>
+        <div class="phase-progress">
+          <div class="ph-dot" id="pd0"></div>
+          <div class="ph-dot" id="pd1"></div>
+          <div class="ph-dot" id="pd2"></div>
+          <div class="ph-dot" id="pd3"></div>
+          <div class="ph-dot" id="pd4"></div>
+        </div>
+        <div class="ph-labels">
+          <div class="ph-label">Nube</div>
+          <div class="ph-label">Proto★</div>
+          <div class="ph-label">Collasso</div>
+          <div class="ph-label">Supernova</div>
+          <div class="ph-label">N★</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /main-grid -->
+
+<!-- ── Sezione Teorica ───────────────────────────────────────────────────── -->
+<div id="teoria">
+  <div class="teoria-header">
+    <h2>La Vita di una Stella</h2>
+    <span class="tag">nota teorica</span>
+    <span class="tag">SPH · WASM</span>
+  </div>
+
+  <div class="teoria-grid">
+
+    <div class="teoria-section">
+      <h3><span class="num">01</span> Le Nubi Molecolari e il Criterio di Jeans</h3>
+      <p>Le stelle nascono all'interno di enormi nubi di gas e polvere — le <em>nubi molecolari giganti</em> — costituite prevalentemente da idrogeno molecolare (H₂), elio e tracce di molecole più complesse. La domanda fondamentale è: quando una nube comincia a collassare? La risposta fu data da James Jeans nel 1902. Egli mostrò che un mezzo auto-gravitante è instabile se la sua dimensione supera una lunghezza critica $\lambda_J$, oltre la quale la forza gravitazionale prevale sulla pressione del gas:</p>
+      <div class="eq-box">
+        $$\lambda_J = c_s \sqrt{\frac{\pi}{G\rho}}, \qquad M_J = \frac{\pi}{6}\rho\,\lambda_J^3$$
+      </div>
+      <p>dove $c_s = \sqrt{\gamma P/\rho}$ è la velocità del suono adiabatica. Se la massa della nube supera $M_J$, nessun gradiente di pressione riesce a impedire il collasso: la perturbazione gravitazionale cresce esponenzialmente.</p>
+      <div class="callout">
+        <strong>Nella simulazione</strong> il pannello in alto a destra mostra in tempo reale $M_J$ e $L_J$ nelle unità adimensionali del modello. Quando il sistema si trova in regime di instabilità, il colore cambia verso il rosso.
+      </div>
+    </div>
+
+    <div class="teoria-section">
+      <h3><span class="num">02</span> Il Metodo SPH (Smoothed Particle Hydrodynamics)</h3>
+      <p>La simulazione usa il metodo SPH, in cui il fluido è rappresentato da un insieme di particelle, ciascuna con massa, posizione, velocità ed energia interna. Le quantità continue (densità, pressione) vengono stimate per interpolazione pesata tramite un <em>kernel</em> $W(r,h)$, una funzione a supporto compatto di larghezza $h$:</p>
+      <div class="eq-box">
+        $$\rho_i = \sum_j m_j\, W(|\mathbf{r}_i - \mathbf{r}_j|, h)$$
+      </div>
+      <p>Qui si usa il kernel B-spline cubico 2D, la scelta standard perché è $C^2$, non oscilla e ha gradiente ben definito. L'equazione del moto per la particella $i$ include la forza di pressione $-\nabla P / \rho$, la gravità con softening $\varepsilon$, e la viscosità artificiale di Monaghan per catturare gli urti senza instabilità numeriche.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="teoria-section">
+      <h3><span class="num">03</span> L'Equazione di Stato e il Raffreddamento</h3>
+      <p>La pressione segue una legge politropica $P = K\rho^\gamma$ con $\gamma = 5/3$ (gas monoatomico). Nelle fasi iniziali (0–1) il gas è otticamente sottile e può raffreddarsi: ogni passo l'energia interna viene moltiplicata per un fattore $\eta < 1$ (il parametro <em>raffreddamento</em> nello slider), mimando la perdita radiativa. Nelle fasi successive il raffreddamento diventa meno efficiente e si aggiunge il termine di pressione termica $(\gamma-1)\rho u$.</p>
+      <div class="eq-box">
+        $$P_i = K\rho_i^\gamma + (\gamma-1)\rho_i u_i \qquad \text{(fase} \geq 2\text{)}$$
+      </div>
+    </div>
+
+    <div class="teoria-section">
+      <h3><span class="num">04</span> Il Collasso del Nucleo e la Supernova di Tipo II</h3>
+      <p>Quando la densità supera la soglia critica e il tempo di free-fall è trascorso, il modello entra nella fase di rimbalzo (fase 3). Un impulso radiale verso l'esterno viene applicato alle particelle vicine al centro di massa, mimando l'onda d'urto della supernova generata dal rimbalzo del nucleo sulla densità nucleare. L'energia viene depositata nel gas circostante con un meccanismo analogo al trasporto di neutrini nelle simulazioni complete.</p>
+      <div class="callout">
+        <strong>Il core C compilato in WASM</strong> esegue l'intero ciclo SPH — calcolo densità, forze, integrazione leapfrog — senza passare dati a JavaScript frame per frame: solo al momento del rendering JS legge il buffer di stato prodotto da <code>sim_get_state()</code>.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="teoria-section">
+      <h3><span class="num">05</span> La Stella di Neutroni</h3>
+      <p>Il resto compatto della supernova è una <em>stella di neutroni</em>: una sfera di circa 10–12 km di raggio con massa di $1.4$–$2\,M_\odot$, sorretta dalla pressione di degenerazione dei neutroni (principio di esclusione di Pauli). Nella simulazione la stella di neutroni è un oggetto puntiforme che assorbe le particelle SPH che le cadono entro 12 px, mentre il nucleo pulsa con periodo fisso mimando l'emissione di un pulsar.</p>
+    </div>
+
+    <div class="teoria-section">
+      <h3><span class="num">06</span> Architettura WASM e Prestazioni</h3>
+      <p>Il core fisico gira interamente in WebAssembly (WASM), compilato da C con Emscripten a ottimizzazione <code>-O2</code>. JavaScript si occupa solo del rendering Canvas e dell'interfaccia utente. La comunicazione avviene tramite memoria condivisa lineare: <code>sim_get_state()</code> restituisce un puntatore a un buffer interno che JS legge direttamente come <code>Float32Array</code>, senza copia. Questo permette di simulare 600–800 particelle a frame rate fluido anche su macchine di classe media.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     JavaScript — carica il modulo WASM prodotto da Emscripten e gestisce
+     rendering + UI. Tutta la fisica è nel C.
+     ════════════════════════════════════════════════════════════════════════ -->
+<script>
+
+/* ── Parametri UI ── */
+const params = {
+  N:     400,
+  R:     190,
+  omega: 0.020,
+  u0:    0.00,
+  G:     12.0,
+  K:     0.004,
+  cool:  0.998
+};
+
+const CANVAS_W = 760;
+const CANVAS_H = 760;
+const PHASE_NAMES  = ['Nube Molecolare','Protostella in Formazione','Collasso del Nucleo','Rimbalzo — Supernova','Stella di Neutroni'];
+const PHASE_COLORS = ['#4a9eff','#f39c12','#e74c3c','#9b59b6','#2ecc71'];
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const loading = document.getElementById('loading');
+const loadingMsg = document.getElementById('loadingMsg');
+
+const BG_STARS = Array.from({length: 180}, () => [
+  Math.random() * CANVAS_W,
+  Math.random() * CANVAS_H,
+  Math.random() * 1.2 + 0.2,
+  0.12 + Math.random() * 0.16
+]);
+
+let running = false;
+let rafId = null;
+const ITERS_PER_FRAME = 3;
+
+let Sim = null;
+let sim_set_params = null;
+let sim_init = null;
+let sim_step = null;
+let sim_get_state = null;
+let sim_get_diagnostics = null;
+let sim_get_phase = null;
+let sim_get_N = null;
+
+function stopLoop() {
+  running = false;
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+}
+
+function safeSetText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function safeSetHTML(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = value;
+}
+
+function setButtonsForStopped() {
+  document.getElementById('btnStart').disabled = !Sim;
+  document.getElementById('btnPause').disabled = true;
+}
+
+function setButtonsForRunning() {
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+}
+
+function bindSlider(id, valId, key, fmt) {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  const refresh = () => {
+    params[key] = parseFloat(sl.value);
+    vl.textContent = fmt(params[key]);
+  };
+  sl.addEventListener('input', refresh);
+  refresh();
+}
+
+bindSlider('sN',     'vN',     'N',     v => String(v));
+bindSlider('sR',     'vR',     'R',     v => String(v));
+bindSlider('sOmega', 'vOmega', 'omega', v => v.toFixed(3));
+bindSlider('sU0',    'vU0',    'u0',    v => v.toFixed(2));
+bindSlider('sG',     'vG',     'G',     v => v.toFixed(1));
+bindSlider('sK',     'vK',     'K',     v => v.toFixed(3));
+bindSlider('sCool',  'vCool',  'cool',  v => v.toFixed(4));
+
+function drawBackground() {
+  ctx.fillStyle = '#060312';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  for (const [sx, sy, sr, sa] of BG_STARS) {
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${sa})`;
+    ctx.fill();
+  }
+}
+
+function doInit() {
+  if (!Sim) return;
+  stopLoop();
+
+  sim_set_params(params.G, params.K, params.cool, 200);
+  sim_init(params.N | 0, params.R, params.omega, params.u0);
+
+  /* Un passo iniziale rende non nulle rho e p già dal primo frame. */
+  sim_step(1);
+
+  render();
+  updateUI();
+  setButtonsForStopped();
+}
+
+function render() {
+  drawBackground();
+  if (!Sim || !sim_get_state) return;
+
+  const state = sim_get_state();
+  if (!state || state.length < 8) return;
+
+  const nAlive = state[0] | 0;
+  const nsActive = state[1] > 0.5;
+  const nsX = state[2];
+  const nsY = state[3];
+  const nsPulse = state[4];
+  const cmx = state[5];
+  const cmy = state[6];
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cmx, cmy, 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  let rhoMax = 0;
+  let off = 8;
+  for (let i = 0; i < nAlive; i++) {
+    const rho = state[off + 3];
+    if (rho > rhoMax) rhoMax = rho;
+    off += 4;
+  }
+
+  off = 8;
+  for (let i = 0; i < nAlive; i++) {
+    const px = state[off++];
+    const py = state[off++];
+    const u = state[off++];
+    const rho = state[off++];
+
+    const nr = rhoMax > 1e-9 ? Math.max(0, Math.min(1, rho / rhoMax)) : 0;
+    const radius = rhoMax > 1e-9 ? (1.8 + 3.0 * nr) : 2.4;
+    const alpha = rhoMax > 1e-9 ? (0.35 + 0.60 * nr) : 0.70;
+
+    let fill = `rgba(170,205,255,${alpha})`;
+    if (u > 1.2) fill = `rgba(255,215,120,${alpha})`;
+    if (u > 2.0) fill = `rgba(255,140,90,${alpha})`;
+
+    ctx.beginPath();
+    ctx.arc(px, py, radius, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+
+    if (nr > 0.65) {
+      ctx.beginPath();
+      ctx.arc(px, py, radius * 2.1, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,230,180,${0.05 + 0.08 * nr})`;
+      ctx.fill();
+    }
+  }
+
+  if (nsActive) {
+    const pulseR = 20 + 12 * nsPulse;
+    const grad = ctx.createRadialGradient(nsX, nsY, 0, nsX, nsY, pulseR);
+    grad.addColorStop(0, 'rgba(180,255,230,0.35)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.beginPath();
+    ctx.arc(nsX, nsY, pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(nsX, nsY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(210,255,235,0.95)';
+    ctx.fill();
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(120,200,255,${0.12 + 0.10 * nsPulse})`;
+    ctx.lineWidth = 3;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(nsX, nsY);
+      ctx.lineTo(nsX, nsY + s * (30 + 20 * nsPulse));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function updateUI() {
+  if (!Sim || !sim_get_diagnostics) return;
+
+  const d = sim_get_diagnostics();
+  if (!d || d.length < 8) return;
+
+  const ph = d[7] | 0;
+  const phaseName = PHASE_NAMES[ph] ?? 'Fase sconosciuta';
+  const phaseColor = PHASE_COLORS[ph] ?? '#999999';
+
+  const badge = document.getElementById('phaseBadge');
+  badge.textContent = `Fase ${ph} — ${phaseName}`;
+  badge.style.borderColor = phaseColor;
+
+  safeSetHTML('diagOverlay', `ρ<sub>max</sub>: ${d[0].toFixed(3)} &nbsp;·&nbsp; t: ${d[3].toFixed(0)}`);
+  safeSetText('dPhase', String(ph));
+  safeSetText('dAlive', String(d[6] | 0));
+  safeSetText('dRho', d[0].toFixed(4));
+  safeSetText('dU', d[1].toFixed(3));
+  safeSetText('dTime', d[3].toFixed(0));
+  safeSetText('dRhoMean', d[2].toFixed(4));
+
+  safeSetText('jMass', d[4] > 0 ? d[4].toExponential(2) : '—');
+  safeSetText('jLen',  d[5] > 0 ? `${d[5].toFixed(1)} px` : '—');
+
+  const Mcloud = d[6];
+  const jStatus = document.getElementById('jStatus');
+  if (d[5] > 0 && d[4] > 0) {
+    if (Mcloud > d[4] * 5) {
+      jStatus.textContent = 'COLLASSO';
+      jStatus.className = 'jeans-col';
+    } else if (Mcloud > d[4]) {
+      jStatus.textContent = 'Instabile';
+      jStatus.className = 'jeans-crit';
+    } else {
+      jStatus.textContent = 'Stabile';
+      jStatus.className = 'jeans-ok';
+    }
+  } else {
+    jStatus.textContent = '—';
+    jStatus.className = '';
+  }
+
+  [0,1,2,3,4].forEach(i => {
+    const dot = document.getElementById(`pd${i}`);
+    if (!dot) return;
+    dot.className = 'ph-dot';
+    if (i < ph) dot.classList.add('done');
+    else if (i === ph) dot.classList.add('current');
+  });
+}
+
+function loop() {
+  if (!running || !Sim) return;
+
+  sim_step(ITERS_PER_FRAME);
+  render();
+  updateUI();
+  rafId = requestAnimationFrame(loop);
+}
+
+document.getElementById('btnStart').addEventListener('click', () => {
+  if (!Sim || running) return;
+  running = true;
+  setButtonsForRunning();
+  loop();
+});
+
+document.getElementById('btnPause').addEventListener('click', () => {
+  stopLoop();
+  setButtonsForStopped();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  doInit();
+});
+
+loadingMsg.textContent = 'Caricamento sim.js…';
+const scriptTag = document.createElement('script');
+scriptTag.src = 'sim.js';
+scriptTag.onerror = () => {
+  loadingMsg.textContent = 'ERRORE: sim.js non trovato nella stessa cartella del file HTML.';
+};
+
+function getWasmBuffer() {
+  if (!Sim) throw new Error('Modulo WASM non inizializzato');
+
+  if (Sim.HEAPU8 && Sim.HEAPU8.buffer) return Sim.HEAPU8.buffer;
+  if (Sim.HEAP8 && Sim.HEAP8.buffer) return Sim.HEAP8.buffer;
+  if (Sim.wasmMemory && Sim.wasmMemory.buffer) return Sim.wasmMemory.buffer;
+  if (typeof Module !== 'undefined' && Module && Module.HEAPU8 && Module.HEAPU8.buffer) return Module.HEAPU8.buffer;
+
+  throw new Error('Memoria WASM non accessibile: HEAPU8/HEAP8/wasmMemory assenti');
+}
+
+function readFloat32View(ptrBytes, lengthFloats) {
+  const buffer = getWasmBuffer();
+  return new Float32Array(buffer, ptrBytes, lengthFloats);
+}
+
+scriptTag.onload = () => {
+  loadingMsg.textContent = 'Istanziazione SimModule…';
+
+  const factory = window.SimModule;
+  if (typeof factory !== 'function') {
+    loadingMsg.textContent = 'ERRORE: SimModule non è definita in sim.js.';
+    return;
+  }
+
+  factory({
+    locateFile: (path) => path
+  }).then(module => {
+    Sim = module;
+
+    sim_set_params = (G, K, cool, soft) => Sim._sim_set_params(G, K, cool, soft);
+    sim_init = (N, R, omega, u0) => Sim._sim_init(N, R, omega, u0);
+    sim_step = (iters) => Sim._sim_step(iters);
+    sim_get_phase = () => Sim._sim_get_phase();
+    sim_get_N = () => Sim._sim_get_N();
+
+    sim_get_diagnostics = () => {
+      const ptr = Sim._sim_get_diagnostics();
+      return readFloat32View(ptr, 8);
+    };
+
+    sim_get_state = () => {
+      const ptr = Sim._sim_get_state();
+      const header = readFloat32View(ptr, 8);
+      const nAlive = header[0] | 0;
+      const len = 8 + nAlive * 4;
+      return readFloat32View(ptr, len);
+    };
+
+    loading.style.display = 'none';
+    doInit();
+    console.log('WASM inizializzato');
+    console.log('N particelle iniziali =', sim_get_N());
+    console.log('Fase iniziale =', sim_get_phase());
+    console.log('Buffer byteLength =', getWasmBuffer().byteLength);
+    console.log('State header =', Array.from(sim_get_state().slice(0, 8)));
+  }).catch(err => {
+    console.error(err);
+    loadingMsg.textContent = 'Errore istanziazione WASM: ' + err;
+  });
+};
+document.head.appendChild(scriptTag);
+
+setButtonsForStopped();
+drawBackground();
+
+</script>
+</body>
+</html>

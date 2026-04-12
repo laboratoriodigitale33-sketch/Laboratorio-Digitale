@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulazioni di Fisica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────────────── */
+    :root {
+      --bg-0: #06090f;
+      --bg-1: #0a0f1a;
+      --bg-2: #0f1623;
+      --bg-3: #141e2e;
+      --surface: rgba(255,255,255,0.042);
+      --surface-hi: rgba(255,255,255,0.068);
+      --border: rgba(255,255,255,0.09);
+      --border-hi: rgba(255,255,255,0.18);
+      --text: #e8edf7;
+      --text-soft: #8fa0be;
+      --text-dim: #4e5f7a;
+      --gold: #f0c060;
+      --gold-dim: rgba(240,192,96,0.18);
+      --gold-glow: rgba(240,192,96,0.08);
+      --teal: #5bd4c4;
+      --teal-dim: rgba(91,212,196,0.15);
+      --rose: #f07070;
+      --rose-dim: rgba(240,112,112,0.15);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 8px 28px rgba(0,0,0,0.45);
+      --shadow-lg: 0 20px 50px rgba(0,0,0,0.55);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 28px;
+      --mono: "DM Mono", monospace;
+      --sans: "DM Sans", sans-serif;
+      --display: "Crimson Pro", Georgia, serif;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg-0);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Background layers ───────────────────────────────────────────── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Gradient mesh */
+    .bg-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(91,212,196,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 5%, rgba(240,192,96,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 80% at 50% 100%, rgba(91,212,196,0.04) 0%, transparent 50%),
+        linear-gradient(175deg, var(--bg-1) 0%, var(--bg-0) 40%, var(--bg-2) 100%);
+    }
+
+    /* Grid reticle */
+    .bg-layer::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, rgba(0,0,0,0.8), transparent 75%);
+    }
+
+    /* Animated star field */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .stars canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.5;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: min(1280px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 40px 0 80px;
+    }
+
+    /* ── Top nav ─────────────────────────────────────────────────────── */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 52px;
+    }
+
+    .site-wordmark {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .site-wordmark span {
+      color: var(--gold);
+      opacity: 0.85;
+    }
+
+    .top-links {
+      display: flex;
+      gap: 10px;
+    }
+
+    .top-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      color: var(--text-soft);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+
+    .top-link:hover {
+      color: var(--gold);
+      border-color: rgba(240,192,96,0.35);
+      background: var(--gold-glow);
+      transform: translateY(-1px);
+    }
+
+    .top-link-icon {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    /* ── Hero ────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 8px 16px 56px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+      padding: 6px 14px 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(240,192,96,0.28);
+      background: var(--gold-glow);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .hero-label-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.75); }
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-family: var(--display);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-subtitle {
+      max-width: 620px;
+      margin: 0 auto 32px;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--text-soft);
+      font-weight: 300;
+    }
+
+    .hero-stats {
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 24px;
+      border-radius: 8px;
+    }
+
+    .hero-stat + .hero-stat {
+      border-left: 1px solid var(--border);
+    }
+
+    .hero-stat-n {
+      font-family: var(--mono);
+      font-size: 1.45rem;
+      font-weight: 500;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .hero-stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    /* ── Search/filter panel ─────────────────────────────────────────── */
+    .panel {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-md);
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .panel-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1 1 280px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      pointer-events: none;
+      font-family: var(--mono);
+    }
+
+    .search {
+      width: 100%;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(6,9,15,0.6);
+      color: var(--text);
+      padding: 0 14px 0 38px;
+      outline: none;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .search::placeholder { color: var(--text-dim); }
+
+    .search:focus {
+      border-color: rgba(240,192,96,0.4);
+      background: rgba(6,9,15,0.8);
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .select {
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(6,9,15,0.6);
+      color: var(--text);
+      padding: 0 36px 0 14px;
+      outline: none;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234e5f7a'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      cursor: pointer;
+      min-width: 160px;
+      transition: border-color 0.2s;
+    }
+
+    .select:focus { border-color: rgba(240,192,96,0.4); }
+
+    .select option { background: #0f1623; }
+
+    .wip-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(6,9,15,0.6);
+      color: var(--text-soft);
+      cursor: pointer;
+      user-select: none;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .wip-toggle:hover { border-color: rgba(240,192,96,0.3); color: var(--gold); }
+
+    .wip-toggle input { margin: 0; accent-color: var(--gold); cursor: pointer; }
+
+    .panel-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    /* ── Results counter ─────────────────────────────────────────────── */
+    .results-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 2px;
+    }
+
+    .results-count {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .results-count strong {
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    /* ── Category blocks ─────────────────────────────────────────────── */
+    .results {
+      display: grid;
+      gap: 16px;
+    }
+
+    .category-block {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .category-block:hover {
+      border-color: var(--border-hi);
+      box-shadow: var(--shadow-md);
+    }
+
+    .category-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 22px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .category-toggle:hover { background: rgba(255,255,255,0.02); }
+    .category-toggle:focus-visible { outline: 2px solid rgba(240,192,96,0.5); outline-offset: -2px; }
+
+    .category-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .category-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--cat-color, var(--text-dim));
+      box-shadow: 0 0 8px var(--cat-color, transparent);
+      opacity: 0.85;
+    }
+
+    .category-text { min-width: 0; }
+
+    .category-title {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.3rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .category-icon {
+      font-size: 1.05rem;
+      line-height: 1;
+      opacity: 0.75;
+      color: var(--cat-color, var(--text-soft));
+      flex-shrink: 0;
+    }
+
+    .category-desc {
+      margin: 3px 0 0;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 600px;
+    }
+
+    .category-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .category-count {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+    }
+
+    .category-chevron {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .category-toggle[aria-expanded="true"] .category-chevron {
+      transform: rotate(180deg);
+    }
+
+    .category-content {
+      border-top: 1px solid var(--border);
+      padding: 20px 22px 22px;
+      background: rgba(0,0,0,0.12);
+    }
+
+    .category-content[hidden] { display: none; }
+
+    /* ── Card grid ───────────────────────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      position: relative;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1), border-color 0.25s, box-shadow 0.25s;
+    }
+
+    /* Shimmer line on hover */
+    .card::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cat-color, var(--gold)), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255,255,255,0.18);
+      box-shadow: var(--shadow-md), 0 0 0 1px rgba(240,192,96,0.08);
+    }
+
+    .card:hover::after { opacity: 0.9; }
+
+    .card-inner {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--cat-color, var(--gold)) 14%, transparent),
+        rgba(255,255,255,0.04)
+      );
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sim-level-chip {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid;
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    .sim-level-chip.base    { color: var(--teal); border-color: rgba(91,212,196,0.3); background: rgba(91,212,196,0.08); }
+    .sim-level-chip.intermedio { color: var(--gold); border-color: rgba(240,192,96,0.3); background: rgba(240,192,96,0.08); }
+    .sim-level-chip.avanzato  { color: var(--rose); border-color: rgba(240,112,112,0.3); background: rgba(240,112,112,0.08); }
+
+    .sim-title {
+      margin: 0 0 8px;
+      font-family: var(--display);
+      font-size: 1.12rem;
+      font-weight: 400;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    .sim-desc {
+      margin: 0;
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: var(--text-soft);
+      flex: 1;
+    }
+
+    .sim-footer {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sim-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.75;
+      transition: opacity 0.2s, gap 0.2s;
+    }
+
+    .card:hover .sim-open { opacity: 1; gap: 11px; }
+
+    /* ── States ──────────────────────────────────────────────────────── */
+    .empty-state,
+    .loading-state,
+    .error-state {
+      text-align: center;
+      padding: 56px 24px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      border-radius: var(--radius-lg);
+      border: 1px dashed var(--border);
+    }
+
+    .loading-state {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .loading-state::after {
+      content: "";
+      display: inline-block;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      margin-left: 8px;
+      animation: blink 1.2s ease infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.15; }
+    }
+
+    .error-state { color: var(--rose); }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 56px;
+      padding: 18px 4px 0;
+      border-top: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .footer-stats {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      opacity: 0.72;
+    }
+
+    .footer-stats strong {
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    .footer-author {
+      text-align: right;
+    }
+
+    .footer-author a {
+      font-family: "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
+      font-size: 1.35rem;
+      font-style: italic;
+      letter-spacing: 0.01em;
+      color: var(--text-dim);
+      text-decoration: none;
+      border-bottom: none;
+      opacity: 0.78;
+      transition: opacity 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .footer-author a:hover {
+      color: var(--text-soft);
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .footer-note {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .container { width: calc(100% - 24px); padding-top: 24px; }
+      .top-nav { margin-bottom: 32px; }
+      .hero { padding-bottom: 36px; }
+      h1 { font-size: clamp(2.4rem, 10vw, 3.6rem); }
+      .hero-stats { flex-wrap: wrap; }
+      .hero-stat + .hero-stat { border-left: none; border-top: 1px solid var(--border); }
+      .hero-stats { display: grid; grid-template-columns: 1fr 1fr; }
+      .panel-row { flex-direction: column; align-items: stretch; }
+      .search-wrap, .filter-group, .select, .wip-toggle { width: 100%; }
+      .filter-group { flex-direction: column; }
+      .grid { grid-template-columns: 1fr; }
+      .category-desc { display: none; }
+      .footer { flex-direction: column; text-align: center; }
+    }
+
+    /* ── Utility ─────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-layer" aria-hidden="true"></div>
+  <div class="stars" aria-hidden="true"><canvas id="starCanvas"></canvas></div>
+
+  <div class="container">
+
+    <!-- Top nav -->
+    <nav class="top-nav" aria-label="Navigazione principale">
+      <div class="site-wordmark">fisica.<span>sim</span></div>
+      <div class="top-links">
+        <a class="top-link" href="theory/index.html" aria-label="Sezione teoria">
+          <span class="top-link-icon">∫</span> Teoria
+        </a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-label">
+        <span class="hero-label-dot"></span>
+        Laboratorio Digitale
+      </div>
+      <h1>Simulazioni<br>di <em>Fisica</em></h1>
+      <p class="hero-subtitle">
+        Esplora la fisica attraverso simulazioni interattive, dai fondamenti della meccanica alle frontiere della meccanica quantistica e della relatività.
+      </p>
+    </section>
+
+    <!-- Filter panel -->
+    <section class="panel" aria-label="Ricerca e filtri">
+      <div class="panel-row">
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            id="searchInput"
+            class="search"
+            type="search"
+            placeholder="Cerca titolo, tag, categoria…"
+            aria-label="Cerca simulazioni"
+          />
+        </div>
+        <div class="filter-group">
+          <select id="categoryFilter" class="select" aria-label="Filtra per categoria">
+            <option value="">Tutte le categorie</option>
+          </select>
+          <select id="levelFilter" class="select" aria-label="Filtra per livello">
+            <option value="">Tutti i livelli</option>
+            <option value="base">Base</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="avanzato">Avanzato</option>
+          </select>
+          <label class="wip-toggle" for="showWipToggle">
+            <input type="checkbox" id="showWipToggle" />
+            <span>Mostra WIP</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <div class="results" id="results" role="region" aria-label="Lista simulazioni">
+        <div class="loading-state" role="status">Caricamento catalogo in corso</div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-stats" id="heroStats" aria-label="Statistiche catalogo">
+        <span><strong id="statTotal">—</strong> simulazioni</span>
+        <span><strong id="statCats">—</strong> categorie</span>
+        <span><strong id="statWip">—</strong> WIP</span>
+      </div>
+      <div class="footer-author">
+       <a href="https://github.com/robertocurciorubertini-ctrl/Simulazioni" target="_blank" rel="noopener">Roberto Curcio Rubertini</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    /* ── Stars canvas ─────────────────────────────────────────────── */
+    (function () {
+      const canvas = document.getElementById("starCanvas");
+      const ctx = canvas.getContext("2d");
+      let stars = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function initStars(n) {
+        stars = [];
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.1 + 0.2,
+            alpha: Math.random() * 0.6 + 0.1,
+            speed: Math.random() * 0.012 + 0.003,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+
+      let frame = 0;
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const t = frame * 0.012;
+        for (const s of stars) {
+          const a = s.alpha * (0.6 + 0.4 * Math.sin(t * s.speed * 60 + s.phase));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(220,230,255,${a})`;
+          ctx.fill();
+        }
+        frame++;
+        requestAnimationFrame(draw);
+      }
+
+      resize();
+      initStars(180);
+      draw();
+      window.addEventListener("resize", () => { resize(); initStars(180); });
+    })();
+
+    /* ── Category color — read from simulations.json ────────────── */
+    // getCatColor() uses the categoryMap built from the loaded catalog.
+    // It is called only after loadCatalog() has populated `catalog`,
+    // so the map is always available at render time.
+    const FALLBACK_COLOR = "#8fa0be";
+
+    function getCatColor(name) {
+      const key = normalize(name);
+      const map = getCategoryMap(catalog.categories || []);
+      // exact match first
+      const exact = map.get(key);
+      if (exact?.color) return exact.color;
+      // partial match as fallback (handles minor name discrepancies)
+      for (const [k, cat] of map.entries()) {
+        if (cat?.color && (key.includes(k) || k.includes(key))) return cat.color;
+      }
+      return FALLBACK_COLOR;
+    }
+
+    /* ── Catalog logic ───────────────────────────────────────────── */
+    const CATALOG_PATH = "simulations.json";
+
+    const results       = document.getElementById("results");
+    const searchInput   = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const levelFilter   = document.getElementById("levelFilter");
+    const showWipToggle = document.getElementById("showWipToggle");
+
+    const statTotal = document.getElementById("statTotal");
+    const statCats  = document.getElementById("statCats");
+    const statWip   = document.getElementById("statWip");
+
+    let catalog = { categories: [], simulations: [] };
+    let expandedCategoryKey = null;
+
+    function escapeHtml(v) {
+      return String(v ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+    }
+
+    function normalize(v) { return String(v ?? "").trim().toLowerCase(); }
+
+    function titleCaseFromSlug(v) {
+      return String(v ?? "").replace(/[-_]+/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+    }
+
+    function levelLabel(v) {
+      const n = normalize(v);
+      if (n==="base") return "Base";
+      if (n==="intermedio") return "Intermedio";
+      if (n==="avanzato") return "Avanzato";
+      return v || "";
+    }
+
+    function simulationCountLabel(n) {
+      return n === 1 ? "1 simulazione" : `${n} simulazioni`;
+    }
+
+    function hasActiveFilters() {
+      return Boolean(
+        normalize(searchInput.value) ||
+        normalize(categoryFilter.value) ||
+        normalize(levelFilter.value)
+      );
+    }
+
+    function getCategoryKey(name) { return normalize(name); }
+
+    function getCategoryMap(cats) {
+      const m = new Map();
+      cats.forEach(c => { if (c?.name) m.set(normalize(c.name), c); });
+      return m;
+    }
+
+    function inferCategoryFromPath(fp) {
+      const parts = String(fp ?? "").split("/").filter(Boolean);
+      if (parts.length <= 1) return "Senza categoria";
+      return titleCaseFromSlug(parts[0]);
+    }
+
+    function normalizeSimulation(sim) {
+      const file = String(sim.file ?? "").trim();
+      const norm = file.replace(/\\/g,"/");
+      const first = norm.split("/").filter(Boolean)[0] || "";
+      const isWip = normalize(first) === "wip";
+      const inferredCategory = isWip ? "WIP" : inferCategoryFromPath(file);
+      const category = isWip ? "WIP" : (String(sim.category ?? inferredCategory).trim() || inferredCategory);
+      const tags = Array.isArray(sim.tags) ? sim.tags.map(t=>String(t).trim()).filter(Boolean) : [];
+      return {
+        ...sim,
+        file,
+        title: String(sim.title ?? "Simulazione senza titolo").trim(),
+        description: String(sim.description ?? "Simulazione interattiva di fisica.").trim(),
+        icon: String(sim.icon ?? "Φ").trim() || "Φ",
+        category,
+        order: Number.isFinite(Number(sim.order)) ? Number(sim.order) : 9999,
+        tags,
+        level: String(sim.level ?? "").trim(),
+        isWip
+      };
+    }
+
+    function matchesFilters(sim) {
+      const query = normalize(searchInput.value);
+      const selCat = normalize(categoryFilter.value);
+      const selLvl = normalize(levelFilter.value);
+      const showWip = showWipToggle.checked;
+
+      if (sim.isWip && !showWip) return false;
+      if (selCat && normalize(sim.category) !== selCat) return false;
+      if (selLvl && normalize(sim.level) !== selLvl) return false;
+      if (!query) return true;
+
+      const hay = [sim.title, sim.description, sim.category, sim.level, ...(sim.tags||[])]
+        .map(normalize).join(" ");
+      return hay.includes(query);
+    }
+
+    function getVisibleSimulations() {
+      return (catalog.simulations || []).map(normalizeSimulation).filter(matchesFilters);
+    }
+
+    function sortCategories(cats, sims) {
+      const map = getCategoryMap(cats);
+      const names = new Set();
+      cats.forEach(c => {
+        if (!c?.name) return;
+        if (normalize(c.name)==="wip" && !showWipToggle.checked) return;
+        names.add(c.name);
+      });
+      sims.forEach(s => { if (s?.category) names.add(s.category); });
+
+      return Array.from(names).map(name => {
+        const cd = map.get(normalize(name)) || {};
+        let order = Number.isFinite(Number(cd.order)) ? Number(cd.order) : 9999;
+        if (normalize(name)==="wip") order = 999999;
+        return { name, description: cd.description || "", icon: cd.icon || "", order };
+      }).sort((a,b) => a.order !== b.order ? a.order - b.order : a.name.localeCompare(b.name,"it"));
+    }
+
+    function buildCategoryOptions(sims, cats) {
+      const map = getCategoryMap(cats);
+      const names = new Set();
+      cats.forEach(c => {
+        if (!c?.name) return;
+        if (normalize(c.name)==="wip" && !showWipToggle.checked) return;
+        names.add(c.name);
+      });
+      sims.forEach(s => { if (s?.category) names.add(s.category); });
+
+      const sorted = Array.from(names).map(name => {
+        const cd = map.get(normalize(name)) || {};
+        let order = Number.isFinite(Number(cd.order)) ? Number(cd.order) : 9999;
+        if (normalize(name)==="wip") order = 999999;
+        return { name, order };
+      }).sort((a,b) => a.order !== b.order ? a.order - b.order : a.name.localeCompare(b.name,"it"));
+
+      const cur = categoryFilter.value;
+      categoryFilter.innerHTML = '<option value="">Tutte le categorie</option>' +
+        sorted.map(it => `<option value="${escapeHtml(it.name)}">${escapeHtml(it.name)}</option>`).join("");
+      if (sorted.some(it => it.name === cur)) categoryFilter.value = cur;
+    }
+
+    function updateStats() {
+      const all = (catalog.simulations || []).map(normalizeSimulation);
+      const visible = all.filter(s => !s.isWip);
+      const wip = all.filter(s => s.isWip);
+      const cats = new Set(visible.map(s => normalize(s.category)));
+
+      if (statTotal) statTotal.textContent = visible.length;
+      if (statCats)  statCats.textContent  = cats.size;
+      if (statWip)   statWip.textContent   = wip.length;
+    }
+
+    function updateResultsCount(sims) {
+      const resultsCount = document.getElementById("resultsCount");
+      if (!resultsCount) return;
+      const n = sims.length;
+      resultsCount.innerHTML = n === 0
+        ? "Nessun risultato"
+        : `<strong>${n}</strong> ${n === 1 ? "simulazione trovata" : "simulazioni trovate"}`;
+    }
+
+    function renderCard(sim) {
+      const color = getCatColor(sim.category);
+      const levelMarkup = sim.level
+        ? `<span class="sim-level-chip ${escapeHtml(normalize(sim.level))}">${escapeHtml(levelLabel(sim.level))}</span>`
+        : "";
+      return `
+        <a class="card" href="${encodeURI(sim.file)}" style="--cat-color:${escapeHtml(color)}"
+           aria-label="Apri simulazione: ${escapeHtml(sim.title)}">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="icon" aria-hidden="true">${escapeHtml(sim.icon)}</div>
+              ${levelMarkup}
+            </div>
+            <h3 class="sim-title">${escapeHtml(sim.title)}</h3>
+            <p class="sim-desc">${escapeHtml(sim.description)}</p>
+            <div class="sim-footer">
+              <span class="sim-open" aria-hidden="true">Apri &nbsp;→</span>
+            </div>
+          </div>
+        </a>
+      `;
+    }
+
+    function render() {
+      const sims = getVisibleSimulations();
+      const orderedCats = sortCategories(catalog.categories || [], sims);
+      const autoExpand = hasActiveFilters();
+
+      updateResultsCount(sims);
+
+      if (sims.length === 0) {
+        results.innerHTML = `<div class="empty-state">Nessuna simulazione corrisponde ai filtri selezionati.</div>`;
+        return;
+      }
+
+      const html = orderedCats.map((cat, catIdx) => {
+        const catSims = sims
+          .filter(s => normalize(s.category) === normalize(cat.name))
+          .sort((a,b) => a.order !== b.order ? a.order - b.order : a.title.localeCompare(b.title,"it"));
+
+        if (catSims.length === 0) return "";
+
+        const key = getCategoryKey(cat.name);
+        const isExpanded = autoExpand || expandedCategoryKey === key;
+        const color = getCatColor(cat.name);
+        const delay = `${catIdx * 0.05}s`;
+
+        return `
+          <section class="category-block" style="animation-delay:${delay}; --cat-color:${escapeHtml(color)}">
+            <button class="category-toggle" type="button"
+              data-category="${escapeHtml(cat.name)}"
+              aria-expanded="${isExpanded ? "true" : "false"}">
+              <div class="category-left">
+                <div class="category-dot"></div>
+                <div class="category-text">
+                  <h2 class="category-title">
+                    ${cat.icon ? `<span class="category-icon" aria-hidden="true">${escapeHtml(cat.icon)}</span>` : ""}${escapeHtml(cat.name)}
+                  </h2>
+                  ${cat.description ? `<p class="category-desc">${escapeHtml(cat.description)}</p>` : ""}
+                </div>
+              </div>
+              <div class="category-right">
+                <span class="category-count">${escapeHtml(simulationCountLabel(catSims.length))}</span>
+                <span class="category-chevron" aria-hidden="true">▾</span>
+              </div>
+            </button>
+            <div class="category-content" ${isExpanded ? "" : "hidden"}>
+              <div class="grid">
+                ${catSims.map(renderCard).join("")}
+              </div>
+            </div>
+          </section>
+        `;
+      }).filter(Boolean).join("");
+
+      results.innerHTML = html;
+    }
+
+    function refreshFiltersAndRender() {
+      buildCategoryOptions(getVisibleSimulations(), catalog.categories || []);
+      render();
+    }
+
+    async function loadCatalog() {
+      try {
+        const resp = await fetch(CATALOG_PATH, { cache: "no-store" });
+        if (!resp.ok) throw new Error("Impossibile recuperare simulations.json");
+        const data = await resp.json();
+        catalog = Array.isArray(data)
+          ? { categories: [], simulations: data }
+          : {
+              categories: Array.isArray(data.categories) ? data.categories : [],
+              simulations: Array.isArray(data.simulations) ? data.simulations : []
+            };
+        updateStats();
+        refreshFiltersAndRender();
+      } catch(err) {
+        results.innerHTML = `
+          <div class="error-state">
+            Non è stato possibile caricare il catalogo.<br>
+            Verifica che <code>simulations.json</code> sia presente e valido.
+          </div>`;
+        console.error(err);
+      }
+    }
+
+    searchInput.addEventListener("input", render);
+    categoryFilter.addEventListener("change", render);
+    levelFilter.addEventListener("change", render);
+    showWipToggle.addEventListener("change", refreshFiltersAndRender);
+
+    results.addEventListener("click", e => {
+      const toggle = e.target.closest(".category-toggle");
+      if (!toggle || hasActiveFilters()) return;
+
+      const block = toggle.closest(".category-block");
+      const content = block?.querySelector(".category-content");
+      if (!block || !content) return;
+
+      const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+
+      results.querySelectorAll(".category-toggle[aria-expanded='true']").forEach(btn => {
+        if (btn === toggle) return;
+        btn.setAttribute("aria-expanded", "false");
+        const otherContent = btn.closest(".category-block")?.querySelector(".category-content");
+        if (otherContent) otherContent.hidden = true;
+      });
+
+      const nextExpanded = !isExpanded;
+      toggle.setAttribute("aria-expanded", nextExpanded ? "true" : "false");
+      content.hidden = !nextExpanded;
+
+      const key = getCategoryKey(toggle.dataset.category || "");
+      expandedCategoryKey = nextExpanded ? key : null;
+    });
+
+    loadCatalog();
+  </script>
+</body>
+</html>

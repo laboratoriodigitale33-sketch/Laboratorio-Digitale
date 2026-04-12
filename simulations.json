@@ -888,6 +888,32 @@
       "isWip": true
     },
     {
+      "title": "Traiettorie Orbitali",
+      "description": "Simulazione interattiva di meccanica orbitale: sistema solare, problema dei due e tre corpi, effetto fionda, anelli planetari e orbite esotiche. Parte teorica su leggi di Keplero, integrali del moto e problema N-corpi.",
+      "category": "WIP",
+      "icon": "🪐",
+      "order": 90,
+      "tags": [
+        "orbite",
+        "traiettorie",
+        "keplero",
+        "gravitazione",
+        "problema dei tre corpi",
+        "effetto fionda",
+        "anelli",
+        "sistema solare",
+        "due corpi",
+        "N-corpi",
+        "assistenza gravitazionale",
+        "precessione",
+        "binaria",
+        "asteroidi"
+      ],
+      "level": "intermedio",
+      "file": "WIP/traiettorie-orbitali.html",
+      "isWip": true
+    },
+    {
       "title": "Onde gravitazionali",
       "description": "Simulazione avanzata di sistemi binari compatti con inspiral, merger e ringdown, deformazione qualitativa dello spaziotempo, segnale di strain in stile LIGO, polarizzazioni e pannello tempo-frequenza.",
       "category": "WIP",

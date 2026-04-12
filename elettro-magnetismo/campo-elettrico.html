@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  title: "Campo elettrico",
+  description: "Visualizzazione del campo elettrico generato da cariche puntiformi, linee di campo, superfici equipotenziali, flusso e circuitazione. Include template per dipolo, condensatore, sfera e cilindro.",
+  category: "Elettromagnetismo",
+  icon: "⚡",
+  order: 10,
+  tags: ["cariche elettriche", "campo elettrico", "forza elettrica", "legge di Coulomb", "equipotenziali", "dipolo", "condensatore", "flusso elettrico", "teorema di Gauss"],
+  level: "intermedio"
+};
+</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elettrostatica — Campo Elettrico</title>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(','\\)'], ['$', '$']],
+          displayMath: [['\\[','\\]']]
+        },
+        svg: { fontCache: 'global' }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f3ee;
+            --bg2: #ece9e2;
+            --panel: #fafaf7;
+            --ink: #1e1b16;
+            --ink2: #4a4540;
+            --ink3: #8a8070;
+            --accent: #c0392b;
+            --accent2: #2563ab;
+            --accent3: #1a7a45;
+            --border: #d4cfc6;
+            --canvas-bg: #111318;
+            --pos: #ef4444;
+            --neg: #3b82f6;
+            --field: rgba(255,200,60,0.85);
+            --equi: rgba(80,200,120,0.7);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--ink);
+            color: #f0ede6;
+            padding: 1.6rem 2.4rem 1.4rem;
+            border-bottom: 3px solid var(--accent);
+            display: flex;
+            align-items: baseline;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        header h1 {
+            font-family: 'EB Garamond', serif;
+            font-size: 2.1rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+        header .sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #a09888;
+        }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex;
+            background: var(--ink);
+            padding: 0 2.4rem;
+            gap: 0;
+            border-bottom: 1px solid #2e2a22;
+        }
+        .tab-btn {
+            padding: 0.7rem 1.4rem;
+            border: none;
+            background: transparent;
+            color: #807060;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .tab-btn.active {
+            color: #f0ede6;
+            border-bottom-color: var(--accent);
+        }
+        .tab-btn:hover:not(.active) { color: #c0b8a8; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── SIMULATOR LAYOUT ── */
+        .sim-wrap {
+            display: grid;
+            grid-template-columns: 260px 1fr 280px;
+            gap: 0;
+            height: calc(100vh - 120px);
+            min-height: 560px;
+        }
+
+        /* ── LEFT SIDEBAR ── */
+        .left-panel {
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            padding: 1.2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .section-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--ink3);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.7rem;
+        }
+        .ctrl-group { margin-bottom: 0.8rem; }
+        .ctrl-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.35rem;
+            font-size: 0.84rem;
+            color: var(--ink2);
+        }
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.76rem;
+            color: var(--accent2);
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent2);
+            cursor: pointer;
+        }
+
+        /* Charge type selector */
+        .charge-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+        }
+        .charge-btn {
+            padding: 0.55rem 0.4rem;
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.74rem;
+            text-align: center;
+            transition: all 0.15s;
+            color: var(--ink2);
+        }
+        .charge-btn.active-pos {
+            background: #fee2e2;
+            border-color: var(--pos);
+            color: var(--pos);
+        }
+        .charge-btn.active-neg {
+            background: #dbeafe;
+            border-color: var(--neg);
+            color: var(--neg);
+        }
+        .charge-btn:hover:not(.active-pos):not(.active-neg) {
+            background: var(--bg2);
+        }
+
+        /* Toggle switches */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.55rem;
+            font-size: 0.85rem;
+            color: var(--ink2);
+        }
+        .toggle {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .toggle input { display: none; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border);
+            border-radius: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 12px; height: 12px;
+            left: 3px; top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--accent2); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+        /* Template buttons */
+        .template-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+        }
+        .tmpl-btn {
+            padding: 0.5rem 0.4rem;
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.74rem;
+            text-align: center;
+            transition: all 0.15s;
+            color: var(--ink2);
+            line-height: 1.3;
+        }
+        .tmpl-btn:hover {
+            background: var(--bg2);
+            border-color: var(--accent2);
+            color: var(--ink);
+        }
+        .tmpl-btn span {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 0.15rem;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink2);
+            transition: all 0.15s;
+            margin-bottom: 0.4rem;
+        }
+        .action-btn:hover { background: var(--bg2); border-color: var(--ink3); }
+        .action-btn.danger:hover { background: #fee2e2; border-color: var(--accent); color: var(--accent); }
+
+        /* ── CANVAS AREA ── */
+        .canvas-wrap {
+            background: var(--canvas-bg);
+            position: relative;
+            overflow: hidden;
+        }
+        #simCanvas {
+            display: block;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+        }
+        #simCanvas.dragging { cursor: grabbing; }
+        #simCanvas.hovering { cursor: grab; }
+
+        /* Canvas overlay hints */
+        .canvas-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.45);
+            pointer-events: none;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── RIGHT SIDEBAR ── */
+        .right-panel {
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            padding: 1.2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Readout cards */
+        .readout-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 0.8rem;
+        }
+        .readout-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink3);
+            margin-bottom: 0.4rem;
+        }
+        .readout-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.05rem;
+            color: var(--ink);
+            font-weight: 500;
+        }
+        .readout-sub {
+            font-size: 0.76rem;
+            color: var(--ink3);
+            margin-top: 0.2rem;
+        }
+
+        /* Charge list */
+        .charge-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .charge-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .charge-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .charge-item-info { flex: 1; color: var(--ink2); }
+        .charge-item-del {
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--ink3);
+            font-size: 0.9rem;
+            padding: 0 2px;
+            line-height: 1;
+        }
+        .charge-item-del:hover { color: var(--accent); }
+
+        /* Flux/circ panel */
+        .gauss-panel {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 0.8rem;
+        }
+        .gauss-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink3);
+            margin-bottom: 0.7rem;
+        }
+        .gauss-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.83rem;
+            color: var(--ink2);
+        }
+        .gauss-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.83rem;
+            color: var(--accent2);
+        }
+
+        /* ── THEORY TAB ── */
+        .theory-wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2.2rem 2rem 3rem;
+        }
+        .theory-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-top: 1.5rem;
+        }
+        .theory-card {
+            background: var(--panel);
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            padding: 1.3rem 1.4rem;
+        }
+        .theory-card h3 {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.28rem;
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+            color: var(--ink);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        .theory-card p, .theory-card li {
+            font-size: 0.9rem;
+            color: var(--ink2);
+            line-height: 1.72;
+            margin-bottom: 0.6rem;
+        }
+        .theory-card ul { padding-left: 1.2rem; }
+        .formula-box {
+            background: var(--bg);
+            border-left: 3px solid var(--accent2);
+            padding: 0.7rem 1rem;
+            margin: 0.9rem 0;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.84rem;
+            color: var(--ink);
+            border-radius: 0 4px 4px 0;
+            overflow-x: auto;
+        }
+        .formula-box .comment {
+            color: var(--ink3);
+            font-size: 0.76rem;
+            display: block;
+            margin-top: 0.3rem;
+        }
+        .callout {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 5px;
+            padding: 0.7rem 1rem;
+            margin-top: 0.8rem;
+            font-size: 0.84rem;
+            color: #1e3a5f;
+        }
+        .theory-intro {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.08rem;
+            color: var(--ink2);
+            line-height: 1.75;
+            margin-bottom: 1.4rem;
+            max-width: 820px;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            .sim-wrap { grid-template-columns: 220px 1fr 240px; }
+        }
+        @media (max-width: 820px) {
+            .sim-wrap { grid-template-columns: 1fr; grid-template-rows: auto 400px auto; height: auto; }
+            .theory-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Elettrostatica</h1>
+    <span class="sub">Campo elettrico · Potenziale · Flusso di Gauss · Circuitazione</span>
+</header>
+
+<div class="tabs">
+    <button class="tab-btn active" data-tab="sim">Simulatore</button>
+    <button class="tab-btn" data-tab="theory">Teoria</button>
+</div>
+
+<!-- ════════════════════════════════
+     TAB SIMULATORE
+════════════════════════════════ -->
+<div class="tab-panel active" id="tab-sim">
+<div class="sim-wrap">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+        <div>
+            <div class="section-title">Tipo di carica</div>
+            <div class="charge-selector">
+                <button class="charge-btn active-pos" id="btnPos" onclick="setChargeType(1)">
+                    ＋ Positiva
+                </button>
+                <button class="charge-btn" id="btnNeg" onclick="setChargeType(-1)">
+                    ＿ Negativa
+                </button>
+            </div>
+            <div class="ctrl-group">
+                <div class="ctrl-row">
+                    <span>Intensità carica</span>
+                    <span class="ctrl-val" id="chargeVal">1.0</span>
+                </div>
+                <input type="range" id="slCharge" min="0.5" max="4" step="0.5" value="1.0"
+                    oninput="document.getElementById('chargeVal').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Visualizzazione</div>
+            <div class="toggle-row">
+                <span>Linee di campo</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togField" checked onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span>Vettori campo E</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togVec" checked onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span>Equipotenziali</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togEqui" onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span>Vettori forza</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togForce" checked onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="ctrl-group" style="margin-top:0.4rem">
+                <div class="ctrl-row">
+                    <span>Densità linee</span>
+                    <span class="ctrl-val" id="densityVal">8</span>
+                </div>
+                <input type="range" id="slDensity" min="4" max="16" step="2" value="8"
+                    oninput="document.getElementById('densityVal').textContent=this.value; scheduleRender()">
+            </div>
+            <div class="ctrl-group">
+                <div class="ctrl-row">
+                    <span>Spaziatura vettori</span>
+                    <span class="ctrl-val" id="vecSpacingVal">22</span>
+                </div>
+                <input type="range" id="slVecSpacing" min="14" max="40" step="2" value="22"
+                    oninput="document.getElementById('vecSpacingVal').textContent=this.value; scheduleRender()">
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Superfici di Gauss</div>
+            <div class="toggle-row">
+                <span>Mostra superficie</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togGauss" onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="ctrl-group">
+                <div class="ctrl-row">
+                    <span>Raggio superficie</span>
+                    <span class="ctrl-val" id="gaussRVal">120</span>
+                </div>
+                <input type="range" id="slGaussR" min="40" max="280" step="10" value="120"
+                    oninput="document.getElementById('gaussRVal').textContent=this.value; scheduleRender()">
+            </div>
+            <div class="toggle-row" style="margin-top:0.3rem">
+                <span>Percorso chiuso (Γ)</span>
+                <label class="toggle">
+                    <input type="checkbox" id="togCirc" onchange="scheduleRender()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Template</div>
+            <div class="template-grid">
+                <button class="tmpl-btn" onclick="loadTemplate('dipole')"><span>⚡</span>Dipolo</button>
+                <button class="tmpl-btn" onclick="loadTemplate('capacitor')"><span>▐▌</span>Condensatore</button>
+                <button class="tmpl-btn" onclick="loadTemplate('sphere')"><span>◉</span>Sfera carica</button>
+                <button class="tmpl-btn" onclick="loadTemplate('sphere_hollow')"><span>○</span>Sfera cava</button>
+                <button class="tmpl-btn" onclick="loadTemplate('cylinder')"><span>▭</span>Cilindro</button>
+                <button class="tmpl-btn" onclick="loadTemplate('quadrupole')"><span>✦</span>Quadrupolo</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Controlli</div>
+            <button class="action-btn" onclick="toggleSimulation()">
+                <span id="simBtnLabel">▶ Avvia dinamica</span>
+            </button>
+            <button class="action-btn danger" onclick="clearCharges()">✕ Cancella tutto</button>
+        </div>
+
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+        <canvas id="simCanvas"></canvas>
+        <div class="canvas-hint">Clic per aggiungere · Trascina per spostare · Scroll per zoom</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+        <div>
+            <div class="section-title">Lettura nel punto</div>
+            <div class="readout-card">
+                <div class="readout-label">Posizione cursore</div>
+                <div class="readout-val" id="rdPos">—</div>
+            </div>
+            <div class="readout-card" style="margin-top:0.5rem">
+                <div class="readout-label">|E| nel punto</div>
+                <div class="readout-val" id="rdE">—</div>
+                <div class="readout-sub" id="rdEdir">—</div>
+            </div>
+            <div class="readout-card" style="margin-top:0.5rem">
+                <div class="readout-label">Potenziale V nel punto</div>
+                <div class="readout-val" id="rdV">—</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Cariche presenti</div>
+            <div class="charge-list" id="chargeList">
+                <div style="font-size:0.8rem;color:var(--ink3);padding:0.4rem">
+                    Nessuna carica. Clicca sul canvas per aggiungerne.
+                </div>
+            </div>
+        </div>
+
+        <div class="gauss-panel">
+            <div class="gauss-title">Teorema di Gauss — flusso su superficie chiusa</div>
+            <div class="gauss-row">
+                <span>Carica racchiusa Q_enc</span>
+                <span class="gauss-val" id="rdQenc">— q</span>
+            </div>
+            <div class="gauss-row">
+                <span>Flusso Φ_E (calc.)</span>
+                <span class="gauss-val" id="rdFlux">—</span>
+            </div>
+            <div class="gauss-row">
+                <span>Flusso Φ_E (Gauss)</span>
+                <span class="gauss-val" id="rdFluxGauss">—</span>
+            </div>
+        </div>
+
+        <div class="gauss-panel">
+            <div class="gauss-title">Circuitazione — Percorso chiuso Γ</div>
+            <div class="gauss-row">
+                <span>∮ E·dl</span>
+                <span class="gauss-val" id="rdCirc">—</span>
+            </div>
+            <div style="font-size:0.78rem; color:var(--ink3); margin-top:0.3rem; line-height:1.55;">
+                In elettrostatica il campo è conservativo e irrotazionale: \(\oint_\Gamma \mathbf{E}\cdot d\mathbf{l}=0\) e \(\nabla\times\mathbf{E}=\mathbf{0}\).
+            </div>
+        </div>
+
+        <div>
+            <div class="section-title">Legenda</div>
+            <div style="font-size:0.8rem; color:var(--ink2); display:flex; flex-direction:column; gap:0.4rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:12px;height:12px;border-radius:50%;background:var(--pos);flex-shrink:0"></div>
+                    <span>Carica positiva (+)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:12px;height:12px;border-radius:50%;background:var(--neg);flex-shrink:0"></div>
+                    <span>Carica negativa (−)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:26px;height:2px;background:rgba(255,200,60,0.85);flex-shrink:0"></div>
+                    <span>Linee di campo E</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:26px;height:2px;background:rgba(80,200,120,0.7);flex-shrink:0;border-top:2px dashed rgba(80,200,120,0.7)"></div>
+                    <span>Superfici equipotenziali</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:12px;height:12px;border-radius:50%;border:2px solid rgba(160,200,255,0.6);flex-shrink:0"></div>
+                    <span>Superficie di Gauss</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                    <div style="width:26px;height:2px;background:rgba(200,160,255,0.8);flex-shrink:0"></div>
+                    <span>Percorso Γ (circuitazione)</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════
+     TAB TEORIA
+════════════════════════════════ -->
+<div class="tab-panel" id="tab-theory">
+<div class="theory-wrap">
+
+    <p class="theory-intro">
+        L'elettrostatica descrive configurazioni di carica stazionarie, per le quali il campo elettrico
+        \(\mathbf{E}(\mathbf{r})\) non dipende dal tempo. In questo regime il campo è determinato dalla distribuzione di carica,
+        il potenziale elettrostatico \(V(\mathbf{r})\) è ben definito e il flusso attraverso superfici chiuse è legato
+        direttamente alla carica racchiusa dal teorema di Gauss. La simulazione permette di visualizzare
+        la struttura locale del campo, la geometria delle linee di forza, le curve equipotenziali e alcune conseguenze
+        fondamentali delle equazioni di Maxwell nel caso statico.
+    </p>
+
+    <div class="theory-grid">
+
+        <div class="theory-card">
+            <h3>Legge di Coulomb e campo elettrico</h3>
+            <p>
+                Per due cariche puntiformi \(q_1\) e \(q_2\), separate dal vettore
+                \(\mathbf{r}_{12}=\mathbf{r}_1-\mathbf{r}_2\), la forza elettrostatica è descritta dalla legge di Coulomb.
+                La sua intensità decresce come \(1/r^2\) e la direzione è quella della congiungente fra le due cariche.
+            </p>
+            <div class="formula-box">
+                \[
+                \mathbf{F}_{12}=\frac{1}{4\pi\varepsilon_0}\,
+                \frac{q_1 q_2}{r_{12}^2}\,\hat{\mathbf{r}}_{12}
+                \]
+                <span class="comment">\(\varepsilon_0\) è la permittività del vuoto, \(\hat{\mathbf{r}}_{12}=\mathbf{r}_{12}/r_{12}\) è il versore radiale.</span>
+            </div>
+            <p>
+                Il <strong>campo elettrico</strong> è definito come forza per unità di carica di prova positiva:
+                \(\mathbf{E}=\mathbf{F}/q_0\). Per una carica puntiforme \(q\) posta nell'origine si ottiene un campo radiale,
+                uscente se \(q&gt;0\) ed entrante se \(q&lt;0\).
+            </p>
+            <div class="formula-box">
+                \[
+                \mathbf{E}(\mathbf{r})=
+                \frac{1}{4\pi\varepsilon_0}\,
+                \frac{q}{r^2}\,\hat{\mathbf{r}}
+                \qquad
+                \left(|\mathbf{E}|=
+                \frac{1}{4\pi\varepsilon_0}\frac{|q|}{r^2}\right)
+                \]
+            </div>
+            <p>
+                Per una distribuzione discreta di cariche vale il <strong>principio di sovrapposizione</strong>:
+                il campo totale è la somma vettoriale di tutti i contributi individuali.
+            </p>
+            <div class="formula-box">
+                \[
+                \mathbf{E}(\mathbf{r})=
+                \sum_i \mathbf{E}_i(\mathbf{r})
+                =
+                \frac{1}{4\pi\varepsilon_0}
+                \sum_i q_i\,
+                \frac{\mathbf{r}-\mathbf{r}_i}{|\mathbf{r}-\mathbf{r}_i|^3}
+                \]
+            </div>
+        </div>
+
+        <div class="theory-card">
+            <h3>Potenziale elettrico e superfici equipotenziali</h3>
+            <p>
+                Poiché il campo elettrostatico è conservativo, è possibile introdurre un potenziale scalare
+                \(V(\mathbf{r})\), definito come energia potenziale per unità di carica. Per un insieme di cariche puntiformi:
+            </p>
+            <div class="formula-box">
+                \[
+                V(\mathbf{r})=
+                \frac{1}{4\pi\varepsilon_0}
+                \sum_i \frac{q_i}{|\mathbf{r}-\mathbf{r}_i|}
+                \]
+                <span class="comment">Unità di misura: \(\mathrm{V}=\mathrm{J/C}\).</span>
+            </div>
+            <p>
+                La relazione fondamentale tra campo e potenziale è
+                \(\mathbf{E}=-\nabla V\): il campo punta nella direzione in cui il potenziale decresce più rapidamente.
+                Ne segue che le superfici o curve equipotenziali sono sempre ortogonali alle linee di campo.
+            </p>
+            <div class="formula-box">
+                \[
+                \mathbf{E}=-\nabla V,
+                \qquad
+                \Delta V_{AB}=-\int_A^B \mathbf{E}\cdot d\mathbf{l}
+                \]
+            </div>
+            <p>
+                Se una carica di prova si sposta lungo una equipotenziale, il lavoro del campo è nullo perché
+                \(dV=0\) lungo il percorso. Nella simulazione, l'ortogonalità tra linee di campo ed equipotenziali
+                è uno degli aspetti geometrici più istruttivi da osservare.
+            </p>
+            <div class="callout">
+                Attivando insieme linee di campo ed equipotenziali puoi verificare direttamente la struttura ortogonale del campo conservativo elettrostatico.
+            </div>
+        </div>
+
+        <div class="theory-card">
+            <h3>Teorema di Gauss e flusso del campo</h3>
+            <p>
+                Il <strong>flusso elettrico</strong> attraverso una superficie chiusa \(\Sigma\) misura quanta componente normale del campo
+                attraversa la superficie stessa. In forma integrale:
+            </p>
+            <div class="formula-box">
+                \[
+                \Phi_E=\oint_{\Sigma} \mathbf{E}\cdot \hat{\mathbf{n}}\, dA
+                \]
+                <span class="comment">\(\hat{\mathbf{n}}\) è la normale uscente alla superficie.</span>
+            </div>
+            <p>
+                Il <strong>teorema di Gauss</strong> collega direttamente questo flusso alla carica totale racchiusa:
+                si tratta di una delle equazioni di Maxwell nel caso elettrostatico.
+            </p>
+            <div class="formula-box">
+                \[
+                \oint_{\Sigma} \mathbf{E}\cdot \hat{\mathbf{n}}\, dA
+                =\frac{Q_{\text{enc}}}{\varepsilon_0}
+                \]
+                <span class="comment">Equivalentemente, in forma locale: \(\nabla\cdot\mathbf{E}=\rho/\varepsilon_0\).</span>
+            </div>
+            <p>
+                Nella simulazione la superficie di Gauss è rappresentata da una circonferenza. Variando posizione e numero delle cariche interne,
+                puoi confrontare il flusso numerico con il valore teorico \(Q_{\text{enc}}/\varepsilon_0\).
+                Le cariche esterne deformano localmente il campo sulla superficie, ma non cambiano il flusso totale netto.
+            </p>
+            <div class="callout">
+                Questo è il punto fisico essenziale del teorema di Gauss: la forma dettagliata di \(\mathbf{E}\) sulla superficie può cambiare, ma il flusso totale dipende solo da \(Q_{\text{enc}}\).
+            </div>
+        </div>
+
+        <div class="theory-card">
+            <h3>Circuitazione e conservatività del campo</h3>
+            <p>
+                In elettrostatica il campo è <strong>irrotazionale</strong>, quindi la sua circuitazione lungo ogni percorso chiuso \(\Gamma\)
+                è nulla. Questa proprietà è equivalente alla conservatività del campo.
+            </p>
+            <div class="formula-box">
+                \[
+                \oint_{\Gamma} \mathbf{E}\cdot d\mathbf{l}=0,
+                \qquad
+                \nabla\times\mathbf{E}=\mathbf{0}
+                \]
+            </div>
+            <p>
+                La nullità della circuitazione implica che il lavoro del campo dipende soltanto dagli estremi del percorso e non dal cammino seguito.
+                Per una carica di prova \(q\) che si sposta da \(A\) a \(B\):
+            </p>
+            <div class="formula-box">
+                \[
+                W_{A\to B}=q\int_A^B \mathbf{E}\cdot d\mathbf{l}
+                =q\,(V_A-V_B)
+                \]
+            </div>
+            <p>
+                Questa proprietà giustifica l'introduzione del potenziale elettrostatico come grandezza scalare di stato.
+                Il risultato vale finché il campo è statico; in elettrodinamica, se il campo magnetico varia nel tempo,
+                compare invece l'induzione elettromagnetica e la circuitazione di \(\mathbf{E}\) non è più nulla.
+            </p>
+            <div class="callout">
+                Il confronto con il campo magnetico è didatticamente importante: in magnetostatica vale \(\nabla\cdot\mathbf{B}=0\), mentre la circuitazione di \(\mathbf{B}\) è in generale non nulla.
+            </div>
+        </div>
+
+        <div class="theory-card">
+            <h3>Template: geometrie specifiche</h3>
+            <p><strong>Dipolo elettrico:</strong> una coppia di cariche \(+q\) e \(-q\) separate da un vettore \(\mathbf{d}\).
+                A grandi distanze il potenziale e il campo decadono più rapidamente rispetto al caso monopolare.
+                Il momento di dipolo è \(\mathbf{p}=q\,\mathbf{d}\).</p>
+            <div class="formula-box">
+                \[
+                V_{\text{dip}}(r,\theta)\simeq
+                \frac{1}{4\pi\varepsilon_0}\frac{p\cos\theta}{r^2}
+                \qquad (r\gg d)
+                \]
+            </div>
+            <p><strong>Condensatore piano ideale:</strong> fra due armature infinite con densità superficiale di carica \(\pm\sigma\),
+                il campo interno è uniforme e il campo esterno è nullo per cancellazione.</p>
+            <div class="formula-box">
+                \[
+                E=\frac{\sigma}{\varepsilon_0}
+                \quad \text{(tra le lastre)}, \qquad
+                E\approx 0 \quad \text{(all'esterno, lastre ideali)}
+                \]
+            </div>
+            <p><strong>Sfera carica:</strong> all'esterno il campo equivale a quello di una carica puntiforme \(Q\) concentrata nel centro.
+                Nel caso di guscio sferico sottile, il campo interno è nullo.</p>
+            <div class="formula-box">
+                \[
+                E(r&gt;R)=\frac{1}{4\pi\varepsilon_0}\frac{Q}{r^2},
+                \qquad
+                E(r&lt;R)=0 \quad \text{(guscio sferico)}
+                \]
+            </div>
+            <p><strong>Cilindro infinito:</strong> usando una superficie gaussiana cilindrica si ricava,
+                per una densità lineare \(\lambda\), un campo radiale che decresce come \(1/r\).</p>
+            <div class="formula-box">
+                \[
+                E(r)=\frac{\lambda}{2\pi\varepsilon_0 r}
+                \]
+            </div>
+        </div>
+
+        <div class="theory-card">
+            <h3>Energia del campo elettrico</h3>
+            <p>
+                Il campo elettrico trasporta e immagazzina energia. In vuoto, la densità di energia elettrostatica
+                associata a un campo di modulo \(E\) è
+            </p>
+            <div class="formula-box">
+                \[
+                u_E=\frac{1}{2}\varepsilon_0 E^2
+                \]
+                <span class="comment">Unità di misura: \(\mathrm{J/m^3}\).</span>
+            </div>
+            <p>
+                Per un sistema discreto di cariche, l'energia di configurazione può essere interpretata come il lavoro necessario
+                per assemblare la distribuzione portando le cariche dall'infinito fino alla configurazione finale.
+            </p>
+            <div class="formula-box">
+                \[
+                U=
+                \frac{1}{4\pi\varepsilon_0}
+                \sum_{i&lt;j}\frac{q_i q_j}{r_{ij}}
+                \]
+            </div>
+            <p>
+                Coppie di cariche di segno opposto contribuiscono con termini energetici negativi, mentre cariche dello stesso segno
+                danno contributi positivi. Questo chiarisce perché configurazioni attrattive sono energeticamente favorite,
+                mentre configurazioni repulsive richiedono lavoro esterno per essere costruite.
+            </p>
+            <div class="callout">
+                Il linguaggio dell'energia di campo diventa essenziale nello studio dei condensatori, dell'elettrodinamica classica e della formulazione lagrangiana dell'elettromagnetismo.
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// COSTANTI E STATO
+// ═══════════════════════════════════════════════════════════════
+const K = 9000;        // costante di Coulomb scalata per la visualizzazione
+const EPS0_SCALED = 1 / (4 * Math.PI * K); // ε₀ scalata
+
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+let charges = [];        // { x, y, q, id }
+let nextId = 0;
+let chargeType = 1;      // +1 o -1
+let isRunning = false;
+let animFrame = null;
+let renderScheduled = false;
+
+// Interazione
+let mouseCanvas = { x: 0, y: 0 };
+let draggingId = null;
+let hoveringId = null;
+
+// Zoom/pan
+let zoom = 1;
+let panX = 0, panY = 0;
+
+// ═══════════════════════════════════════════════════════════════
+// RESIZE CANVAS
+// ═══════════════════════════════════════════════════════════════
+function resizeCanvas() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    scheduleRender();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ═══════════════════════════════════════════════════════════════
+// COORDINATE HELPERS
+// ═══════════════════════════════════════════════════════════════
+function canvasCenter() {
+    return { x: canvas.width / 2 + panX, y: canvas.height / 2 + panY };
+}
+function worldToCanvas(wx, wy) {
+    const c = canvasCenter();
+    return { x: c.x + wx * zoom, y: c.y - wy * zoom };
+}
+function canvasToWorld(cx, cy) {
+    const c = canvasCenter();
+    return { x: (cx - c.x) / zoom, y: -(cy - c.y) / zoom };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FISICA
+// ═══════════════════════════════════════════════════════════════
+function electricField(x, y) {
+    let ex = 0, ey = 0;
+    for (const ch of charges) {
+        const dx = x - ch.x;
+        const dy = y - ch.y;
+        const r2 = dx * dx + dy * dy;
+        const r = Math.sqrt(r2);
+        if (r < 2) continue;
+        const e = K * ch.q / r2;
+        ex += e * dx / r;
+        ey += e * dy / r;
+    }
+    return { ex, ey, mag: Math.hypot(ex, ey) };
+}
+
+function potential(x, y) {
+    let v = 0;
+    for (const ch of charges) {
+        const r = Math.hypot(x - ch.x, y - ch.y);
+        if (r < 0.5) continue;
+        v += K * ch.q / r;
+    }
+    return v;
+}
+
+function forceOnCharge(target) {
+    let fx = 0, fy = 0;
+    for (const ch of charges) {
+        if (ch.id === target.id) continue;
+        const dx = target.x - ch.x;
+        const dy = target.y - ch.y;
+        const r2 = dx * dx + dy * dy;
+        if (r2 < 0.01) continue;
+        const r = Math.sqrt(r2);
+        const f = K * target.q * ch.q / r2;
+        fx += f * dx / r;
+        fy += f * dy / r;
+    }
+    return { fx, fy };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════
+function drawArrow(x1, y1, x2, y2, color, lw, headLen) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 1) return;
+    const ux = dx / len, uy = dy / len;
+    const hl = headLen || Math.min(10, len * 0.35);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lw || 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - hl * (ux - 0.4 * uy), y2 - hl * (uy + 0.4 * ux));
+    ctx.lineTo(x2 - hl * (ux + 0.4 * uy), y2 - hl * (uy - 0.4 * ux));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LINEE DI CAMPO — tracciatura numerica
+// ═══════════════════════════════════════════════════════════════
+
+function traceFieldLine(startWx, startWy, forward) {
+    const stepWorld = 2.2;
+    const maxSteps = 1400;
+    let wx = startWx, wy = startWy;
+    const pts = [];
+    const margin = 24;
+
+    for (let i = 0; i < maxSteps; i++) {
+        const cp = worldToCanvas(wx, wy);
+        pts.push({ x: cp.x, y: cp.y });
+
+        if (cp.x < -margin || cp.x > canvas.width + margin || cp.y < -margin || cp.y > canvas.height + margin) {
+            break;
+        }
+
+        const f = electricField(wx, wy);
+        if (f.mag < 1e-8) break;
+
+        const dir = forward ? 1 : -1;
+        wx += dir * stepWorld * f.ex / f.mag;
+        wy += dir * stepWorld * f.ey / f.mag;
+
+        // termina se entra in una carica
+        for (const ch of charges) {
+            const rr = Math.hypot(wx - ch.x, wy - ch.y);
+            if (rr < Math.max(4, chargeRadius(ch) / zoom)) {
+                const hit = worldToCanvas(ch.x, ch.y);
+                pts.push({ x: hit.x, y: hit.y });
+                i = maxSteps;
+                break;
+            }
+        }
+    }
+    return pts;
+}
+
+function drawFieldLines() {
+    const density = parseInt(document.getElementById('slDensity').value);
+
+    for (const ch of charges) {
+        if (ch.q === 0) continue;
+        const numLines = Math.max(8, Math.round(Math.abs(ch.q) * density));
+        const radiusW = Math.max(8 / zoom, (14 + Math.abs(ch.q) * 4) / zoom);
+        const forward = ch.q > 0;
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,200,60,0.82)';
+        ctx.lineWidth = 1.35;
+        ctx.shadowColor = 'rgba(255,200,60,0.28)';
+        ctx.shadowBlur = 2;
+
+        for (let i = 0; i < numLines; i++) {
+            const angle = (2 * Math.PI * i) / numLines;
+            const sx = ch.x + radiusW * Math.cos(angle);
+            const sy = ch.y + radiusW * Math.sin(angle);
+            const pts = traceFieldLine(sx, sy, forward);
+            if (pts.length < 2) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].x, pts[k].y);
+            ctx.stroke();
+
+            // Freccia direzionale ben allineata alla tangente locale
+            if (pts.length > 12) {
+                const mi = Math.floor(pts.length * 0.55);
+                const i1 = Math.max(0, mi - 3);
+                const i2 = Math.min(pts.length - 1, mi + 3);
+                const p1 = pts[i1], p2 = pts[i2];
+                drawArrow(p1.x, p1.y, p2.x, p2.y, 'rgba(255,210,90,0.95)', 1.2, 7);
+            }
+        }
+        ctx.restore();
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// VETTORI CAMPO
+// ═══════════════════════════════════════════════════════════════
+function drawFieldVectors() {
+    const spacing = parseInt(document.getElementById('slVecSpacing').value);
+    const W = canvas.width, H = canvas.height;
+
+    let maxMag = 0;
+    const gridData = [];
+
+    for (let cx = spacing; cx < W; cx += spacing) {
+        for (let cy = spacing; cy < H; cy += spacing) {
+            const { x, y } = canvasToWorld(cx, cy);
+            const f = electricField(x, y);
+            if (f.mag > 1e-6) {
+                gridData.push({ cx, cy, f });
+                if (f.mag > maxMag) maxMag = f.mag;
+            }
+        }
+    }
+
+    for (const { cx, cy, f } of gridData) {
+        const t = Math.min(1, Math.log1p(f.mag) / Math.log1p(maxMag));
+        const len = 6 + t * 12;
+        const nx = f.ex / f.mag, ny = f.ey / f.mag;
+
+        // colore: blu debole → giallo forte
+        const r = Math.round(t * 200);
+        const g = Math.round(80 + t * 140);
+        const b = Math.round(200 - t * 160);
+        const color = `rgba(${r},${g},${b},0.85)`;
+
+        const ex = cx + nx * len;
+        const ey = cy - ny * len;  // y canvas invertita
+
+        drawArrow(cx - nx * len * 0.4, cy + ny * len * 0.4, ex, ey, color, 1.3, 5);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EQUIPOTENZIALI — marching squares semplificato
+// ═══════════════════════════════════════════════════════════════
+function drawEquipotentials() {
+    if (charges.length === 0) return;
+
+    const W = canvas.width, H = canvas.height;
+    const step = 14;
+    const cols = Math.floor(W / step);
+    const rows = Math.floor(H / step);
+
+    // Calcola griglia potenziali
+    const grid = [];
+    let vmin = Infinity, vmax = -Infinity;
+    for (let r = 0; r <= rows; r++) {
+        grid[r] = [];
+        for (let c = 0; c <= cols; c++) {
+            const wx = canvasToWorld(c * step, r * step);
+            const v = potential(wx.x, wx.y);
+            grid[r][c] = Number.isFinite(v) ? v : 0;
+            if (grid[r][c] < vmin) vmin = grid[r][c];
+            if (grid[r][c] > vmax) vmax = grid[r][c];
+        }
+    }
+
+    // Livelli equidistanti in scala logaritmica attorno allo 0
+    const numLevels = 14;
+    const range = Math.max(Math.abs(vmin), Math.abs(vmax));
+    const levels = [];
+    for (let i = 1; i <= numLevels; i++) {
+        const v = range * (i / numLevels);
+        levels.push(v);
+        levels.push(-v);
+    }
+    levels.push(0);
+
+    ctx.save();
+    ctx.lineWidth = 1.1;
+    ctx.setLineDash([5, 4]);
+
+    for (const level of levels) {
+        if (!Number.isFinite(level)) continue;
+
+        // Intensità colore: rosso per V>0, blu per V<0, bianco per V=0
+        let color;
+        if (Math.abs(level) < range * 0.03) {
+            color = 'rgba(200,230,200,0.65)';
+        } else if (level > 0) {
+            const t = Math.min(1, level / range);
+            color = `rgba(255,${Math.round(100 - t * 60)},${Math.round(80 - t * 60)},${0.35 + t * 0.3})`;
+        } else {
+            const t = Math.min(1, -level / range);
+            color = `rgba(${Math.round(80 - t * 60)},${Math.round(100 - t * 60)},255,${0.35 + t * 0.3})`;
+        }
+        ctx.strokeStyle = color;
+
+        // Marching squares
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const v00 = grid[r][c], v10 = grid[r][c + 1];
+                const v01 = grid[r + 1][c], v11 = grid[r + 1][c + 1];
+                const x0 = c * step, y0 = r * step;
+
+                function interp(vA, vB, pAx, pAy, pBx, pBy) {
+                    const d = vB - vA;
+                    if (Math.abs(d) < 1e-10) return null;
+                    const t = (level - vA) / d;
+                    if (t < 0 || t > 1) return null;
+                    return { x: pAx + t * (pBx - pAx), y: pAy + t * (pBy - pAy) };
+                }
+
+                const pts = [
+                    interp(v00, v10, x0, y0, x0 + step, y0),
+                    interp(v10, v11, x0 + step, y0, x0 + step, y0 + step),
+                    interp(v11, v01, x0 + step, y0 + step, x0, y0 + step),
+                    interp(v01, v00, x0, y0 + step, x0, y0)
+                ].filter(Boolean);
+
+                if (pts.length >= 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    ctx.lineTo(pts[1].x, pts[1].y);
+                    ctx.stroke();
+                    if (pts.length === 4) {
+                        ctx.beginPath();
+                        ctx.moveTo(pts[2].x, pts[2].y);
+                        ctx.lineTo(pts[3].x, pts[3].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+    }
+
+    ctx.setLineDash([]);
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VETTORI FORZA
+// ═══════════════════════════════════════════════════════════════
+function drawForceVectors() {
+    let maxF = 0;
+    const forces = charges.map(ch => {
+        const f = forceOnCharge(ch);
+        const mag = Math.hypot(f.fx, f.fy);
+        if (mag > maxF) maxF = mag;
+        return f;
+    });
+
+    for (let i = 0; i < charges.length; i++) {
+        const ch = charges[i];
+        const f = forces[i];
+        const mag = Math.hypot(f.fx, f.fy);
+        if (mag < 0.01) continue;
+        const t = Math.min(1, mag / (maxF + 1e-6));
+        const len = 18 + t * 40;
+        const cp = worldToCanvas(ch.x, ch.y);
+        const r = chargeRadius(ch);
+        const nx = f.fx / mag, ny = f.fy / mag;
+        const sx = cp.x + nx * (r + 8);
+        const sy = cp.y - ny * (r + 8);
+        const ex = cp.x + nx * (r + 8 + len);
+        const ey = cp.y - ny * (r + 8 + len);
+        drawArrow(sx, sy, ex, ey, '#22c55e', 2.2, 8);
+        ctx.save();
+        ctx.fillStyle = 'rgba(34,197,94,0.85)';
+        ctx.font = '11px IBM Plex Mono';
+        ctx.fillText('F', ex + 4, ey - 4);
+        ctx.restore();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUPERFICIE DI GAUSS E CIRCUITAZIONE
+// ═══════════════════════════════════════════════════════════════
+function computeGauss() {
+    const R = parseInt(document.getElementById('slGaussR').value);
+    const cx = canvas.width / 2 + panX;
+    const cy = canvas.height / 2 + panY;
+
+    // Carica racchiusa
+    let qEnc = 0;
+    for (const ch of charges) {
+        const cp = worldToCanvas(ch.x, ch.y);
+        if (Math.hypot(cp.x - cx, cp.y - cy) < R) {
+            qEnc += ch.q;
+        }
+    }
+
+    // Flusso numerico: campiono 360 punti sulla superficie
+    const N = 360;
+    let flux = 0;
+    for (let i = 0; i < N; i++) {
+        const angle = (2 * Math.PI * i) / N;
+        // punto sulla superficie di Gauss in coord canvas
+        const pcx = cx + R * Math.cos(angle);
+        const pcy = cy + R * Math.sin(angle);
+        const pw = canvasToWorld(pcx, pcy);
+        const f = electricField(pw.x, pw.y);
+
+        // normale esterna (in coord mondo, orientata verso l'esterno)
+        // ma il campo è già in unità mondo, serve coerenza
+        const nxW = Math.cos(angle);
+        const nyW = -Math.sin(angle);  // y invertita
+
+        // dl sul cerchio = R * dθ, in unità mondo = R/zoom * dθ
+        const ds = (2 * Math.PI * R / zoom) / N;
+
+        flux += (f.ex * nxW + f.ey * nyW) * ds;
+    }
+
+    // Flusso teorico da Gauss
+    const fluxGauss = 4 * Math.PI * K * qEnc;
+
+    return { qEnc, flux, fluxGauss };
+}
+
+function computeCirculation() {
+    // Cerchio chiuso di raggio gaussR intorno al centro
+    const R = parseInt(document.getElementById('slGaussR').value) * 0.75;
+    const cx = canvas.width / 2 + panX;
+    const cy = canvas.height / 2 + panY;
+    const N = 360;
+    let circ = 0;
+
+    for (let i = 0; i < N; i++) {
+        const angle = (2 * Math.PI * i) / N;
+        const pcx = cx + R * Math.cos(angle);
+        const pcy = cy + R * Math.sin(angle);
+        const pw = canvasToWorld(pcx, pcy);
+        const f = electricField(pw.x, pw.y);
+
+        // Tangente (antiorario): (-sin θ, cos θ)
+        const txW = -Math.sin(angle);
+        const tyW = Math.cos(angle);
+
+        const ds = (2 * Math.PI * R / zoom) / N;
+        circ += (f.ex * txW + f.ey * tyW) * ds;
+    }
+    return circ;
+}
+
+function drawGaussSurface() {
+    const R = parseInt(document.getElementById('slGaussR').value);
+    const cx = canvas.width / 2 + panX;
+    const cy = canvas.height / 2 + panY;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,180,255,0.55)';
+    ctx.fillStyle = 'rgba(100,150,255,0.04)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([8, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Etichetta
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(120,180,255,0.7)';
+    ctx.font = '11px IBM Plex Mono';
+    ctx.fillText('Σ (Gauss)', cx + R * 0.68, cy - R * 0.68);
+
+    // Normali uscenti campionate
+    const nSamples = 16;
+    for (let i = 0; i < nSamples; i++) {
+        const angle = (2 * Math.PI * i) / nSamples;
+        const px = cx + R * Math.cos(angle);
+        const py = cy + R * Math.sin(angle);
+        const nx = Math.cos(angle) * 14;
+        const ny = Math.sin(angle) * 14;
+        drawArrow(px, py, px + nx, py + ny, 'rgba(120,180,255,0.5)', 1, 4);
+    }
+    ctx.restore();
+}
+
+function drawCirculationPath() {
+    const R = parseInt(document.getElementById('slGaussR').value) * 0.75;
+    const cx = canvas.width / 2 + panX;
+    const cy = canvas.height / 2 + panY;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,150,255,0.65)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI, false);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Freccia direzionale
+    ctx.strokeStyle = 'rgba(200,150,255,0.85)';
+    ctx.fillStyle = 'rgba(200,150,255,0.85)';
+    const arrowAngle = -Math.PI / 4;
+    const ax = cx + R * Math.cos(arrowAngle);
+    const ay = cy + R * Math.sin(arrowAngle);
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(arrowAngle + Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, -7); ctx.lineTo(-5, 3); ctx.lineTo(5, 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(200,150,255,0.7)';
+    ctx.font = '11px IBM Plex Mono';
+    ctx.fillText('Γ', cx + R * 0.72, cy + R * 0.72);
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DISEGNO CARICHE
+// ═══════════════════════════════════════════════════════════════
+function chargeRadius(ch) {
+    return 9 + Math.abs(ch.q) * 4;
+}
+
+function drawCharges() {
+    for (const ch of charges) {
+        const cp = worldToCanvas(ch.x, ch.y);
+        const r = chargeRadius(ch);
+        const isPos = ch.q > 0;
+        const color = isPos ? '#ef4444' : '#3b82f6';
+        const glow = isPos ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)';
+
+        // Alone
+        const grad = ctx.createRadialGradient(cp.x, cp.y, 0, cp.x, cp.y, r * 2.8);
+        grad.addColorStop(0, glow);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, r * 2.8, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Cerchio principale
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Simbolo
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.round(r * 0.9)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(isPos ? '+' : '−', cp.x, cp.y);
+
+        // Etichetta q
+        ctx.fillStyle = color;
+        ctx.font = '10px IBM Plex Mono';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(`${isPos ? '+' : ''}${ch.q.toFixed(1)}q`, cp.x + r + 3, cp.y - 4);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRIGLIA DI SFONDO
+// ═══════════════════════════════════════════════════════════════
+function drawBackground() {
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#111318';
+    ctx.fillRect(0, 0, W, H);
+
+    // Griglia
+    ctx.strokeStyle = 'rgba(255,255,255,0.045)';
+    ctx.lineWidth = 1;
+    const gs = 48;
+    const offX = (canvasCenter().x % gs + gs) % gs;
+    const offY = (canvasCenter().y % gs + gs) % gs;
+    for (let x = offX; x < W; x += gs) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = offY; y < H; y += gs) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // Assi
+    const cc = canvasCenter();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cc.x, 0); ctx.lineTo(cc.x, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cc.y); ctx.lineTo(W, cc.y); ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER PRINCIPALE
+// ═══════════════════════════════════════════════════════════════
+function render() {
+    renderScheduled = false;
+    drawBackground();
+
+    if (charges.length > 0) {
+        if (document.getElementById('togEqui').checked) drawEquipotentials();
+        if (document.getElementById('togField').checked) drawFieldLines();
+        if (document.getElementById('togVec').checked) drawFieldVectors();
+        if (document.getElementById('togForce').checked && charges.length > 1) drawForceVectors();
+    }
+
+    if (document.getElementById('togGauss').checked) {
+        drawGaussSurface();
+        if (charges.length > 0) {
+            const g = computeGauss();
+            document.getElementById('rdQenc').textContent = g.qEnc.toFixed(2) + ' q';
+            document.getElementById('rdFlux').textContent = g.flux.toExponential(2);
+            document.getElementById('rdFluxGauss').textContent = g.fluxGauss.toExponential(2);
+        }
+    } else {
+        document.getElementById('rdQenc').textContent = '—';
+        document.getElementById('rdFlux').textContent = '—';
+        document.getElementById('rdFluxGauss').textContent = '—';
+    }
+
+    if (document.getElementById('togCirc').checked) {
+        drawCirculationPath();
+        if (charges.length > 0) {
+            const circ = computeCirculation();
+            document.getElementById('rdCirc').textContent = circ.toExponential(2);
+        } else {
+            document.getElementById('rdCirc').textContent = '0 (nessuna carica)';
+        }
+    } else {
+        document.getElementById('rdCirc').textContent = '—';
+    }
+
+    drawCharges();
+    updateChargeList();
+}
+
+function scheduleRender() {
+    if (!renderScheduled) {
+        renderScheduled = true;
+        requestAnimationFrame(render);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DINAMICA (simulazione del moto delle cariche)
+// ═══════════════════════════════════════════════════════════════
+
+const MASS_BASE = 18;
+const DAMPING = 0.992;
+const DT = 0.16;
+const MAX_SPEED = 10;
+const MIN_PAIR_DISTANCE = 10;
+const velocities = {};
+
+function stopSimulation() {
+    isRunning = false;
+    document.getElementById('simBtnLabel').textContent = '▶ Avvia dinamica';
+    if (animFrame) {
+        cancelAnimationFrame(animFrame);
+        animFrame = null;
+    }
+}
+
+function stepDynamics() {
+    // Failsafe semplice contro esplosioni numeriche
+    for (let i = 0; i < charges.length; i++) {
+        for (let j = i + 1; j < charges.length; j++) {
+            const a = charges[i], b = charges[j];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < MIN_PAIR_DISTANCE) {
+                stopSimulation();
+                scheduleRender();
+                return;
+            }
+        }
+    }
+
+    for (const ch of charges) {
+        if (ch.fixed) continue;
+
+        const f = forceOnCharge(ch);
+        const mass = MASS_BASE * Math.max(0.7, Math.abs(ch.q));
+        const vx = velocities[ch.id]?.vx || 0;
+        const vy = velocities[ch.id]?.vy || 0;
+
+        let nvx = (vx + (f.fx / mass) * DT) * DAMPING;
+        let nvy = (vy + (f.fy / mass) * DT) * DAMPING;
+
+        const speed = Math.hypot(nvx, nvy);
+        if (speed > MAX_SPEED) {
+            nvx = nvx / speed * MAX_SPEED;
+            nvy = nvy / speed * MAX_SPEED;
+        }
+
+        velocities[ch.id] = { vx: nvx, vy: nvy };
+        ch.x += nvx * DT;
+        ch.y += nvy * DT;
+
+        // Rimbalzo sui bordi del canvas in coordinate mondo
+        const pad = 24;
+        const p1 = canvasToWorld(pad, canvas.height - pad);
+        const p2 = canvasToWorld(canvas.width - pad, pad);
+        const xMin = Math.min(p1.x, p2.x), xMax = Math.max(p1.x, p2.x);
+        const yMin = Math.min(p1.y, p2.y), yMax = Math.max(p1.y, p2.y);
+
+        if (ch.x < xMin) { ch.x = xMin; velocities[ch.id].vx *= -0.65; }
+        if (ch.x > xMax) { ch.x = xMax; velocities[ch.id].vx *= -0.65; }
+        if (ch.y < yMin) { ch.y = yMin; velocities[ch.id].vy *= -0.65; }
+        if (ch.y > yMax) { ch.y = yMax; velocities[ch.id].vy *= -0.65; }
+    }
+}
+
+function dynamicLoop() {
+    if (!isRunning) return;
+    stepDynamics();
+    render();
+    animFrame = requestAnimationFrame(dynamicLoop);
+}
+
+function toggleSimulation() {
+    isRunning = !isRunning;
+    document.getElementById('simBtnLabel').textContent = isRunning ? '⏸ Pausa dinamica' : '▶ Avvia dinamica';
+    if (isRunning) {
+        for (const ch of charges) {
+            if (!velocities[ch.id]) velocities[ch.id] = { vx: 0, vy: 0 };
+        }
+        if (animFrame) cancelAnimationFrame(animFrame);
+        dynamicLoop();
+    } else {
+        if (animFrame) {
+            cancelAnimationFrame(animFrame);
+            animFrame = null;
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// GESTIONE CARICHE
+// ═══════════════════════════════════════════════════════════════
+function addCharge(wx, wy) {
+    const q = parseFloat(document.getElementById('slCharge').value) * chargeType;
+    const ch = { x: wx, y: wy, q, id: nextId++ };
+    charges.push(ch);
+    velocities[ch.id] = { vx: 0, vy: 0 };
+    scheduleRender();
+}
+
+function removeCharge(id) {
+    charges = charges.filter(c => c.id !== id);
+    delete velocities[id];
+    scheduleRender();
+}
+
+function clearCharges() {
+    stopSimulation();
+    charges = [];
+    for (const k in velocities) delete velocities[k];
+    scheduleRender();
+}
+
+function setChargeType(t) {
+    chargeType = t;
+    document.getElementById('btnPos').className = 'charge-btn' + (t === 1 ? ' active-pos' : '');
+    document.getElementById('btnNeg').className = 'charge-btn' + (t === -1 ? ' active-neg' : '');
+}
+
+function updateChargeList() {
+    const list = document.getElementById('chargeList');
+    if (charges.length === 0) {
+        list.innerHTML = '<div style="font-size:0.8rem;color:var(--ink3);padding:0.4rem">Nessuna carica. Clicca sul canvas per aggiungerne.</div>';
+        return;
+    }
+    list.innerHTML = charges.map((ch, i) => `
+        <div class="charge-item">
+            <div class="charge-dot" style="background:${ch.q > 0 ? '#ef4444' : '#3b82f6'}"></div>
+            <div class="charge-item-info">
+                #${i + 1}: ${ch.q > 0 ? '+' : ''}${ch.q.toFixed(1)}q
+                <span style="font-size:0.72rem;color:var(--ink3)">&nbsp;(${ch.x.toFixed(1)}, ${ch.y.toFixed(1)})</span>
+            </div>
+            <button class="charge-item-del" onclick="removeCharge(${ch.id})">×</button>
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEMPLATE
+// ═══════════════════════════════════════════════════════════════
+function loadTemplate(name) {
+    clearCharges();
+    panX = 0; panY = 0; zoom = 1;
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    // Le coordinate sono in unità mondo, centro = (0,0)
+    const templates = {
+        dipole: [
+            { x: -50, y: 0, q: 2 },
+            { x:  50, y: 0, q: -2 }
+        ],
+        capacitor: (() => {
+            const arr = [];
+            const nPlate = 7;
+            for (let i = 0; i < nPlate; i++) {
+                const y = -90 + (180 / (nPlate - 1)) * i;
+                arr.push({ x: -70, y, q:  1.5, fixed: true });
+                arr.push({ x:  70, y, q: -1.5, fixed: true });
+            }
+            return arr;
+        })(),
+        sphere: (() => {
+            // Sfera piena: cariche distribuite uniformemente su cerchio
+            const arr = [];
+            const n = 12;
+            for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
+                arr.push({ x: 70 * Math.cos(angle), y: 70 * Math.sin(angle), q: 1, fixed: true });
+            }
+            return arr;
+        })(),
+        sphere_hollow: (() => {
+            // Sfera cava: solo cariche sul guscio
+            const arr = [];
+            const n = 16;
+            for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
+                arr.push({ x: 85 * Math.cos(angle), y: 85 * Math.sin(angle), q: 1, fixed: true });
+            }
+            return arr;
+        })(),
+        cylinder: (() => {
+            // Cilindro: due colonne di cariche
+            const arr = [];
+            const nRow = 9;
+            for (let i = 0; i < nRow; i++) {
+                const y = -100 + (200 / (nRow - 1)) * i;
+                arr.push({ x: -50, y, q: 1, fixed: true });
+                arr.push({ x:  50, y, q: 1, fixed: true });
+            }
+            // Cariche sulle facce
+            const nFace = 5;
+            for (let i = 0; i < nFace; i++) {
+                const x = -40 + (80 / (nFace - 1)) * i;
+                arr.push({ x, y: -100, q: 1, fixed: true });
+                arr.push({ x, y:  100, q: 1, fixed: true });
+            }
+            return arr;
+        })(),
+        quadrupole: [
+            { x: -60, y:  60, q:  2 },
+            { x:  60, y:  60, q: -2 },
+            { x: -60, y: -60, q: -2 },
+            { x:  60, y: -60, q:  2 }
+        ]
+    };
+
+    const tmpl = templates[name];
+    if (!tmpl) return;
+    tmpl.forEach(c => {
+        const ch = { x: c.x, y: c.y, q: c.q, id: nextId++, fixed: c.fixed || false };
+        charges.push(ch);
+        velocities[ch.id] = { vx: 0, vy: 0 };
+    });
+    scheduleRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INTERAZIONE MOUSE — drag, click, hover
+// ═══════════════════════════════════════════════════════════════
+function getHitCharge(cx, cy) {
+    for (const ch of charges) {
+        const cp = worldToCanvas(ch.x, ch.y);
+        const r = chargeRadius(ch) + 6;
+        if (Math.hypot(cx - cp.x, cy - cp.y) < r) return ch;
+    }
+    return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    const hit = getHitCharge(cx, cy);
+    if (hit) {
+        draggingId = hit.id;
+        canvas.classList.add('dragging');
+        canvas.classList.remove('hovering');
+    } else {
+        const w = canvasToWorld(cx, cy);
+        addCharge(w.x, w.y);
+    }
+});
+
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const cy = (e.clientY - rect.top) * (canvas.height / rect.height);
+    mouseCanvas = { x: cx, y: cy };
+
+    if (draggingId !== null) {
+        const ch = charges.find(c => c.id === draggingId);
+        if (ch) {
+            const w = canvasToWorld(cx, cy);
+            ch.x = w.x;
+            ch.y = w.y;
+            velocities[ch.id] = { vx: 0, vy: 0 };
+            scheduleRender();
+        }
+    } else {
+        const hit = getHitCharge(cx, cy);
+        hoveringId = hit ? hit.id : null;
+        canvas.className = hit ? 'hovering' : '';
+    }
+
+    // Aggiorna readout
+    const w = canvasToWorld(cx, cy);
+    document.getElementById('rdPos').textContent = `(${w.x.toFixed(1)}, ${w.y.toFixed(1)})`;
+
+    if (charges.length > 0) {
+        const f = electricField(w.x, w.y);
+        document.getElementById('rdE').textContent = f.mag.toFixed(2);
+        const theta = Math.atan2(f.ey, f.ex) * 180 / Math.PI;
+        document.getElementById('rdEdir').textContent = `θ = ${theta.toFixed(1)}°`;
+        document.getElementById('rdV').textContent = potential(w.x, w.y).toFixed(2);
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    draggingId = null;
+    canvas.classList.remove('dragging');
+});
+canvas.addEventListener('mouseleave', () => {
+    draggingId = null;
+    canvas.classList.remove('dragging');
+});
+
+// Scroll = zoom
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    zoom = Math.max(0.2, Math.min(5, zoom * factor));
+    scheduleRender();
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+        if (tab === 'sim') { resizeCanvas(); scheduleRender(); }
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// AVVIO
+// ═══════════════════════════════════════════════════════════════
+scheduleRender();
+</script>
+</body>
+</html>

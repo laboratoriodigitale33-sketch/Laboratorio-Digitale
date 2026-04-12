@@ -6,10 +6,14 @@ SISTEMARE:
 	moto elicoidale non sicronizzato con la spira mostrata, poi sarebbe dda fare la telecamera he la seguen nel moto retilineo, infine la spira si stringe lungo l'asse del moto per qualche ragione
 -Effetto fotoelettrico:
 	non mi convince la fisica, certe soglie sembrano troppo alte
+-Gravitazione:
+	fare meglio leggi di keplero
+	Orbite sistema luna-terra -sole
+	studiare phet a riguardo
 -Oscillatore armonico:
 	asse y primo grafico non simmetrico
 -Eletrostatica:
-	campo lettrico in altre situzioni (condesatore facce paine parallele, cilidrio, sferico)
+	sistemare linee equipotenziale
 -Turbolena-instabilita:
 	per ora rimanda ad un odice fato in html dentro la cartella old, da rimuovere quando sara pronto il file c
 	ancora da compilare e la build non la vede
@@ -145,7 +149,9 @@ Ottica:
 - Specchi e Lenti
 
 Elettromagnetismo:
+- Campo elettrico
 - Elettrostatica
+- Magnetismo
 
 Matematica per la Fisica:
 - Gradiente, divergenza e rotore
@@ -168,6 +174,5 @@ WIP:
 - Trasporto di particelle
 - Circuiti
 - Trasformazioni cicliche
-- Magnetismo
 - Entropia
 - Onde gravitazionali

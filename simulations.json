@@ -298,8 +298,14 @@
       "order": 5,
       "category": "Meccanica",
       "file": "meccanica/moto-uniformemente-accelerato.html",
-      "tags": [],
-      "level": "",
+      "tags": [
+        "moto uniformemente accelerato",
+        "accelerazione costante",
+        "grafico posizione-tempo",
+        "grafico velocità-tempo",
+        "cinematica"
+      ],
+      "level": "base",
       "isWip": false
     },
     {
@@ -715,7 +721,7 @@
         "flussi"
       ],
       "level": "avanzato",
-      "file": "WIP/turbolenza-e-instabilita/old/turbolenza-e-instbilita.html",
+      "file": "WIP/turbolenza-e-instabilita/fluid.html",
       "isWip": true
     },
     {

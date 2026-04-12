@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
 
 def find_html_files(root: Path) -> list[Path]:
     html_files = []
-    excluded_dirs = {"theory"}
+    excluded_dirs = {"theory", "old"}
 
     for p in root.rglob("*"):
         if not p.is_file():

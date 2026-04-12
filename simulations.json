@@ -812,6 +812,35 @@
       "isWip": true
     },
     {
+      "title": "Magnetismo",
+      "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
+      "category": "WIP",
+      "icon": "🧲",
+      "order": 22,
+      "tags": [
+        "magnetismo",
+        "campo magnetico",
+        "biot-savart",
+        "corrente elettrica",
+        "fili rettilinei",
+        "sovrapposizione dei campi",
+        "forza di Lorentz",
+        "particelle cariche",
+        "deflessione magnetica",
+        "raggio ciclotronico",
+        "periodo ciclotronico",
+        "dipolo magnetico",
+        "spira circolare",
+        "momento magnetico",
+        "moto elicoidale",
+        "campo uniforme",
+        "elettromagnetismo"
+      ],
+      "level": "intermedio",
+      "file": "WIP/magnetismo.html",
+      "isWip": true
+    },
+    {
       "title": "Entropia",
       "description": "Esplora l’entropia dal punto di vista microscopico attraverso espansione libera, miscelamento di gas, distribuzione di Maxwell-Boltzmann e modello a microstati.",
       "category": "WIP",

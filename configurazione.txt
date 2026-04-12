@@ -168,5 +168,6 @@ WIP:
 - Trasporto di particelle
 - Circuiti
 - Trasformazioni cicliche
+- Magnetismo
 - Entropia
 - Onde gravitazionali

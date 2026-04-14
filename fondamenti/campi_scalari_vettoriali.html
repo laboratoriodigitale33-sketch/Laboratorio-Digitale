@@ -441,9 +441,12 @@ footer {
           <div class="ctrl-group">
             <label>Tipo di campo</label>
             <select id="vectorType">
-              <option value="coulomb">Campo elettrico (1/r²)</option>
+              <option value="coulomb" selected>Campo elettrico (1/r²)</option>
               <option value="uniform">Campo uniforme</option>
               <option value="vortex">Campo vorticoso</option>
+              <option value="source_sink">Sorgente + pozzo</option>
+              <option value="spiral">Campo a spirale</option>
+              <option value="lattice">Reticolo vorticoso</option>
               <option value="dipole_v">Dipolo vettoriale</option>
               <option value="gravity">Campo gravitazionale</option>
             </select>
@@ -773,6 +776,46 @@ const vectorFields = {
     div: '0 (solenoidale)',
     rot: '≠ 0 (rotazionale)'
   },
+  source_sink: {
+    name: 'Sorgente + pozzo',
+    F: (x, y) => {
+      const source = { cx: 0.42, cy: 0.42, q: 1.0 };
+      const sink = { cx: -0.42, cy: -0.42, q: -1.0 };
+      const eps = 0.018;
+      const dx1 = x - source.cx, dy1 = y - source.cy;
+      const r1 = Math.pow(dx1*dx1 + dy1*dy1 + eps, 1.5);
+      const dx2 = x - sink.cx, dy2 = y - sink.cy;
+      const r2 = Math.pow(dx2*dx2 + dy2*dy2 + eps, 1.5);
+      return {
+        fx: source.q * dx1 / r1 + sink.q * dx2 / r2,
+        fy: source.q * dy1 / r1 + sink.q * dy2 / r2
+      };
+    },
+    div: '+ in alto a destra, − in basso a sinistra',
+    rot: '0 (irrotazionale, salvo i centri)'
+  },
+  spiral: {
+    name: 'Campo a spirale',
+    F: (x, y) => {
+      const a = -0.55;
+      const b = 1.0;
+      return { fx: a*x - b*y, fy: b*x + a*y };
+    },
+    div: '< 0 (convergenza + rotazione)',
+    rot: '≠ 0 (rotazionale)'
+  },
+  lattice: {
+    name: 'Reticolo vorticoso',
+    F: (x, y) => {
+      const k = Math.PI * 1.6;
+      return {
+        fx: Math.sin(k*x) * Math.cos(k*y),
+        fy: -Math.cos(k*x) * Math.sin(k*y)
+      };
+    },
+    div: '0 (solenoidale)',
+    rot: 'alternato nello spazio'
+  },
   dipole_v: {
     name: 'Dipolo vettoriale',
     F: (x, y) => {
@@ -955,6 +998,76 @@ class ScalarRenderer {
     ctx.beginPath();
     ctx.ellipse(this.W*0.78, this.H*0.55, this.W*0.18, this.H*0.14, 0.2, 0, Math.PI*2);
     ctx.fill();
+  }
+
+  getStreamSeeds() {
+    const seeds = [];
+    if (this.fieldKey === 'lattice') {
+      for (let i = 0; i < 9; i++) for (let j = 0; j < 7; j++) {
+        seeds.push([-0.85 + i * 0.21, -0.78 + j * 0.26]);
+      }
+      return seeds;
+    }
+    if (this.fieldKey === 'uniform') {
+      for (let j = 0; j < 10; j++) seeds.push([-0.92, -0.85 + j * 0.19]);
+      return seeds;
+    }
+    if (this.fieldKey === 'source_sink') {
+      const centers = [[0.42, 0.42], [-0.42, -0.42]];
+      const radii = [0.11, 0.24];
+      const counts = [4, 6];
+      centers.forEach(([cx, cy]) => {
+        radii.forEach((r, idx) => {
+          const n = counts[idx];
+          for (let k = 0; k < n; k++) {
+            const angle = (k / n) * Math.PI * 2;
+            seeds.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+          }
+        });
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'coulomb' || this.fieldKey === 'gravity') {
+      const radii = [0.14, 0.34, 0.56];
+      const counts = [6, 8, 10];
+      radii.forEach((r, idx) => {
+        const n = counts[idx];
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'dipole_v') {
+      const radii = [0.18, 0.42];
+      const counts = [6, 8];
+      radii.forEach((r, idx) => {
+        const n = counts[idx];
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'spiral' || this.fieldKey === 'vortex') {
+      const radii = [0.18, 0.40];
+      const n = this.fieldKey === 'spiral' ? 8 : 10;
+      for (const r of radii) {
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      }
+      return seeds;
+    }
+    const nSeeds = 24;
+    for (let k = 0; k < nSeeds; k++) {
+      const angle = (k / nSeeds) * Math.PI * 2;
+      seeds.push([Math.cos(angle) * 0.15, Math.sin(angle) * 0.15]);
+    }
+    return seeds;
   }
 
   render() {
@@ -1268,6 +1381,77 @@ class VectorRenderer {
     return mx || 1;
   }
 
+  getStreamSeeds() {
+    const seeds = [];
+    if (this.fieldKey === 'lattice') {
+      for (let i = 0; i < 9; i++) for (let j = 0; j < 7; j++) {
+        seeds.push([-0.85 + i * 0.21, -0.78 + j * 0.26]);
+      }
+      return seeds;
+    }
+    if (this.fieldKey === 'uniform') {
+      for (let j = 0; j < 10; j++) seeds.push([-0.92, -0.85 + j * 0.19]);
+      return seeds;
+    }
+    if (this.fieldKey === 'source_sink') {
+      const centers = [[0.42, 0.42], [-0.42, -0.42]];
+      const radii = [0.09, 0.18, 0.30];
+      const counts = [6, 8, 10];
+      centers.forEach(([cx, cy]) => {
+        radii.forEach((r, idx) => {
+          const n = counts[idx];
+          for (let k = 0; k < n; k++) {
+            const angle = (k / n) * Math.PI * 2;
+            seeds.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+          }
+        });
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'coulomb' || this.fieldKey === 'gravity') {
+      const radii = [0.12, 0.28, 0.48];
+      const counts = [8, 10, 12];
+      radii.forEach((r, idx) => {
+        const n = counts[idx];
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'dipole_v') {
+      const radii = [0.16, 0.34, 0.56];
+      const counts = [8, 10, 12];
+      radii.forEach((r, idx) => {
+        const n = counts[idx];
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      });
+      return seeds;
+    }
+    if (this.fieldKey === 'spiral' || this.fieldKey === 'vortex') {
+      const radii = [0.14, 0.30, 0.48];
+      const n = 14;
+      for (const r of radii) {
+        for (let k = 0; k < n; k++) {
+          const angle = (k / n) * Math.PI * 2;
+          seeds.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
+      }
+      return seeds;
+    }
+    const nSeeds = 24;
+    for (let k = 0; k < nSeeds; k++) {
+      const angle = (k / nSeeds) * Math.PI * 2;
+      seeds.push([Math.cos(angle) * 0.15, Math.sin(angle) * 0.15]);
+    }
+    return seeds;
+  }
+
+
   render() {
     const ctx = this.ctx;
     const W = this.W, H = this.H;
@@ -1279,15 +1463,16 @@ class VectorRenderer {
 
     // ── Linee di campo (streamlines) ──
     if (this.showStreamlines) {
-      const nSeeds = 28;
       ctx.lineWidth = 0.9;
-      for (let k = 0; k < nSeeds; k++) {
-        const angle = (k / nSeeds) * Math.PI * 2;
-        let wx = Math.cos(angle) * 0.15, wy = Math.sin(angle) * 0.15;
+      const seeds = this.getStreamSeeds();
+
+      const dt = 0.012;
+      for (const [sx, sy] of seeds) {
+        // in avanti
+        let wx = sx, wy = sy;
         ctx.beginPath();
         const { px, py } = this.toCanvas(wx, wy);
         ctx.moveTo(px, py);
-        const dt = 0.012;
         for (let step = 0; step < 300; step++) {
           const { fx, fy } = field.F(wx, wy);
           const m = Math.sqrt(fx*fx + fy*fy);
@@ -1301,22 +1486,24 @@ class VectorRenderer {
         ctx.strokeStyle = 'rgba(60,100,160,0.30)';
         ctx.stroke();
 
-        // anche in senso contrario
-        wx = Math.cos(angle) * 0.15; wy = Math.sin(angle) * 0.15;
-        ctx.beginPath();
-        const { px: px2, py: py2 } = this.toCanvas(wx, wy);
-        ctx.moveTo(px2, py2);
-        for (let step = 0; step < 300; step++) {
-          const { fx, fy } = field.F(wx, wy);
-          const m = Math.sqrt(fx*fx + fy*fy);
-          if (!isFinite(m) || m < 1e-8) break;
-          wx -= (fx / m) * dt;
-          wy -= (fy / m) * dt;
-          if (Math.abs(wx) > 1.1 || Math.abs(wy) > 1.1) break;
-          const { px: cpx, py: cpy } = this.toCanvas(wx, wy);
-          ctx.lineTo(cpx, cpy);
+        {
+          // integrazione anche in senso contrario
+          wx = sx; wy = sy;
+          ctx.beginPath();
+          const { px: px2, py: py2 } = this.toCanvas(wx, wy);
+          ctx.moveTo(px2, py2);
+          for (let step = 0; step < 300; step++) {
+            const { fx, fy } = field.F(wx, wy);
+            const m = Math.sqrt(fx*fx + fy*fy);
+            if (!isFinite(m) || m < 1e-8) break;
+            wx -= (fx / m) * dt;
+            wy -= (fy / m) * dt;
+            if (Math.abs(wx) > 1.1 || Math.abs(wy) > 1.1) break;
+            const { px: cpx, py: cpy } = this.toCanvas(wx, wy);
+            ctx.lineTo(cpx, cpy);
+          }
+          ctx.stroke();
         }
-        ctx.stroke();
       }
     }
 
@@ -1342,11 +1529,12 @@ class VectorRenderer {
         }
 
         const nx = fx / mag, ny = fy / mag;
-        const arrowLen = 14 + t * 10;
+        // Frecce griglia: lunghezza fissa, solo il colore codifica l'intensità
+        const arrowLen = 18;
         const { px: cx, py: cy } = this.toCanvas(x, y);
         this.drawArrow(ctx, cx, cy,
           cx + nx * arrowLen, cy - ny * arrowLen,
-          4 + t * 3, color, 1 + t);
+          4, color, 1.3);
       }
     }
 
@@ -1358,8 +1546,12 @@ class VectorRenderer {
       if (isFinite(mag) && mag > 1e-6) {
         const nx = fx / mag, ny = fy / mag;
         const cx = this.mouseX, cy = this.mouseY;
+        // Lunghezza freccia cursore proporzionale all'intensità: da 14px a 54px
+        const tCursor = clamp(mag / maxMag, 0, 1);
+        const cursorLen = 14 + tCursor * 40;
         this.drawArrow(ctx, cx, cy,
-          cx + nx * 36, cy - ny * 36, 9, '#b34a00', 2.5);
+          cx + nx * cursorLen, cy - ny * cursorLen,
+          6 + tCursor * 5, '#b34a00', 1.8 + tCursor * 1.2);
       }
       ctx.beginPath();
       ctx.arc(this.mouseX, this.mouseY, 4.5, 0, Math.PI * 2);
@@ -1401,6 +1593,11 @@ class VectorRenderer {
 ════════════════════════════════════════════ */
 const scalarRend = new ScalarRenderer('scalarCanvas');
 const vectorRend = new VectorRenderer('vectorCanvas');
+
+// Inizializza pannello proprietà con il campo di default
+document.getElementById('vectorProps').innerHTML =
+  `div F = <span class="val">${vectorFields['coulomb'].div}</span><br>` +
+  `rot F = <span class="val">${vectorFields['coulomb'].rot}</span>`;
 
 /* ═══════════════════════════════════════════
    CONTROLLI

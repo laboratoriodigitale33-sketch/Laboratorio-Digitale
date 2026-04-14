@@ -609,7 +609,6 @@ window.SIM_METADATA = {
                 <button class="tmpl-btn" onclick="loadTemplate('dipole')"><span>⚡</span>Dipolo</button>
                 <button class="tmpl-btn" onclick="loadTemplate('capacitor')"><span>▐▌</span>Condensatore</button>
                 <button class="tmpl-btn" onclick="loadTemplate('sphere')"><span>◉</span>Sfera carica</button>
-                <button class="tmpl-btn" onclick="loadTemplate('sphere_hollow')"><span>○</span>Sfera cava</button>
                 <button class="tmpl-btn" onclick="loadTemplate('cylinder')"><span>▭</span>Cilindro</button>
                 <button class="tmpl-btn" onclick="loadTemplate('quadrupole')"><span>✦</span>Quadrupolo</button>
             </div>
@@ -667,11 +666,7 @@ window.SIM_METADATA = {
                 <span class="gauss-val" id="rdQenc">— q</span>
             </div>
             <div class="gauss-row">
-                <span>Flusso Φ_E (calc.)</span>
-                <span class="gauss-val" id="rdFlux">—</span>
-            </div>
-            <div class="gauss-row">
-                <span>Flusso Φ_E (Gauss)</span>
+                <span>Flusso Φ_E</span>
                 <span class="gauss-val" id="rdFluxGauss">—</span>
             </div>
         </div>
@@ -906,17 +901,17 @@ window.SIM_METADATA = {
                 E\approx 0 \quad \text{(all'esterno, lastre ideali)}
                 \]
             </div>
-            <p><strong>Sfera carica:</strong> all'esterno il campo equivale a quello di una carica puntiforme \(Q\) concentrata nel centro.
-                Nel caso di guscio sferico sottile, il campo interno è nullo.</p>
+            <p><strong>Sfera carica:</strong> il template sferico serve a visualizzare la simmetria radiale.
+                All'esterno il campo equivale a quello di una carica puntiforme totale \(Q\) concentrata nel centro;
+                questa è la geometria più utile da confrontare con il teorema di Gauss.</p>
             <div class="formula-box">
                 \[
-                E(r&gt;R)=\frac{1}{4\pi\varepsilon_0}\frac{Q}{r^2},
-                \qquad
-                E(r&lt;R)=0 \quad \text{(guscio sferico)}
+                E(r&gt;R)=\frac{1}{4\pi\varepsilon_0}\frac{Q}{r^2}
                 \]
             </div>
             <p><strong>Cilindro infinito:</strong> usando una superficie gaussiana cilindrica si ricava,
-                per una densità lineare \(\lambda\), un campo radiale che decresce come \(1/r\).</p>
+                per una densità lineare \(\lambda\), un campo radiale che decresce come \(1/r\).
+                Questa geometria è didatticamente complementare a quella sferica perché mostra una diversa simmetria del campo.</p>
             <div class="formula-box">
                 \[
                 E(r)=\frac{\lambda}{2\pi\varepsilon_0 r}
@@ -1088,7 +1083,7 @@ function drawArrow(x1, y1, x2, y2, color, lw, headLen) {
 // LINEE DI CAMPO — tracciatura numerica
 // ═══════════════════════════════════════════════════════════════
 
-function traceFieldLine(startWx, startWy, forward) {
+function traceFieldSegment(startWx, startWy, dirSign) {
     const stepWorld = 2.2;
     const maxSteps = 1400;
     let wx = startWx, wy = startWy;
@@ -1106,32 +1101,54 @@ function traceFieldLine(startWx, startWy, forward) {
         const f = electricField(wx, wy);
         if (f.mag < 1e-8) break;
 
-        const dir = forward ? 1 : -1;
-        wx += dir * stepWorld * f.ex / f.mag;
-        wy += dir * stepWorld * f.ey / f.mag;
+        wx += dirSign * stepWorld * f.ex / f.mag;
+        wy += dirSign * stepWorld * f.ey / f.mag;
 
-        // termina se entra in una carica
-        for (const ch of charges) {
-            const rr = Math.hypot(wx - ch.x, wy - ch.y);
-            if (rr < Math.max(4, chargeRadius(ch) / zoom)) {
-                const hit = worldToCanvas(ch.x, ch.y);
-                pts.push({ x: hit.x, y: hit.y });
-                i = maxSteps;
-                break;
+        // Quando si segue il verso fisico del campo, una linea può terminare entrando
+        // in una carica negativa. Nel verso opposto non forziamo l'arresto sulla carica
+        // di partenza, altrimenti le linee delle cariche negative isolate collassano subito.
+        if (dirSign > 0) {
+            for (const ch of charges) {
+                const rr = Math.hypot(wx - ch.x, wy - ch.y);
+                if (rr < Math.max(4, chargeRadius(ch) / zoom)) {
+                    const hit = worldToCanvas(ch.x, ch.y);
+                    pts.push({ x: hit.x, y: hit.y });
+                    i = maxSteps;
+                    break;
+                }
             }
         }
     }
     return pts;
 }
 
+function traceFieldLine(startWx, startWy) {
+    const backward = traceFieldSegment(startWx, startWy, -1);
+    const forward = traceFieldSegment(startWx, startWy, +1);
+
+    if (backward.length === 0) return forward;
+    if (forward.length === 0) return backward.slice().reverse();
+
+    backward.reverse();
+    return backward.concat(forward.slice(1));
+}
+
 function drawFieldLines() {
     const density = parseInt(document.getElementById('slDensity').value);
+    const totalAbsQ = charges.reduce((s, ch) => s + Math.abs(ch.q || 0), 0);
+
+    // Budget globale di semi per evitare lag nei template con molte cariche.
+    // Per poche cariche resta quasi invariato; per distribuzioni estese si riduce in modo adattivo.
+    const maxSeedBudget = 90;
+    const adaptiveScale = totalAbsQ > 0
+        ? Math.min(1, maxSeedBudget / Math.max(1, density * totalAbsQ))
+        : 1;
 
     for (const ch of charges) {
         if (ch.q === 0) continue;
-        const numLines = Math.max(8, Math.round(Math.abs(ch.q) * density));
+        const rawLines = Math.abs(ch.q) * density * adaptiveScale;
+        const numLines = Math.max(4, Math.min(18, Math.round(rawLines)));
         const radiusW = Math.max(8 / zoom, (14 + Math.abs(ch.q) * 4) / zoom);
-        const forward = ch.q > 0;
 
         ctx.save();
         ctx.strokeStyle = 'rgba(255,200,60,0.82)';
@@ -1143,7 +1160,7 @@ function drawFieldLines() {
             const angle = (2 * Math.PI * i) / numLines;
             const sx = ch.x + radiusW * Math.cos(angle);
             const sy = ch.y + radiusW * Math.sin(angle);
-            const pts = traceFieldLine(sx, sy, forward);
+            const pts = traceFieldLine(sx, sy);
             if (pts.length < 2) continue;
 
             ctx.beginPath();
@@ -1151,7 +1168,6 @@ function drawFieldLines() {
             for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].x, pts[k].y);
             ctx.stroke();
 
-            // Freccia direzionale ben allineata alla tangente locale
             if (pts.length > 12) {
                 const mi = Math.floor(pts.length * 0.55);
                 const i1 = Math.max(0, mi - 3);
@@ -1211,86 +1227,113 @@ function drawEquipotentials() {
     if (charges.length === 0) return;
 
     const W = canvas.width, H = canvas.height;
-    const step = 14;
+    const step = 9;
     const cols = Math.floor(W / step);
     const rows = Math.floor(H / step);
+    const exclusionR = Math.max(10 / zoom, 18);
 
-    // Calcola griglia potenziali
+    function nearCharge(wx, wy) {
+        for (const ch of charges) {
+            if (Math.hypot(wx - ch.x, wy - ch.y) < exclusionR + chargeRadius(ch) / zoom) return true;
+        }
+        return false;
+    }
+
     const grid = [];
     let vmin = Infinity, vmax = -Infinity;
     for (let r = 0; r <= rows; r++) {
         grid[r] = [];
         for (let c = 0; c <= cols; c++) {
             const wx = canvasToWorld(c * step, r * step);
+            if (nearCharge(wx.x, wx.y)) {
+                grid[r][c] = NaN;
+                continue;
+            }
             const v = potential(wx.x, wx.y);
-            grid[r][c] = Number.isFinite(v) ? v : 0;
-            if (grid[r][c] < vmin) vmin = grid[r][c];
-            if (grid[r][c] > vmax) vmax = grid[r][c];
+            grid[r][c] = Number.isFinite(v) ? v : NaN;
+            if (Number.isFinite(grid[r][c])) {
+                if (grid[r][c] < vmin) vmin = grid[r][c];
+                if (grid[r][c] > vmax) vmax = grid[r][c];
+            }
         }
     }
 
-    // Livelli equidistanti in scala logaritmica attorno allo 0
-    const numLevels = 14;
     const range = Math.max(Math.abs(vmin), Math.abs(vmax));
+    if (!Number.isFinite(range) || range < 1e-8) return;
+
+    const positiveScales = [0.04, 0.07, 0.11, 0.16, 0.22, 0.30, 0.40, 0.52, 0.67, 0.85];
     const levels = [];
-    for (let i = 1; i <= numLevels; i++) {
-        const v = range * (i / numLevels);
-        levels.push(v);
-        levels.push(-v);
-    }
+    for (const s of positiveScales) levels.push(-range * s);
     levels.push(0);
+    for (const s of positiveScales) levels.push(range * s);
 
     ctx.save();
-    ctx.lineWidth = 1.1;
-    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.0;
+    ctx.setLineDash([4, 3]);
+
+    function interp(vA, vB, pAx, pAy, pBx, pBy, level) {
+        if (!Number.isFinite(vA) || !Number.isFinite(vB)) return null;
+        const d = vB - vA;
+        if (Math.abs(d) < 1e-12) return null;
+        const t = (level - vA) / d;
+        if (t < 0 || t > 1) return null;
+        return { x: pAx + t * (pBx - pAx), y: pAy + t * (pBy - pAy) };
+    }
 
     for (const level of levels) {
         if (!Number.isFinite(level)) continue;
 
-        // Intensità colore: rosso per V>0, blu per V<0, bianco per V=0
         let color;
-        if (Math.abs(level) < range * 0.03) {
-            color = 'rgba(200,230,200,0.65)';
+        if (Math.abs(level) < range * 0.025) {
+            color = 'rgba(205,235,205,0.72)';
         } else if (level > 0) {
-            const t = Math.min(1, level / range);
-            color = `rgba(255,${Math.round(100 - t * 60)},${Math.round(80 - t * 60)},${0.35 + t * 0.3})`;
+            const t = Math.min(1, Math.abs(level) / range);
+            color = `rgba(255,${Math.round(110 - t * 55)},${Math.round(88 - t * 48)},${0.34 + t * 0.30})`;
         } else {
-            const t = Math.min(1, -level / range);
-            color = `rgba(${Math.round(80 - t * 60)},${Math.round(100 - t * 60)},255,${0.35 + t * 0.3})`;
+            const t = Math.min(1, Math.abs(level) / range);
+            color = `rgba(${Math.round(88 - t * 48)},${Math.round(112 - t * 55)},255,${0.34 + t * 0.30})`;
         }
         ctx.strokeStyle = color;
 
-        // Marching squares
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                const v00 = grid[r][c], v10 = grid[r][c + 1];
+                const v00 = grid[r][c],     v10 = grid[r][c + 1];
                 const v01 = grid[r + 1][c], v11 = grid[r + 1][c + 1];
+                if (![v00, v10, v01, v11].every(Number.isFinite)) continue;
+
                 const x0 = c * step, y0 = r * step;
-
-                function interp(vA, vB, pAx, pAy, pBx, pBy) {
-                    const d = vB - vA;
-                    if (Math.abs(d) < 1e-10) return null;
-                    const t = (level - vA) / d;
-                    if (t < 0 || t > 1) return null;
-                    return { x: pAx + t * (pBx - pAx), y: pAy + t * (pBy - pAy) };
-                }
-
                 const pts = [
-                    interp(v00, v10, x0, y0, x0 + step, y0),
-                    interp(v10, v11, x0 + step, y0, x0 + step, y0 + step),
-                    interp(v11, v01, x0 + step, y0 + step, x0, y0 + step),
-                    interp(v01, v00, x0, y0 + step, x0, y0)
+                    interp(v00, v10, x0, y0, x0 + step, y0, level),
+                    interp(v10, v11, x0 + step, y0, x0 + step, y0 + step, level),
+                    interp(v11, v01, x0 + step, y0 + step, x0, y0 + step, level),
+                    interp(v01, v00, x0, y0 + step, x0, y0, level)
                 ].filter(Boolean);
 
-                if (pts.length >= 2) {
+                if (pts.length === 2) {
                     ctx.beginPath();
                     ctx.moveTo(pts[0].x, pts[0].y);
                     ctx.lineTo(pts[1].x, pts[1].y);
                     ctx.stroke();
-                    if (pts.length === 4) {
+                } else if (pts.length === 4) {
+                    const d02 = (pts[0].x - pts[2].x) ** 2 + (pts[0].y - pts[2].y) ** 2;
+                    const d03 = (pts[0].x - pts[3].x) ** 2 + (pts[0].y - pts[3].y) ** 2;
+                    if (d02 < d03) {
                         ctx.beginPath();
-                        ctx.moveTo(pts[2].x, pts[2].y);
+                        ctx.moveTo(pts[0].x, pts[0].y);
+                        ctx.lineTo(pts[2].x, pts[2].y);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(pts[1].x, pts[1].y);
                         ctx.lineTo(pts[3].x, pts[3].y);
+                        ctx.stroke();
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(pts[0].x, pts[0].y);
+                        ctx.lineTo(pts[3].x, pts[3].y);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(pts[1].x, pts[1].y);
+                        ctx.lineTo(pts[2].x, pts[2].y);
                         ctx.stroke();
                     }
                 }
@@ -1379,7 +1422,7 @@ function computeGauss() {
     // Flusso teorico da Gauss
     const fluxGauss = 4 * Math.PI * K * qEnc;
 
-    return { qEnc, flux, fluxGauss };
+    return { qEnc, fluxGauss };
 }
 
 function computeCirculation() {
@@ -1575,12 +1618,10 @@ function render() {
         if (charges.length > 0) {
             const g = computeGauss();
             document.getElementById('rdQenc').textContent = g.qEnc.toFixed(2) + ' q';
-            document.getElementById('rdFlux').textContent = g.flux.toExponential(2);
             document.getElementById('rdFluxGauss').textContent = g.fluxGauss.toExponential(2);
         }
     } else {
         document.getElementById('rdQenc').textContent = '—';
-        document.getElementById('rdFlux').textContent = '—';
         document.getElementById('rdFluxGauss').textContent = '—';
     }
 
@@ -1782,17 +1823,7 @@ function loadTemplate(name) {
             }
             return arr;
         })(),
-        sphere_hollow: (() => {
-            // Sfera cava: solo cariche sul guscio
-            const arr = [];
-            const n = 16;
-            for (let i = 0; i < n; i++) {
-                const angle = (2 * Math.PI * i) / n;
-                arr.push({ x: 85 * Math.cos(angle), y: 85 * Math.sin(angle), q: 1, fixed: true });
-            }
-            return arr;
-        })(),
-        cylinder: (() => {
+                cylinder: (() => {
             // Cilindro: due colonne di cariche
             const arr = [];
             const nRow = 9;

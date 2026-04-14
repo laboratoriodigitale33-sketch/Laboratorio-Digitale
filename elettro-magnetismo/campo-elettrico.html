@@ -972,6 +972,7 @@ let chargeType = 1;      // +1 o -1
 let isRunning = false;
 let animFrame = null;
 let renderScheduled = false;
+let currentTemplate = null;
 
 // Interazione
 let mouseCanvas = { x: 0, y: 0 };
@@ -1012,9 +1013,45 @@ function canvasToWorld(cx, cy) {
 // ═══════════════════════════════════════════════════════════════
 // FISICA
 // ═══════════════════════════════════════════════════════════════
+function getComputationCharges() {
+    if (currentTemplate !== 'capacitor' || charges.length === 0) return charges;
+
+    const leftPlate = charges.filter(ch => ch.q > 0);
+    const rightPlate = charges.filter(ch => ch.q < 0);
+    if (leftPlate.length === 0 || rightPlate.length === 0) return charges;
+
+    const leftX = leftPlate.reduce((s, ch) => s + ch.x, 0) / leftPlate.length;
+    const rightX = rightPlate.reduce((s, ch) => s + ch.x, 0) / rightPlate.length;
+    const yMinVis = Math.min(...charges.map(ch => ch.y));
+    const yMaxVis = Math.max(...charges.map(ch => ch.y));
+
+    // Per il solo calcolo del campo allunghiamo leggermente le armature
+    // rispetto alla distribuzione visibile, così la zona quasi uniforme
+    // si estende un po' più lontano dai bordi.
+    const span = Math.max(1, yMaxVis - yMinVis);
+    const extra = Math.min(18, span * 0.10);
+    const yMin = yMinVis - extra;
+    const yMax = yMaxVis + extra;
+
+    const nCalc = 37;
+    const qLeftTot = leftPlate.reduce((s, ch) => s + ch.q, 0);
+    const qRightTot = rightPlate.reduce((s, ch) => s + ch.q, 0);
+    const qLeft = qLeftTot / nCalc;
+    const qRight = qRightTot / nCalc;
+
+    const calcCharges = [];
+    for (let i = 0; i < nCalc; i++) {
+        const t = (nCalc === 1) ? 0.5 : i / (nCalc - 1);
+        const y = yMin + (yMax - yMin) * t;
+        calcCharges.push({ x: leftX, y, q: qLeft, id: -1000 - i });
+        calcCharges.push({ x: rightX, y, q: qRight, id: -2000 - i });
+    }
+    return calcCharges;
+}
+
 function electricField(x, y) {
     let ex = 0, ey = 0;
-    for (const ch of charges) {
+    for (const ch of getComputationCharges()) {
         const dx = x - ch.x;
         const dy = y - ch.y;
         const r2 = dx * dx + dy * dy;
@@ -1029,7 +1066,7 @@ function electricField(x, y) {
 
 function potential(x, y) {
     let v = 0;
-    for (const ch of charges) {
+    for (const ch of getComputationCharges()) {
         const r = Math.hypot(x - ch.x, y - ch.y);
         if (r < 0.5) continue;
         v += K * ch.q / r;
@@ -1795,6 +1832,7 @@ function updateChargeList() {
 // ═══════════════════════════════════════════════════════════════
 function loadTemplate(name) {
     clearCharges();
+    currentTemplate = name;
     panX = 0; panY = 0; zoom = 1;
     const cx = canvas.width / 2, cy = canvas.height / 2;
     // Le coordinate sono in unità mondo, centro = (0,0)

@@ -616,7 +616,7 @@ window.SIM_METADATA = {
 
         <div>
             <div class="section-title">Controlli</div>
-            <button class="action-btn" onclick="toggleSimulation()">
+            <button class="action-btn" id="simToggleBtn" onclick="toggleSimulation()">
                 <span id="simBtnLabel">▶ Avvia dinamica</span>
             </button>
             <button class="action-btn danger" onclick="clearCharges()">✕ Cancella tutto</button>
@@ -990,6 +990,8 @@ function resizeCanvas() {
     const wrap = canvas.parentElement;
     canvas.width = wrap.clientWidth;
     canvas.height = wrap.clientHeight;
+    updateSimulationButtonVisibility();
+    stopSimulation();
     scheduleRender();
 }
 window.addEventListener('resize', resizeCanvas);
@@ -1020,30 +1022,33 @@ function getComputationCharges() {
     const rightPlate = charges.filter(ch => ch.q < 0);
     if (leftPlate.length === 0 || rightPlate.length === 0) return charges;
 
-    const leftX = leftPlate.reduce((s, ch) => s + ch.x, 0) / leftPlate.length;
+    const leftX  = leftPlate.reduce((s, ch) => s + ch.x, 0) / leftPlate.length;
     const rightX = rightPlate.reduce((s, ch) => s + ch.x, 0) / rightPlate.length;
     const yMinVis = Math.min(...charges.map(ch => ch.y));
     const yMaxVis = Math.max(...charges.map(ch => ch.y));
 
-    // Per il solo calcolo del campo allunghiamo leggermente le armature
-    // rispetto alla distribuzione visibile, così la zona quasi uniforme
-    // si estende un po' più lontano dai bordi.
-    const span = Math.max(1, yMaxVis - yMinVis);
-    const extra = Math.min(18, span * 0.10);
-    const yMin = yMinVis - extra;
-    const yMax = yMaxVis + extra;
+    // Estensione ai bordi: aggiungiamo una frangia pari al 35% della semi-lunghezza.
+    // Questo simula il fatto che un'armatura realmente estesa "continua" oltre la zona
+    // visibile, riducendo drasticamente l'effetto bordo nella regione centrale.
+    const halfSpan = (yMaxVis - yMinVis) / 2;
+    const fringe   = halfSpan * 0.35;
+    const yMin = yMinVis - fringe;
+    const yMax = yMaxVis + fringe;
 
-    const nCalc = 37;
-    const qLeftTot = leftPlate.reduce((s, ch) => s + ch.q, 0);
+    // Usiamo 120 cariche per armatura — densità elevata rende la sovrapposizione
+    // praticamente equivalente a una distribuzione lineare uniforme sigma.
+    const nCalc = 120;
+    const qLeftTot  = leftPlate.reduce((s, ch) => s + ch.q, 0);
     const qRightTot = rightPlate.reduce((s, ch) => s + ch.q, 0);
-    const qLeft = qLeftTot / nCalc;
+    // Ciascuna carica fantasma porta una frazione 1/nCalc della carica totale.
+    const qLeft  = qLeftTot  / nCalc;
     const qRight = qRightTot / nCalc;
 
     const calcCharges = [];
     for (let i = 0; i < nCalc; i++) {
-        const t = (nCalc === 1) ? 0.5 : i / (nCalc - 1);
+        const t = i / (nCalc - 1);
         const y = yMin + (yMax - yMin) * t;
-        calcCharges.push({ x: leftX, y, q: qLeft, id: -1000 - i });
+        calcCharges.push({ x: leftX,  y, q: qLeft,  id: -1000 - i });
         calcCharges.push({ x: rightX, y, q: qRight, id: -2000 - i });
     }
     return calcCharges;
@@ -1172,10 +1177,173 @@ function traceFieldLine(startWx, startWy) {
 
 function drawFieldLines() {
     const density = parseInt(document.getElementById('slDensity').value);
-    const totalAbsQ = charges.reduce((s, ch) => s + Math.abs(ch.q || 0), 0);
 
-    // Budget globale di semi per evitare lag nei template con molte cariche.
-    // Per poche cariche resta quasi invariato; per distribuzioni estese si riduce in modo adattivo.
+    // ── Template condensatore: visualizzazione dedicata.
+    // Usiamo 5 punti equivalenti per armatura e costruiamo esplicitamente:
+    // linee quasi rettilinee al centro, linee di bordo più incurvate e
+    // alcune linee esterne di richiusura, meno dense, per mostrare il fringing field.
+    if (currentTemplate === 'capacitor' && charges.length > 0) {
+        const leftPlate = charges.filter(ch => ch.q > 0);
+        const rightPlate = charges.filter(ch => ch.q < 0);
+        if (leftPlate.length > 0 && rightPlate.length > 0) {
+            const leftX = leftPlate.reduce((s, ch) => s + ch.x, 0) / leftPlate.length;
+            const rightX = rightPlate.reduce((s, ch) => s + ch.x, 0) / rightPlate.length;
+            const yMinVis = Math.min(...charges.map(ch => ch.y));
+            const yMaxVis = Math.max(...charges.map(ch => ch.y));
+
+            const plateSeeds = 5;
+            const interiorInset = 26;
+            const ys = [];
+            for (let i = 0; i < plateSeeds; i++) {
+                const t = plateSeeds === 1 ? 0.5 : i / (plateSeeds - 1);
+                ys.push(yMinVis + interiorInset + (yMaxVis - yMinVis - 2 * interiorInset) * t);
+            }
+
+            const xStart = leftX + 7 / zoom;
+            const xEnd   = rightX - 7 / zoom;
+            const gap = rightX - leftX;
+            const topY = ys[0];
+            const bottomY = ys[ys.length - 1];
+
+            function drawBezierWorld(p0, c1, c2, p3, arrowT = 0.55, color='rgba(255,210,90,0.96)') {
+                const P0 = worldToCanvas(p0.x, p0.y);
+                const C1 = worldToCanvas(c1.x, c1.y);
+                const C2 = worldToCanvas(c2.x, c2.y);
+                const P3 = worldToCanvas(p3.x, p3.y);
+
+                ctx.beginPath();
+                ctx.moveTo(P0.x, P0.y);
+                ctx.bezierCurveTo(C1.x, C1.y, C2.x, C2.y, P3.x, P3.y);
+                ctx.stroke();
+
+                const t1 = Math.max(0.05, arrowT - 0.04);
+                const t2 = Math.min(0.95, arrowT + 0.04);
+                const A1 = cubicBezierPointWorld(p0, c1, c2, p3, t1);
+                const A2 = cubicBezierPointWorld(p0, c1, c2, p3, t2);
+                const a1 = worldToCanvas(A1.x, A1.y);
+                const a2 = worldToCanvas(A2.x, A2.y);
+                drawArrow(a1.x, a1.y, a2.x, a2.y, color, 1.2, 7);
+            }
+
+            function cubicBezierPointWorld(p0, c1, c2, p3, t) {
+                const u = 1 - t;
+                return {
+                    x: u*u*u*p0.x + 3*u*u*t*c1.x + 3*u*t*t*c2.x + t*t*t*p3.x,
+                    y: u*u*u*p0.y + 3*u*u*t*c1.y + 3*u*t*t*c2.y + t*t*t*p3.y
+                };
+            }
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,200,60,0.86)';
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = 'rgba(255,200,60,0.30)';
+            ctx.shadowBlur = 2;
+
+            // 5 linee principali nella regione interna
+            for (const y of ys) {
+                const p1 = worldToCanvas(xStart, y);
+                const p2 = worldToCanvas(xEnd, y);
+
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+
+                const mx1 = p1.x + 0.44 * (p2.x - p1.x);
+                const mx2 = p1.x + 0.56 * (p2.x - p1.x);
+                drawArrow(mx1, p1.y, mx2, p2.y, 'rgba(255,210,90,0.96)', 1.25, 7);
+            }
+
+            // Due linee interne di bordo, più incurvate
+            const edgeCurv = 34 / zoom;
+            drawBezierWorld(
+                { x: xStart, y: topY },
+                { x: leftX + 0.28 * gap, y: topY - edgeCurv },
+                { x: leftX + 0.72 * gap, y: topY - edgeCurv },
+                { x: xEnd,   y: topY },
+                0.52
+            );
+            drawBezierWorld(
+                { x: xStart, y: bottomY },
+                { x: leftX + 0.28 * gap, y: bottomY + edgeCurv },
+                { x: leftX + 0.72 * gap, y: bottomY + edgeCurv },
+                { x: xEnd,   y: bottomY },
+                0.52
+            );
+
+            // Linee esterne ampie di richiusura sopra
+            const outerTopOffsets = [16 / zoom, 34 / zoom];
+            for (const off of outerTopOffsets) {
+                drawBezierWorld(
+                    { x: leftX + 2 / zoom, y: topY - off * 0.35 },
+                    { x: leftX - 0.30 * gap, y: topY - off - 26 / zoom },
+                    { x: rightX + 0.30 * gap, y: topY - off - 26 / zoom },
+                    { x: rightX - 2 / zoom, y: topY - off * 0.35 },
+                    0.50
+                );
+            }
+
+            // Linee esterne ampie di richiusura sotto
+            const outerBottomOffsets = [16 / zoom, 34 / zoom];
+            for (const off of outerBottomOffsets) {
+                drawBezierWorld(
+                    { x: leftX + 2 / zoom, y: bottomY + off * 0.35 },
+                    { x: leftX - 0.30 * gap, y: bottomY + off + 26 / zoom },
+                    { x: rightX + 0.30 * gap, y: bottomY + off + 26 / zoom },
+                    { x: rightX - 2 / zoom, y: bottomY + off * 0.35 },
+                    0.50
+                );
+            }
+
+            // Linee più deboli dietro ciascuna armatura
+            ctx.strokeStyle = 'rgba(255,200,60,0.45)';
+            ctx.shadowColor = 'rgba(255,200,60,0.15)';
+
+            const rearSpan = Math.max(18 / zoom, 0.22 * (yMaxVis - yMinVis));
+            const rearInset = 8 / zoom;
+
+            // Dietro la piastra positiva: escono verso sinistra
+            drawBezierWorld(
+                { x: leftX - rearInset, y: topY + 6 / zoom },
+                { x: leftX - 0.26 * gap, y: topY - 0.18 * rearSpan },
+                { x: leftX - 0.26 * gap, y: bottomY + 0.18 * rearSpan },
+                { x: leftX - rearInset, y: bottomY - 6 / zoom },
+                0.52,
+                'rgba(255,210,90,0.70)'
+            );
+
+            // Dietro la piastra negativa: entrano da destra
+            drawBezierWorld(
+                { x: rightX + rearInset, y: topY + 6 / zoom },
+                { x: rightX + 0.26 * gap, y: topY - 0.18 * rearSpan },
+                { x: rightX + 0.26 * gap, y: bottomY + 0.18 * rearSpan },
+                { x: rightX + rearInset, y: bottomY - 6 / zoom },
+                0.52,
+                'rgba(255,210,90,0.70)'
+            );
+
+            // Marker dei 5 punti equivalenti sulle due armature
+            ctx.fillStyle = 'rgba(255,230,160,0.62)';
+            for (const py of ys) {
+                const pL = worldToCanvas(leftX, py);
+                const pR = worldToCanvas(rightX, py);
+
+                ctx.beginPath();
+                ctx.arc(pL.x, pL.y, 2.6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(pR.x, pR.y, 2.6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+        return;
+    }
+
+    // ── Caso generale: semi radiali attorno a ogni carica ──
+    const totalAbsQ = charges.reduce((s, ch) => s + Math.abs(ch.q || 0), 0);
     const maxSeedBudget = 90;
     const adaptiveScale = totalAbsQ > 0
         ? Math.min(1, maxSeedBudget / Math.max(1, density * totalAbsQ))
@@ -1557,19 +1725,83 @@ function drawCirculationPath() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DISEGNO CARICHE
+// RENDER ARMATURE CONDENSATORE
 // ═══════════════════════════════════════════════════════════════
+function drawCapacitorPlates() {
+    if (currentTemplate !== 'capacitor' || charges.length === 0) return;
+
+    const leftPlate  = charges.filter(ch => ch.q > 0);
+    const rightPlate = charges.filter(ch => ch.q < 0);
+    if (leftPlate.length === 0 || rightPlate.length === 0) return;
+
+    const leftX  = leftPlate.reduce((s, ch) => s + ch.x, 0) / leftPlate.length;
+    const rightX = rightPlate.reduce((s, ch) => s + ch.x, 0) / rightPlate.length;
+    const yMin = Math.min(...charges.map(ch => ch.y));
+    const yMax = Math.max(...charges.map(ch => ch.y));
+
+    const pTop    = worldToCanvas(leftX, yMax);
+    const pBot    = worldToCanvas(leftX, yMin);
+    const pTopR   = worldToCanvas(rightX, yMax);
+    const pBotR   = worldToCanvas(rightX, yMin);
+
+    const plateW  = 7 * zoom;   // spessore visivo della barra
+
+    // Armatura positiva (sinistra) — rossa
+    ctx.save();
+    ctx.fillStyle   = 'rgba(239,68,68,0.18)';
+    ctx.strokeStyle = 'rgba(239,68,68,0.85)';
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    ctx.rect(pTop.x - plateW, pTop.y, plateW * 2, pBot.y - pTop.y);
+    ctx.fill();
+    ctx.strokeRect(pTop.x - plateW, pTop.y, plateW * 2, pBot.y - pTop.y);
+    ctx.fillStyle = 'rgba(239,68,68,0.9)';
+    ctx.font = 'bold 13px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('+σ', pTop.x, pTop.y - 10);
+    ctx.restore();
+
+    // Armatura negativa (destra) — blu
+    ctx.save();
+    ctx.fillStyle   = 'rgba(59,130,246,0.18)';
+    ctx.strokeStyle = 'rgba(59,130,246,0.85)';
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    ctx.rect(pTopR.x - plateW, pTopR.y, plateW * 2, pBotR.y - pTopR.y);
+    ctx.fill();
+    ctx.strokeRect(pTopR.x - plateW, pTopR.y, plateW * 2, pBotR.y - pTopR.y);
+    ctx.fillStyle = 'rgba(59,130,246,0.9)';
+    ctx.font = 'bold 13px IBM Plex Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('−σ', pTopR.x, pTopR.y - 10);
+    ctx.restore();
+}
+
+
 function chargeRadius(ch) {
     return 9 + Math.abs(ch.q) * 4;
 }
 
 function drawCharges() {
+    // Nel template condensatore le armature sono già disegnate come barre piene.
+    // Mostriamo solo le cariche delle estremità come piccoli indicatori di segno.
+    const isCapacitor = (currentTemplate === 'capacitor');
+
     for (const ch of charges) {
         const cp = worldToCanvas(ch.x, ch.y);
         const r = chargeRadius(ch);
         const isPos = ch.q > 0;
         const color = isPos ? '#ef4444' : '#3b82f6';
-        const glow = isPos ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)';
+        const glow  = isPos ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)';
+
+        if (isCapacitor) {
+            // Nel condensatore disegniamo solo un piccolo dot senza il cerchio grande
+            ctx.beginPath();
+            ctx.arc(cp.x, cp.y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            continue;
+        }
 
         // Alone
         const grad = ctx.createRadialGradient(cp.x, cp.y, 0, cp.x, cp.y, r * 2.8);
@@ -1650,6 +1882,10 @@ function render() {
         if (document.getElementById('togForce').checked && charges.length > 1) drawForceVectors();
     }
 
+    // Le armature del condensatore si disegnano sopra le linee di campo
+    // ma sotto le cariche individuali
+    drawCapacitorPlates();
+
     if (document.getElementById('togGauss').checked) {
         drawGaussSurface();
         if (charges.length > 0) {
@@ -1685,20 +1921,28 @@ function scheduleRender() {
     }
 }
 
+
+function updateSimulationButtonVisibility() {
+    const btn = document.getElementById('simToggleBtn');
+    if (!btn) return;
+    const staticTemplates = new Set(['capacitor', 'sphere', 'cylinder']);
+    btn.style.display = staticTemplates.has(currentTemplate) ? 'none' : 'block';
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DINAMICA (simulazione del moto delle cariche)
 // ═══════════════════════════════════════════════════════════════
 
-const MASS_BASE = 18;
-const DAMPING = 0.992;
-const DT = 0.16;
-const MAX_SPEED = 10;
+const MASS_BASE = 10;
+const DAMPING = 0.999;
+const DT = 0.34;
+const MAX_SPEED = 16;
 const MIN_PAIR_DISTANCE = 10;
 const velocities = {};
 
 function stopSimulation() {
     isRunning = false;
-    document.getElementById('simBtnLabel').textContent = '▶ Avvia dinamica';
+    const lbl = document.getElementById('simBtnLabel'); if (lbl) lbl.textContent = '▶ Avvia dinamica';
     if (animFrame) {
         cancelAnimationFrame(animFrame);
         animFrame = null;
@@ -1763,7 +2007,7 @@ function dynamicLoop() {
 
 function toggleSimulation() {
     isRunning = !isRunning;
-    document.getElementById('simBtnLabel').textContent = isRunning ? '⏸ Pausa dinamica' : '▶ Avvia dinamica';
+    const lbl = document.getElementById('simBtnLabel'); if (lbl) lbl.textContent = isRunning ? '⏸ Pausa dinamica' : '▶ Avvia dinamica';
     if (isRunning) {
         for (const ch of charges) {
             if (!velocities[ch.id]) velocities[ch.id] = { vx: 0, vy: 0 };
@@ -1833,6 +2077,7 @@ function updateChargeList() {
 function loadTemplate(name) {
     clearCharges();
     currentTemplate = name;
+    updateSimulationButtonVisibility();
     panX = 0; panY = 0; zoom = 1;
     const cx = canvas.width / 2, cy = canvas.height / 2;
     // Le coordinate sono in unità mondo, centro = (0,0)
@@ -1843,9 +2088,12 @@ function loadTemplate(name) {
         ],
         capacitor: (() => {
             const arr = [];
-            const nPlate = 7;
+            // 9 cariche visive per armatura, piastre più lunghe (±160)
+            // Le cariche visive sono solo "marker" — il calcolo del campo
+            // usa una distribuzione densa separata in getComputationCharges().
+            const nPlate = 9;
             for (let i = 0; i < nPlate; i++) {
-                const y = -90 + (180 / (nPlate - 1)) * i;
+                const y = -160 + (320 / (nPlate - 1)) * i;
                 arr.push({ x: -70, y, q:  1.5, fixed: true });
                 arr.push({ x:  70, y, q: -1.5, fixed: true });
             }

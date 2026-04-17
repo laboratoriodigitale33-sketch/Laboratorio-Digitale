@@ -51,8 +51,6 @@ typedef enum {
 /* ------------------------------------------------------------------ */
 /*  STRUTTURE                                                           */
 /* ------------------------------------------------------------------ */
-typedef struct { uint8_t r, g, b, a; } Color;
-
 typedef struct {
     double gtt, gtphi, grr, gphiphi;
     double Delta, Sigma, det;
@@ -79,8 +77,14 @@ static double   g_remit   = 18.0;
 static RenderMode g_mode  = MODE_GRID;
 static double   g_phi_off = 0.0;
 static double   g_cam_pitch = 0.60;
-static int      g_animating = 0;
 static KerrProps g_kp;
+static GeodesicPath g_geo_cache[N_RAYS_MAX];
+static int      g_geo_cache_valid = 0;
+
+static void invalidate_geodesic_cache(void)
+{
+    g_geo_cache_valid = 0;
+}
 
 /* ------------------------------------------------------------------ */
 /*  METRICA DI KERR (piano equatoriale θ=π/2, M=1)                    */
@@ -203,7 +207,7 @@ static void rk4_adaptive(
     *h = fmax(h_min, fmin(h_max, (*h)*factor));
 
     if (err < tol || *h <= h_min) {
-        *r=r1; *phi=p1; *dr=d1;
+        *r=r2; *phi=p2; *dr=d2;
     }
 }
 
@@ -236,6 +240,41 @@ static void integrate_geodesic(
         double Vn = Veff(r,a,E,L);
         if (dr<0.0 && Vn<0.0) dr=fabs(dr);
     }
+}
+
+static void build_geodesic_cache(void)
+{
+    double a = g_a;
+    double r_max = g_remit * 2.4;
+    double r_cap = g_kp.rp * 1.005;
+    double E = 1.0;
+    int n = g_nrays;
+
+    for (int i = 0; i < n; i++) {
+        GeodesicPath *path = &g_geo_cache[i];
+        double phi0 = (double)i / (double)n * TWO_PI;
+        double frac = (n > 1) ? ((double)i / (double)(n - 1)) * 2.0 - 1.0 : 0.0;
+        double b = frac * g_remit * 0.90;
+        double L = E * b;
+
+        path->n = 0;
+        path->captured = 0;
+        path->escaped = 0;
+
+        if (Veff(g_remit, a, E, L) < 0.0) {
+            continue;
+        }
+
+        integrate_geodesic(g_remit, phi0, E, L, a, r_max * 1.6, r_cap, path);
+    }
+
+    for (int i = n; i < N_RAYS_MAX; i++) {
+        g_geo_cache[i].n = 0;
+        g_geo_cache[i].captured = 0;
+        g_geo_cache[i].escaped = 0;
+    }
+
+    g_geo_cache_valid = 1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -439,22 +478,16 @@ static void render_geodesics(void)
     for(int rg=5;rg<=(int)r_max;rg+=5)
         draw_circle(icx,icy,(int)(rg*scale),30,26,20,0);
 
-    GeodesicPath *path=malloc(sizeof(GeodesicPath));
-    if(!path) return;
-
     double E=1.0;
     int n=g_nrays;
+    if (!g_geo_cache_valid) {
+        build_geodesic_cache();
+    }
 
     for(int i=0;i<n;i++){
-        double phi0=(double)i/n*TWO_PI+g_phi_off;
-        double frac=((double)i/(n-1))*2.0-1.0;
+        GeodesicPath *path=&g_geo_cache[i];
+        double frac=(n>1)?((double)i/(n-1))*2.0-1.0:0.0;
         double b=frac*g_remit*0.90;
-        double L=E*b;
-
-        double V0=Veff(g_remit,a,E,L);
-        if(V0<0.0) continue;
-
-        integrate_geodesic(g_remit,phi0,E,L,a,r_max*1.6,r_cap,path);
         if(path->n<2) continue;
 
         /* Colore basato su parametro d'impatto e esito */
@@ -469,17 +502,18 @@ static void render_geodesics(void)
         }
 
         for(int j=1;j<path->n;j++){
-            double wx0=path->r[j-1]*cos(path->phi[j-1]);
-            double wy0=path->r[j-1]*sin(path->phi[j-1]);
-            double wx1=path->r[j  ]*cos(path->phi[j  ]);
-            double wy1=path->r[j  ]*sin(path->phi[j  ]);
+            double phi0=path->phi[j-1] + g_phi_off;
+            double phi1=path->phi[j  ] + g_phi_off;
+            double wx0=path->r[j-1]*cos(phi0);
+            double wy0=path->r[j-1]*sin(phi0);
+            double wx1=path->r[j  ]*cos(phi1);
+            double wy1=path->r[j  ]*sin(phi1);
             int sx0,sy0,sx1,sy1;
             w2s(wx0,wy0,cx,cy,scale,&sx0,&sy0);
             w2s(wx1,wy1,cx,cy,scale,&sx1,&sy1);
             draw_line(sx0,sy0,sx1,sy1,R,G,B);
         }
     }
-    free(path);
 
     draw_circle(icx,icy,(int)(g_kp.r_ergo*scale),230,115,20,1);
     draw_circle(icx,icy,(int)(g_kp.r_isco*scale), 41,128,185,1);
@@ -711,6 +745,7 @@ EMSCRIPTEN_KEEPALIVE void set_spin(double a)
 {
     g_a=fmax(0.001,fmin(0.998,a));
     kerr_props(g_a,&g_kp);
+    invalidate_geodesic_cache();
 }
 
 EMSCRIPTEN_KEEPALIVE void set_zoom(double z)
@@ -723,10 +758,16 @@ EMSCRIPTEN_KEEPALIVE void set_mode(int m)
 { g_mode=(RenderMode)(m%MODE_COUNT); }
 
 EMSCRIPTEN_KEEPALIVE void set_nrays(int n)
-{ g_nrays=fmax(4,fmin(N_RAYS_MAX,n)); }
+{
+    g_nrays=fmax(4,fmin(N_RAYS_MAX,n));
+    invalidate_geodesic_cache();
+}
 
 EMSCRIPTEN_KEEPALIVE void set_remit(double r)
-{ g_remit=fmax(5.0,fmin(40.0,r)); }
+{
+    g_remit=fmax(5.0,fmin(40.0,r));
+    invalidate_geodesic_cache();
+}
 
 EMSCRIPTEN_KEEPALIVE void step_anim(void)
 { g_phi_off+=0.015; }

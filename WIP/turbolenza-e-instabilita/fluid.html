@@ -682,6 +682,7 @@ let visc    = 0.0008;
 let obstR   = 12;
 
 let lastTs  = 0, fps = 0;
+let stepsPerFrame = 2;
 
 // Puntatori (offset in HEAPF32/HEAPU8)
 let pUx, pUy, pVort, pPres, pDye, pWall;
@@ -809,20 +810,29 @@ function drawCbar() {
 
 function render() {
   if (!M) return;
-  M._compute_vorticity();
+  const showVorticity = vis === 'vorticity';
+  if (showVorticity) M._compute_vorticity();
 
   const F = M.HEAPF32;
   const U = M.HEAPU8;
 
   let maxV = 0.005, maxVel = 0.001, maxP = 0.001;
-  for (let k = 0; k < N; k++) {
-    if (U[pWall+k]) continue;
-    const av = Math.abs(F[pVort+k]);
-    if (av > maxV) maxV = av;
-    const vel2 = Math.sqrt(F[pUx+k]*F[pUx+k] + F[pUy+k]*F[pUy+k]);
-    if (vel2 > maxVel) maxVel = vel2;
-    const ap = Math.abs(F[pPres+k]);
-    if (ap > maxP) maxP = ap;
+  if (showVorticity || vis === 'velocity' || vis === 'pressure') {
+    let maxVel2 = maxVel * maxVel;
+    for (let k = 0; k < N; k++) {
+      if (U[pWall+k]) continue;
+      if (showVorticity) {
+        const av = Math.abs(F[pVort+k]);
+        if (av > maxV) maxV = av;
+      } else if (vis === 'velocity') {
+        const vel2 = F[pUx+k]*F[pUx+k] + F[pUy+k]*F[pUy+k];
+        if (vel2 > maxVel2) maxVel2 = vel2;
+      } else if (vis === 'pressure') {
+        const ap = Math.abs(F[pPres+k]);
+        if (ap > maxP) maxP = ap;
+      }
+    }
+    if (vis === 'velocity') maxVel = Math.sqrt(maxVel2);
   }
 
   for (let j = 0; j < NY; j++) {
@@ -884,11 +894,11 @@ function loop(ts) {
   document.getElementById('stepTxt').textContent = 'step ' + step_n;
 
   if (!paused && M) {
-    M._step();
-    M._step();
+    stepsPerFrame = fps < 38 ? 1 : (fps > 72 ? 3 : 2);
+    for (let s = 0; s < stepsPerFrame; s++) M._step();
     // ricarica dye all'inlet (scenari con flusso da sx)
     if (scene !== 5) M._refresh_inlet_dye(20);
-    step_n++;
+    step_n += stepsPerFrame;
   }
   render();
   updateHUD();

@@ -52,6 +52,9 @@
 #define E_CUTOFF_PHOTON 0.001                /* cutoff fotone 1 keV                  */
 #define E_CUTOFF_ELEC   0.001                /* cutoff elettrone 1 keV               */
 #define E_CUTOFF_NEUT   1e-5                 /* cutoff neutrone termico ~0.025 eV    */
+#define SPEC_BINS       80
+#define SPEC_E_MIN      1e-8
+#define SPEC_E_MAX      20.0
 
 /* ─────────────────────────────────────────────
    GEOMETRIA E GRIGLIA
@@ -230,7 +233,6 @@ static int       n_sec = 0;
 
 static Track     tracks[MAX_TRACKS];
 static int       n_tracks = 0;
-static int       track_write_idx = 0;
 
 /* Griglia materiali */
 static uint8_t   mat_grid[GRID_H][GRID_W];
@@ -242,6 +244,8 @@ static float     fluence_e[GRID_H][GRID_W];   /* elettroni       */
 
 /* Mappa di dose (energia depositata per unità di massa, Gy equivalente) */
 static float     dose_map[GRID_H][GRID_W];
+static float     spec_neut[SPEC_BINS];
+static float     spec_phot[SPEC_BINS];
 
 /* Parametri sorgente */
 static double    src_x, src_y;            /* posizione sorgente (cm)     */
@@ -255,6 +259,7 @@ static long      total_histories;
 static long      total_fissions;
 static long      total_captures;
 static long      total_scatterings;
+static float     material_query[9];
 
 /* ─────────────────────────────────────────────
    FUNZIONI GEOMETRICHE
@@ -297,6 +302,32 @@ static inline void deposit_dose(double x, double y, double dE_MeV, double rho) {
     /* converti MeV in J: 1 MeV = 1.602176634e-13 J; Gy = J/kg = J / (mass_g * 1e-3) */
     double dose_gy  = dE_MeV * 1.602176634e-13 / (mass_g * 1e-3);
     dose_map[cy][cx] += (float)dose_gy;
+}
+
+static inline int spectrum_bin(double energy_MeV) {
+    double safe_e = fmax(energy_MeV, SPEC_E_MIN);
+    double log_span = log10(SPEC_E_MAX / SPEC_E_MIN);
+    double log_pos = log10(safe_e / SPEC_E_MIN) / log_span;
+    int bin = (int)(log_pos * SPEC_BINS);
+    if (bin < 0) return 0;
+    if (bin >= SPEC_BINS) return SPEC_BINS - 1;
+    return bin;
+}
+
+static void clear_tallies(void) {
+    memset(fluence_n, 0, sizeof(fluence_n));
+    memset(fluence_p, 0, sizeof(fluence_p));
+    memset(fluence_e, 0, sizeof(fluence_e));
+    memset(dose_map,  0, sizeof(dose_map));
+    memset(spec_neut, 0, sizeof(spec_neut));
+    memset(spec_phot, 0, sizeof(spec_phot));
+    memset(tracks,    0, sizeof(tracks));
+    n_tracks = 0;
+    n_sec = 0;
+    total_histories = 0;
+    total_fissions = 0;
+    total_captures = 0;
+    total_scatterings = 0;
 }
 
 /* ─────────────────────────────────────────────
@@ -611,6 +642,7 @@ static void transport_neutron(Particle *p, Track *trk) {
 
         /* Deposita fluenza lungo il percorso */
         deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0, PTYPE_NEUTRON, p->weight);
+        spec_neut[spectrum_bin(p->energy)] += (float)p->weight;
         track_add_point(trk, new_x, new_y, p->energy);
 
         p->x = new_x; p->y = new_y;
@@ -639,7 +671,7 @@ static void transport_neutron(Particle *p, Track *trk) {
             push_secondary(p->x, p->y, gdx, gdy, E_gamma, PTYPE_PHOTON,
                            p->weight, p->generation + 1);
             /* Deposita energia di rinculo del nucleo come dose */
-            deposit_dose(p->x, p->y, p->energy, MATERIALS[mid].density);
+            deposit_dose(p->x, p->y, p->energy * p->weight, MATERIALS[mid].density);
             p->alive = 0;
             total_captures++;
 
@@ -682,14 +714,14 @@ static void transport_neutron(Particle *p, Track *trk) {
                 push_secondary(p->x, p->y, gdx, gdy, Eg, PTYPE_PHOTON,
                                p->weight / n_gamma, p->generation + 1);
             }
-            deposit_dose(p->x, p->y, E_release * 0.03, MATERIALS[mid].density);
+            deposit_dose(p->x, p->y, E_release * 0.03 * p->weight, MATERIALS[mid].density);
             p->alive = 0;
             total_fissions++;
         }
     }
     if (p->energy <= E_CUTOFF_NEUT && p->alive) {
         /* Neutrone termico catturato */
-        deposit_dose(p->x, p->y, p->energy, MATERIALS[mid_for(p)].density);
+        deposit_dose(p->x, p->y, p->energy * p->weight, MATERIALS[mid_for(p)].density);
         p->alive = 0;
     }
 }
@@ -720,6 +752,7 @@ static void transport_photon(Particle *p, Track *trk) {
         double new_y = p->y + p->dy * step;
 
         deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0, PTYPE_PHOTON, p->weight);
+        spec_phot[spectrum_bin(p->energy)] += (float)p->weight;
         track_add_point(trk, new_x, new_y, p->energy);
 
         p->x = new_x; p->y = new_y;
@@ -731,15 +764,18 @@ static void transport_photon(Particle *p, Track *trk) {
         if (r < mu_pe) {
             /* ── EFFETTO FOTOELETTRICO ── */
             /* L'elettrone viene emesso con E = hν - E_binding (appross. E_binding piccola) */
-            double E_e = p->energy - MATERIALS[mid].I_eV * 1e-6 * MATERIALS[mid].Z_eff;
+            double binding_E = fmin(MATERIALS[mid].I_eV * 1e-6, p->energy);
+            double E_e = p->energy - binding_E;
+            double local_dep = binding_E;
             if (E_e > E_CUTOFF_ELEC) {
                 double edx, edy;
                 sample_isotropic(&edx, &edy);
                 push_secondary(p->x, p->y, edx, edy, E_e, PTYPE_ELECTRON,
                                p->weight, p->generation + 1);
+            } else {
+                local_dep += E_e;
             }
-            deposit_dose(p->x, p->y, MATERIALS[mid].I_eV * 1e-6 * MATERIALS[mid].Z_eff,
-                         MATERIALS[mid].density);
+            deposit_dose(p->x, p->y, local_dep * p->weight, MATERIALS[mid].density);
             p->alive = 0;
 
         } else if (r < mu_pe + mu_c) {
@@ -776,7 +812,7 @@ static void transport_photon(Particle *p, Track *trk) {
             if (E_p > E_CUTOFF_ELEC)
                 push_secondary(p->x, p->y, pdx, pdy, E_p, PTYPE_POSITRON,
                                p->weight, p->generation + 1);
-            deposit_dose(p->x, p->y, E_PAIR_THRESH, MATERIALS[mid].density);
+            deposit_dose(p->x, p->y, E_PAIR_THRESH * p->weight, MATERIALS[mid].density);
             p->alive = 0;
         }
     }
@@ -802,7 +838,7 @@ static void transport_electron(Particle *p, Track *trk) {
             /* Gaussiana approssimata: campionamento Box-Muller */
             double u1 = rng_double() + 1e-300, u2 = rng_double();
             double theta = sigma_theta * sqrt(-2.0 * log(u1)) * cos(TWO_PI * u2);
-            rotate_direction(&p->dx, &p->dy, cos(theta), sin(fabs(theta)));
+            rotate_direction(&p->dx, &p->dy, cos(theta), sin(theta));
         }
 
         double new_x = p->x + p->dx * step;
@@ -865,15 +901,8 @@ static void transport_particle(Particle *p, Track *trk) {
 EXPORT void sim_init(void) {
     rng_seed(12345678901234ULL);
     memset(mat_grid,   0, sizeof(mat_grid));
-    memset(fluence_n,  0, sizeof(fluence_n));
-    memset(fluence_p,  0, sizeof(fluence_p));
-    memset(fluence_e,  0, sizeof(fluence_e));
-    memset(dose_map,   0, sizeof(dose_map));
     memset(particles,  0, sizeof(particles));
-    memset(tracks,     0, sizeof(tracks));
-    n_tracks = 0; track_write_idx = 0; n_sec = 0;
-    total_histories = 0; total_fissions = 0;
-    total_captures  = 0; total_scatterings = 0;
+    clear_tallies();
 
     /* Geometria default:
      *   sfondo = acqua
@@ -907,6 +936,10 @@ EXPORT void sim_init(void) {
 
 EXPORT void sim_reset(void) {
     sim_init();
+}
+
+EXPORT void reset_tallies(void) {
+    clear_tallies();
 }
 
 EXPORT void set_source(double x_cm, double y_cm, double energy_MeV,
@@ -951,14 +984,12 @@ EXPORT int sim_step(int n_primaries) {
 
         /* Alloca traccia */
         Track *trk = NULL;
-        if (track_write_idx < MAX_TRACKS) {
-            trk = &tracks[track_write_idx];
+        if (n_tracks < MAX_TRACKS) {
+            trk = &tracks[n_tracks++];
             memset(trk, 0, sizeof(Track));
             trk->type = src_type;
             trk->generation = 0;
             track_add_point(trk, primary.x, primary.y, primary.energy);
-            track_write_idx = (track_write_idx + 1) % MAX_TRACKS;
-            n_tracks++;
         }
 
         transport_particle(&primary, trk);
@@ -970,14 +1001,12 @@ EXPORT int sim_step(int n_primaries) {
             for (int si = sec_start; si < sec_end && si < SECONDARY_QUEUE; si++) {
                 Particle *sp = &sec_queue[si];
                 Track *strk = NULL;
-                if (track_write_idx < MAX_TRACKS) {
-                    strk = &tracks[track_write_idx];
+                if (n_tracks < MAX_TRACKS) {
+                    strk = &tracks[n_tracks++];
                     memset(strk, 0, sizeof(Track));
                     strk->type = sp->type;
                     strk->generation = sp->generation;
                     track_add_point(strk, sp->x, sp->y, sp->energy);
-                    track_write_idx = (track_write_idx + 1) % MAX_TRACKS;
-                    n_tracks++;
                 }
                 transport_particle(sp, strk);
             }
@@ -986,7 +1015,6 @@ EXPORT int sim_step(int n_primaries) {
 
         total_histories++;
     }
-    track_write_idx = 0; /* reset per il prossimo frame */
     return n_primaries;
 }
 
@@ -999,10 +1027,34 @@ EXPORT float* get_fluence_p(void) { return &fluence_p[0][0]; }
 EXPORT float* get_fluence_e(void) { return &fluence_e[0][0]; }
 EXPORT float* get_dose(void)      { return &dose_map[0][0];  }
 EXPORT uint8_t* get_mat_grid(void){ return &mat_grid[0][0];  }
+EXPORT float* get_spec_neut(void) { return spec_neut; }
+EXPORT float* get_spec_phot(void) { return spec_phot; }
 
 EXPORT int get_grid_w(void) { return GRID_W; }
 EXPORT int get_grid_h(void) { return GRID_H; }
 EXPORT int get_track_count(void) { return n_tracks; }
+
+EXPORT float* query_material_response(int material_id, double energy_MeV) {
+    double sig_s = 0.0, sig_c = 0.0, sig_f = 0.0;
+    double mu_pe = 0.0, mu_c = 0.0, mu_pp = 0.0, mu_tot = 0.0;
+    double stop = 0.0;
+    if (material_id >= 0 && material_id < MAT_COUNT) {
+        MaterialID mid = (MaterialID)material_id;
+        neutron_xs(mid, energy_MeV, &sig_s, &sig_c, &sig_f);
+        photon_xs(mid, energy_MeV, &mu_pe, &mu_c, &mu_pp, &mu_tot);
+        stop = bethe_bloch_MeV_per_cm(mid, energy_MeV);
+    }
+    material_query[0] = (float)sig_s;
+    material_query[1] = (float)sig_c;
+    material_query[2] = (float)sig_f;
+    material_query[3] = (float)(sig_s + sig_c + sig_f);
+    material_query[4] = (float)mu_pe;
+    material_query[5] = (float)mu_c;
+    material_query[6] = (float)mu_pp;
+    material_query[7] = (float)mu_tot;
+    material_query[8] = (float)stop;
+    return material_query;
+}
 
 /* Ritorna array flat di tracce:
  * per ogni traccia: [type(f), n_pts(f), px0,py0,pe0, px1,py1,pe1, ..., (MAX_TRACK_PTS*3 floats)]

@@ -406,11 +406,10 @@ void init_kelvin_helmholtz(void) {
         float yc  = (float)(j - NY/2) / (NY * 0.04f);
         float sgn = tanhf(yc);     /* da -1 a +1 attraverso l'interfaccia */
 
-        /* Perturbazione sinusoidale per seedare il modo instabile */
-        float pert = 0.03f * v0 * sinf(pi2 * 4.0f * i / NX);
-
         for (i = 0; i < NX; i++) {
             if (_wall[IX(i,j)]) continue;
+            /* Perturbazione sinusoidale per seedare il modo instabile */
+            float pert = 0.03f * v0 * sinf(pi2 * 4.0f * i / NX);
             _ux[IX(i,j)] = v0 * sgn;
             _uy[IX(i,j)] = pert;
             /* Dye: sopra bianco, sotto nero */

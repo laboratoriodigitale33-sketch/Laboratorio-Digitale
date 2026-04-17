@@ -79,7 +79,8 @@ static float kernel(float dist) {
     if (q <= 1.0f) {
         return norm * (1.0f - 1.5f*q*q + 0.75f*q*q*q);
     }
-    return norm * 0.25f * powf(2.0f - q, 3.0f);
+    float tail = 2.0f - q;
+    return norm * 0.25f * tail * tail * tail;
 }
 
 static void kernel_grad(float dx, float dy, float dist, float *gx, float *gy) {
@@ -92,9 +93,13 @@ static void kernel_grad(float dx, float dy, float dist, float *gx, float *gy) {
     }
 
     float norm = 10.0f / (7.0f * M_PI * h * h * h);
-    float dWdq = (q <= 1.0f)
-        ? norm * (-3.0f*q + 2.25f*q*q)
-        : norm * (-0.75f * powf(2.0f - q, 2.0f));
+    float dWdq;
+    if (q <= 1.0f) {
+        dWdq = norm * (-3.0f*q + 2.25f*q*q);
+    } else {
+        float tail = 2.0f - q;
+        dWdq = norm * (-0.75f * tail * tail);
+    }
 
     *gx = dWdq * dx / dist;
     *gy = dWdq * dy / dist;
@@ -213,7 +218,8 @@ static void update_forces_and_energy_rhs(void) {
             float r2 = rx*rx + ry*ry;
             float dist = sqrtf(r2 + 1e-12f);
 
-            float invr3 = 1.0f / powf(r2 + g_soft, 1.5f);
+            float inv_dist = 1.0f / sqrtf(r2 + g_soft);
+            float invr3 = inv_dist * inv_dist * inv_dist;
             float ag = g_G * g_mass * invr3;
 
             ax[i] += ag * rx;

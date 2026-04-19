@@ -361,6 +361,7 @@ footer {
     <div>
       <div class="canvas-wrap" style="position:relative">
         <canvas id="scalarCanvas" width="660" height="500"></canvas>
+        <canvas id="scalarOverlay" width="660" height="500" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair"></canvas>
         <div class="canvas-label" id="scalarCanvasLabel">T(x, y) — temperatura [°C]</div>
       </div>
     </div>
@@ -854,9 +855,19 @@ class ScalarRenderer {
     this.fieldKey = 'meteo';
     this.mouseX = null;
     this.mouseY = null;
+
+    // canvas overlay separato per il cursore (solo per il renderer principale)
     if (!small) {
-      this.canvas.addEventListener('mousemove', e => this.onMouseMove(e));
-      this.canvas.addEventListener('mouseleave', () => { this.mouseX = null; this.render(); this.clearReadout(); });
+      this.overlay = document.getElementById(canvasId.replace('Canvas', 'Overlay'));
+      if (this.overlay) {
+        this.octx = this.overlay.getContext('2d');
+        this.overlay.addEventListener('mousemove', e => this.onMouseMove(e));
+        this.overlay.addEventListener('mouseleave', () => {
+          this.mouseX = null;
+          this.octx.clearRect(0, 0, this.W, this.H);
+          this.clearReadout();
+        });
+      }
     }
     this.render();
     this.updateLegend();
@@ -866,10 +877,10 @@ class ScalarRenderer {
   toCanvas(wx, wy) { return { px: (wx+1)/2*this.W, py: (1-(wy+1)/2)*this.H }; }
 
   onMouseMove(e) {
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = this.overlay.getBoundingClientRect();
     this.mouseX = (e.clientX - rect.left) * (this.W / rect.width);
     this.mouseY = (e.clientY - rect.top) * (this.H / rect.height);
-    this.render();
+    this.renderCursor();
     this.updateReadout();
   }
 
@@ -1256,45 +1267,53 @@ class ScalarRenderer {
           4 + t*2, `rgba(${rv},${gv},${bv},0.88)`, 1.2 + t*0.8);
       }
     }
+  }
 
-    // ── Cursore ──
-    if (this.mouseX !== null) {
-      const { x, y } = this.toWorld(this.mouseX, this.mouseY);
-      const phi = fd.phi(x, y);
-      const cx = this.mouseX, cy = this.mouseY;
+  // ── Cursore sull'overlay (chiamato solo a ogni mousemove) ──
+  renderCursor() {
+    if (!this.octx) return;
+    const ctx = this.octx;
+    const W = this.W, H = this.H;
+    ctx.clearRect(0, 0, W, H);
+    if (this.mouseX === null) return;
 
-      // alone
+    const fd = scalarFields[this.fieldKey];
+    const { x, y } = this.toWorld(this.mouseX, this.mouseY);
+    const phi = fd.phi(x, y);
+    const cx = this.mouseX, cy = this.mouseY;
+
+    // alone esterno
+    ctx.beginPath();
+    ctx.arc(cx, cy, 11, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(179,74,0,0.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // punto centrale
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#b34a00';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI*2);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // tooltip
+    if (isFinite(phi)) {
+      const valStr = fd.unit === '°C' ? `${phi.toFixed(1)} °C`
+                   : fd.unit === 'hPa' ? `${phi.toFixed(1)} hPa`
+                   : phi.toFixed(3);
+      ctx.font = '600 11px IBM Plex Mono, monospace';
+      const tw = ctx.measureText(valStr).width;
+      let tx = cx + 14, ty = cy - 14;
+      if (tx + tw + 8 > W) tx = cx - tw - 18;
+      ctx.fillStyle = 'rgba(20,20,20,0.78)';
       ctx.beginPath();
-      ctx.arc(cx, cy, 11, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(179,74,0,0.25)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(cx, cy, 5, 0, Math.PI*2);
-      ctx.fillStyle = '#b34a00';
+      ctx.roundRect(tx-4, ty-12, tw+8, 18, 3);
       ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx, cy, 5, 0, Math.PI*2);
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // tooltip con valore
-      if (isFinite(phi)) {
-        const valStr = fd.unit === '°C' ? `${phi.toFixed(1)} °C`
-                     : fd.unit === 'hPa' ? `${phi.toFixed(1)} hPa`
-                     : phi.toFixed(3);
-        ctx.font = '600 11px IBM Plex Mono, monospace';
-        const tw = ctx.measureText(valStr).width;
-        let tx = cx + 14, ty = cy - 14;
-        if (tx + tw + 8 > W) tx = cx - tw - 18;
-        ctx.fillStyle = 'rgba(20,20,20,0.78)';
-        ctx.beginPath();
-        ctx.roundRect(tx-4, ty-12, tw+8, 18, 3);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.fillText(valStr, tx, ty);
-      }
+      ctx.fillStyle = '#fff';
+      ctx.fillText(valStr, tx, ty);
     }
   }
 

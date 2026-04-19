@@ -114,6 +114,22 @@
       "isWip": false
     },
     {
+      "title": "Elettrostatica",
+      "description": "Visualizzazione del campo elettrico generato da cariche puntiformi e studio delle forze elettrostatiche.",
+      "category": "Elettromagnetismo",
+      "icon": "⚡",
+      "order": 10,
+      "tags": [
+        "cariche elettriche",
+        "campo elettrico",
+        "forza elettrica",
+        "legge di Coulomb"
+      ],
+      "level": "intermedio",
+      "file": "elettro-magnetismo/elettrostatica.html",
+      "isWip": false
+    },
+    {
       "title": "Magnetismo",
       "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
       "category": "Elettromagnetismo",
@@ -798,7 +814,7 @@
       "title": "Trasporto di particelle",
       "description": "Simulazione Monte Carlo del trasporto di neutroni, fotoni ed elettroni in materiali diversi, con visualizzazione di tracce, fluenza, dose e principali processi di interazione.",
       "category": "WIP",
-      "icon": "☢️",
+      "icon": "??",
       "order": 10,
       "tags": [
         "trasporto di particelle",
@@ -829,6 +845,46 @@
       ],
       "level": "intermedio",
       "file": "WIP/circuiti.html",
+      "isWip": true
+    },
+    {
+      "title": "Moto Browniano",
+      "description": "Visualizza il moto stocastico di una particella tracciante immersa in un solvente, con collisioni elastiche, traiettoria casuale, spostamento quadratico medio e collegamento alla diffusione di Einstein.",
+      "category": "WIP",
+      "icon": "🌫️",
+      "order": 20,
+      "tags": [
+        "moto browniano",
+        "diffusione",
+        "fisica statistica",
+        "equazione di Langevin",
+        "spostamento quadratico medio",
+        "Einstein",
+        "collisioni elastiche",
+        "teorema di fluttuazione-dissipazione"
+      ],
+      "level": "intermedio",
+      "file": "WIP/browniano.html",
+      "isWip": true
+    },
+    {
+      "title": "Onde di Faraday",
+      "description": "Visualizza l’instabilità parametrica della superficie libera di un fluido sottoposto a vibrazione verticale, mostrando la risposta sub-armonica, i modi normali e la relazione di dispersione gravitocapillare.",
+      "category": "WIP",
+      "icon": "🌊",
+      "order": 20,
+      "tags": [
+        "onde di Faraday",
+        "instabilità parametrica",
+        "fluidodinamica",
+        "onde superficiali",
+        "relazione di dispersione",
+        "modi normali",
+        "Mathieu",
+        "gravitocapillare"
+      ],
+      "level": "avanzato",
+      "file": "WIP/faraday.html",
       "isWip": true
     },
     {

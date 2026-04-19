@@ -364,6 +364,7 @@ footer {
         <canvas id="scalarOverlay" width="660" height="500" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair"></canvas>
         <div class="canvas-label" id="scalarCanvasLabel">T(x, y) — temperatura [°C]</div>
       </div>
+      <img id="europeMap" src="mappa_europa.png" style="display:none" alt="">
     </div>
     <div class="side-panel">
       <div class="info-box">
@@ -981,31 +982,19 @@ class ScalarRenderer {
   }
 
   drawGeoBackground(ctx) {
-    // sfondo "mare" + zone "terra" stilizzate per la mappa meteorologica
-    ctx.fillStyle = '#c8dff0';
+    // sfondo mare azzurro uniforme
+    ctx.fillStyle = '#daeaf5';
     ctx.fillRect(0, 0, this.W, this.H);
-    // penisola italiana stilizzata
-    ctx.fillStyle = '#d8cfb8';
-    ctx.beginPath();
-    // forma molto approssimata — solo evocativa
-    ctx.ellipse(this.W*0.52, this.H*0.62, this.W*0.07, this.H*0.22, -0.3, 0, Math.PI*2);
-    ctx.fill();
-    // penisola iberica
-    ctx.beginPath();
-    ctx.ellipse(this.W*0.10, this.H*0.58, this.W*0.12, this.H*0.16, 0.1, 0, Math.PI*2);
-    ctx.fill();
-    // europa centrale
-    ctx.beginPath();
-    ctx.ellipse(this.W*0.45, this.H*0.22, this.W*0.42, this.H*0.20, 0.05, 0, Math.PI*2);
-    ctx.fill();
-    // africa nord
-    ctx.beginPath();
-    ctx.ellipse(this.W*0.45, this.H*0.98, this.W*0.55, this.H*0.18, 0, 0, Math.PI*2);
-    ctx.fill();
-    // balcani/turchia
-    ctx.beginPath();
-    ctx.ellipse(this.W*0.78, this.H*0.55, this.W*0.18, this.H*0.14, 0.2, 0, Math.PI*2);
-    ctx.fill();
+  }
+
+  drawGeoOverlay(ctx) {
+    // sovrappone la mappa dell'Europa sopra la colormap, con multiply
+    const img = document.getElementById('europeMap');
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(img, 0, 0, this.W, this.H);
+    ctx.restore();
   }
 
   getStreamSeeds() {
@@ -1089,8 +1078,12 @@ class ScalarRenderer {
     const isGeo = fd.bgType === 'geo';
 
     // ── Sfondo geografico (solo per meteo/pressure) ──
-    if (isGeo && this.showColor) this.drawGeoBackground(ctx);
-    else if (!this.showColor) { ctx.fillStyle = isGeo ? '#c8dff0' : '#fafaf7'; ctx.fillRect(0,0,W,H); }
+    if (isGeo) {
+      this.drawGeoBackground(ctx);
+    } else {
+      ctx.fillStyle = '#fafaf7';
+      ctx.fillRect(0, 0, W, H);
+    }
 
     // ── Mappa colore (sovrapposta con alpha per geo) ──
     if (this.showColor) {
@@ -1103,16 +1096,18 @@ class ScalarRenderer {
           const rgb = fd.colormap(t);
           const idx = (py * W + px) * 4;
           img.data[idx] = rgb[0]; img.data[idx+1] = rgb[1]; img.data[idx+2] = rgb[2];
-          img.data[idx+3] = isGeo ? 175 : 255; // semi-trasparente su geo
+          img.data[idx+3] = isGeo ? 170 : 255;
         }
       }
-      // disegno su canvas offscreen poi composito
       const offCanvas = document.createElement('canvas');
       offCanvas.width = W; offCanvas.height = H;
       const offCtx = offCanvas.getContext('2d');
       offCtx.putImageData(img, 0, 0);
       ctx.drawImage(offCanvas, 0, 0);
     }
+
+    // ── Mappa geografica sovrapposta (contorni sempre visibili) ──
+    if (isGeo) this.drawGeoOverlay(ctx);
 
     // ── Isoterme / isolinee ──
     if (this.showIso) {
@@ -1609,6 +1604,12 @@ class VectorRenderer {
 ════════════════════════════════════════════ */
 const scalarRend = new ScalarRenderer('scalarCanvas');
 const vectorRend = new VectorRenderer('vectorCanvas');
+
+// Ridisegna quando la mappa geografica è caricata
+const europeMapEl = document.getElementById('europeMap');
+if (europeMapEl) {
+  europeMapEl.addEventListener('load', () => scalarRend.render());
+}
 
 // Inizializza pannello proprietà con il campo di default
 document.getElementById('vectorProps').innerHTML =

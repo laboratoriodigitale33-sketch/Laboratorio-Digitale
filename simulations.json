@@ -114,22 +114,6 @@
       "isWip": false
     },
     {
-      "title": "Elettrostatica",
-      "description": "Visualizzazione del campo elettrico generato da cariche puntiformi e studio delle forze elettrostatiche.",
-      "category": "Elettromagnetismo",
-      "icon": "⚡",
-      "order": 10,
-      "tags": [
-        "cariche elettriche",
-        "campo elettrico",
-        "forza elettrica",
-        "legge di Coulomb"
-      ],
-      "level": "intermedio",
-      "file": "elettro-magnetismo/elettrostatica.html",
-      "isWip": false
-    },
-    {
       "title": "Magnetismo",
       "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
       "category": "Elettromagnetismo",

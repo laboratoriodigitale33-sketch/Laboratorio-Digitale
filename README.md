@@ -24,7 +24,3 @@ Il repository contiene:
 ## Autore
 
 **Roberto Curcio Rubertini**
-
-## Note finali
-
-Questo repository raccoglie un progetto personale dedicato alla costruzione di un archivio di simulazioni fisiche accessibili, rigorose e didatticamente utili.

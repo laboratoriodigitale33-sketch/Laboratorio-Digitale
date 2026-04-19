@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moto Browniano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[
+    {left:'$$',right:'$$',display:true},
+    {left:'$',right:'$',display:false}
+  ]})"></script>
+<script>
+window.SIM_METADATA = {
+  title: "Moto Browniano",
+  description: "Visualizza il moto stocastico di una particella tracciante immersa in un solvente, con collisioni elastiche, traiettoria casuale, spostamento quadratico medio e collegamento alla diffusione di Einstein.",
+  category: "Termodinamica",
+  icon: "🌫️",
+  order: 20,
+  tags: ["moto browniano", "diffusione", "fisica statistica", "equazione di Langevin", "spostamento quadratico medio", "Einstein", "collisioni elastiche", "teorema di fluttuazione-dissipazione"],
+  level: "intermedio"
+};
+</script>
+<style>
+:root{
+  --cream:#f5f0e8; --ink:#1a1410; --ink2:#3a2e26; --ink3:#6b5a4e;
+  --accent:#8b3a2a; --accent2:#c8783a; --light:#ede8df; --border:#c8bfb0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.7;}
+header{background:var(--ink);color:var(--cream);padding:2rem 3rem 1.6rem;border-bottom:3px solid var(--accent);}
+header h1{font-family:'EB Garamond',serif;font-size:2.4rem;font-weight:500;margin-bottom:.2rem;}
+header .subtitle{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--accent2);letter-spacing:.12em;text-transform:uppercase;}
+.main-wrap{max-width:1280px;margin:0 auto;padding:1.8rem 1.8rem 3rem;display:grid;grid-template-columns:1fr 340px;gap:1.6rem;}
+.sim-panel{display:flex;flex-direction:column;gap:1rem;}
+.canvas-container{position:relative;border:1.5px solid var(--border);background:#fffdf8;overflow:hidden;}
+#simCanvas{display:block;width:100%;cursor:crosshair;}
+.canvas-badge{position:absolute;top:8px;left:8px;background:rgba(26,20,16,.72);color:var(--cream);font-family:'IBM Plex Mono',monospace;font-size:.67rem;padding:.22rem .55rem;letter-spacing:.05em;pointer-events:none;}
+.controls-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:.4rem 1rem;cursor:pointer;transition:background .14s,color .14s;}
+.btn:hover{background:var(--ink);color:var(--cream);}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.warn{border-color:var(--accent);color:var(--accent);}
+.btn.warn:hover{background:var(--accent);color:#fff;}
+.sliders-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 1.4rem;}
+.slider-row{display:flex;flex-direction:column;gap:.12rem;}
+.slider-row label{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.05em;color:var(--ink3);text-transform:uppercase;}
+.slider-row .val{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--accent);font-weight:500;}
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+.stats-card{border:1.5px solid var(--border);padding:.9rem 1.1rem;background:var(--light);}
+.stats-card h3{font-family:'EB Garamond',serif;font-size:1rem;font-weight:500;margin-bottom:.6rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem .7rem;}
+.stat-item{display:flex;flex-direction:column;}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;}
+.stat-value{font-family:'IBM Plex Mono',monospace;font-size:.84rem;color:var(--ink);font-weight:500;}
+.side-panel{display:flex;flex-direction:column;gap:1rem;}
+.chart-box{border:1.5px solid var(--border);background:#fffdf8;padding:.65rem;}
+.chart-box h3{font-family:'EB Garamond',serif;font-size:.95rem;font-weight:500;margin-bottom:.35rem;color:var(--ink2);}
+.chart-box canvas{display:block;width:100%;}
+.note-box{background:#fff9f3;border:1.5px solid var(--border);padding:.7rem 1rem;font-size:.85rem;color:var(--ink3);line-height:1.55;}
+.note-box strong{color:var(--accent);}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.04em;color:var(--ink3);}
+.legend-item{display:flex;align-items:center;gap:.3rem;}
+.ldot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.theory-section{max-width:1280px;margin:0 auto;padding:0 1.8rem 5rem;}
+.theory-section h2{font-family:'EB Garamond',serif;font-size:1.75rem;font-weight:500;margin-bottom:1.3rem;padding-bottom:.5rem;border-bottom:2px solid var(--border);}
+.theory-section h3{font-family:'EB Garamond',serif;font-size:1.2rem;font-weight:500;margin:1.6rem 0 .6rem;color:var(--ink2);}
+.theory-section p{margin-bottom:.85rem;color:var(--ink2);max-width:82ch;}
+.eq-block{background:var(--light);border-left:3px solid var(--accent);padding:.7rem 1.1rem;margin:.8rem 0;overflow-x:auto;}
+.tnote{background:#fff9f3;border:1.5px solid var(--border);padding:.7rem 1rem;margin:.8rem 0;font-size:.88rem;color:var(--ink3);max-width:82ch;}
+.tnote strong{color:var(--accent);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.8rem;max-width:82ch;margin-bottom:.8rem;}
+@media(max-width:900px){.main-wrap{grid-template-columns:1fr;}.two-col{grid-template-columns:1fr;}header{padding:1.4rem 1.2rem;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Moto Browniano</h1>
+  <div class="subtitle">Dinamica molecolare diretta &mdash; collisioni elastiche &mdash; diffusione di Einstein</div>
+</header>
+
+<div class="main-wrap">
+  <div class="sim-panel">
+    <div class="canvas-container">
+      <canvas id="simCanvas"></canvas>
+      <div class="canvas-badge" id="timeBadge">t = 0.000 s</div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="ldot" style="background:#8b3a2a;opacity:.7;"></div>Solvente (m=1)</div>
+      <div class="legend-item"><div class="ldot" style="background:#2a5c8b;"></div>Tracciante (M)</div>
+      <div class="legend-item"><div class="ldot" style="background:rgba(42,92,139,.5);width:22px;height:2px;border-radius:1px;"></div>Traiettoria</div>
+    </div>
+
+    <div class="controls-bar">
+      <button class="btn active" id="btnPlay">Pausa</button>
+      <button class="btn warn"   id="btnReset">Reinit</button>
+      <button class="btn"        id="btnClear">Cancella trail</button>
+      <button class="btn active" id="btnTrail">Trail ON</button>
+    </div>
+
+    <div class="sliders-grid">
+      <div class="slider-row">
+        <label>N solvente &nbsp;<span class="val" id="vN">60</span></label>
+        <input type="range" id="sN" min="10" max="120" value="60" step="5">
+      </div>
+      <div class="slider-row">
+        <label>Temperatura T &nbsp;<span class="val" id="vT">1.00</span></label>
+        <input type="range" id="sT" min="0.2" max="5.0" value="1.0" step="0.05">
+      </div>
+      <div class="slider-row">
+        <label>Massa tracciante M &nbsp;<span class="val" id="vM">4</span> m</label>
+        <input type="range" id="sM" min="1" max="20" value="4" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Raggio tracciante R &nbsp;<span class="val" id="vR">14</span> px</label>
+        <input type="range" id="sR" min="6" max="30" value="14" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Raggio solvente r &nbsp;<span class="val" id="vr">5</span> px</label>
+        <input type="range" id="sr" min="3" max="9" value="5" step="1">
+      </div>
+      <div class="slider-row">
+        <label>Velocita sim &nbsp;<span class="val" id="vSpd">1.0</span>x</label>
+        <input type="range" id="sSpd" min="0.2" max="8.0" value="1.0" step="0.1">
+      </div>
+    </div>
+
+    <div class="stats-card">
+      <h3>Statistiche in tempo reale</h3>
+      <div class="stats-grid">
+        <div class="stat-item"><span class="stat-label">MSD (r^2)</span><span class="stat-value" id="sMSD">—</span></div>
+        <div class="stat-item"><span class="stat-label">RMS sqrt(r^2)</span><span class="stat-value" id="sRMS">—</span></div>
+        <div class="stat-item"><span class="stat-label">D misurato (fit)</span><span class="stat-value" id="sDfit">—</span></div>
+        <div class="stat-item"><span class="stat-label">KE/N = k_BT</span><span class="stat-value" id="sKE">—</span></div>
+        <div class="stat-item"><span class="stat-label">|v| tracciante</span><span class="stat-value" id="sVt">—</span></div>
+        <div class="stat-item"><span class="stat-label">Collisioni tot.</span><span class="stat-value" id="sColl">0</span></div>
+        <div class="stat-item"><span class="stat-label">Tempo fisico</span><span class="stat-value" id="sTime">0.000 s</span></div>
+        <div class="stat-item"><span class="stat-label">Passi</span><span class="stat-value" id="sSteps">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-panel">
+    <div class="chart-box">
+      <h3>MSD vs t</h3>
+      <canvas id="cMSD" height="190"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Distribuzione degli spostamenti Dx</h3>
+      <canvas id="cDist" height="150"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Autocorr. velocita tracciante C(t)</h3>
+      <canvas id="cVACF" height="130"></canvas>
+    </div>
+    <div class="note-box">
+      <strong>Lettura grafici.</strong> MSD lineare nel tempo indica il regime diffusivo: dalla pendenza si ricava $D = \text{slope}/4$ (in 2D). L'istogramma degli spostamenti converge verso una gaussiana (TLC). La VACF (Velocity Autocorrelation Function) decade esponenzialmente con $\tau = M/\gamma_\text{eff}$; l'area sotto la curva da' $D$ per il teorema di Green-Kubo.
+    </div>
+  </div>
+</div>
+
+<!-- THEORY -->
+<div class="theory-section">
+  <h2>Teoria del moto browniano</h2>
+
+  <h3>Osservazione storica</h3>
+  <p>Nel 1827 il botanico Robert Brown osservò che granuli di polline sospesi in acqua si muovono in modo caotico e incessante senza alcuna causa esterna apparente. Esperimenti successivi con minerali inerti mostrarono che il fenomeno non aveva origine biologica. La spiegazione quantitativa arrivò nel 1905 con Albert Einstein e, indipendentemente, con Marian Smoluchowski: il moto è causato dai continui urti stocastici delle molecole del fluido sulla particella colloide. La conferma sperimentale di Jean Perrin (1908–1909) permise una misura precisa del numero di Avogadro $N_A$, diventando prova diretta dell'esistenza degli atomi.</p>
+
+  <h3>Equazione di Langevin</h3>
+  <p>Paul Langevin (1908) separò le forze del solvente in due contributi per la componente $x$:</p>
+  <div class="eq-block">$$m\,\dot{v}_x = -\gamma\,v_x + \xi_x(t)$$</div>
+  <p>Il termine $-\gamma v_x$ è l'attrito viscoso (Stokes); $\xi_x(t)$ è la forza stocastica (rumore bianco gaussiano) con:</p>
+  <div class="eq-block">$$\langle\xi_i(t)\rangle=0,\qquad \langle\xi_i(t)\,\xi_j(t')\rangle = 2\gamma k_BT\,\delta_{ij}\,\delta(t-t')$$</div>
+  <p>La seconda relazione è il teorema di fluttuazione-dissipazione: attrito e rumore hanno la stessa origine microscopica e non possono essere indipendenti. La potenza dissipata dall'attrito deve essere compensata dall'energia iniettata dal rumore termico per mantenere l'equilibrio termodinamico.</p>
+
+  <h3>Coefficiente di diffusione e relazione di Einstein</h3>
+  <p>Nel regime diffusivo ($t \gg \tau = m/\gamma$, dove la memoria della velocità iniziale è persa), lo spostamento quadratico medio (MSD, Mean Square Displacement) cresce linearmente:</p>
+  <div class="eq-block">$$\langle r^2(t)\rangle = 4Dt \quad\text{(2D)},\qquad D = \frac{k_BT}{\gamma}$$</div>
+  <p>Questa è la relazione di Einstein. Per sfere di raggio $R$ in un fluido di viscosità $\eta$, la legge di Stokes fornisce $\gamma = 6\pi\eta R$, da cui la relazione di Stokes–Einstein: $D = k_BT/(6\pi\eta R)$. Fu questa formula che Perrin usò per ricavare $N_A$ dalle sue misure di $D$.</p>
+
+  <h3>Dinamica molecolare: collisioni elastiche</h3>
+  <p>Nella simulazione il solvente è propagato con moto libero tra collisioni. Le collisioni tra sfere rigide vengono risolte con la formula esatta di urto elastico che conserva quantità di moto ed energia. Per due sfere di masse $m_1, m_2$ con vettore unitario di contatto $\hat{\mathbf{n}}$ (da 1 verso 2):</p>
+  <div class="eq-block">$$\mathbf{v}_1' = \mathbf{v}_1 - \frac{2m_2}{m_1+m_2}[(\mathbf{v}_1-\mathbf{v}_2)\cdot\hat{\mathbf{n}}]\,\hat{\mathbf{n}}, \qquad \mathbf{v}_2' = \mathbf{v}_2 + \frac{2m_1}{m_1+m_2}[(\mathbf{v}_1-\mathbf{v}_2)\cdot\hat{\mathbf{n}}]\,\hat{\mathbf{n}}$$</div>
+  <p>Dopo ogni collisione le sfere vengono separate fisicamente in proporzione alla loro massa, evitando le sovrapposizioni persistenti che causavano cluster bloccati nella versione precedente. La condizione $(\mathbf{v}_1-\mathbf{v}_2)\cdot\hat{\mathbf{n}} > 0$ garantisce che si processi solo la collisione di avvicinamento, non quella di allontanamento.</p>
+
+  <h3>Distribuzione degli spostamenti e TLC</h3>
+  <p>Poiché ogni spostamento infinitesimo è indipendente dagli altri, lo spostamento totale $x(t)$ è la somma di molte variabili aleatorie indipendenti. Per il teorema del limite centrale (TLC) la distribuzione converge a una gaussiana:</p>
+  <div class="eq-block">$$P(x,t)=\frac{1}{\sqrt{4\pi Dt}}\exp\!\left(-\frac{x^2}{4Dt}\right)$$</div>
+  <p>che è anche la soluzione dell'equazione di diffusione $\partial_t P = D\nabla^2 P$. La larghezza della gaussiana cresce come $\sqrt{t}$: questa è la firma della diffusione, distinta dal moto balistico ($\propto t$).</p>
+
+  <h3>Autocorrelazione della velocità e teorema di Green–Kubo</h3>
+  <p>La funzione di autocorrelazione della velocità (VACF, Velocity Autocorrelation Function) è definita come:</p>
+  <div class="eq-block">$$C(t) = \langle \mathbf{v}(0)\cdot\mathbf{v}(t)\rangle$$</div>
+  <p>Dall'equazione di Langevin si ricava $C(t)=C(0)\,e^{-\gamma t/m}$: decadimento esponenziale con tempo caratteristico $\tau = m/\gamma$. Il teorema di Green–Kubo collega $D$ all'integrale della VACF:</p>
+  <div class="eq-block">$$D = \int_0^\infty C(t)\,dt = \frac{k_BT}{\gamma}$$</div>
+  <p>Il terzo grafico mostra la VACF normalizzata $C(t)/C(0)$ della tracciante. La sua forma permette di stimare $\tau$ e quindi $\gamma_\text{eff}$, che nella simulazione dipende da quante particelle di solvente urtano la tracciante per unità di tempo.</p>
+
+  <h3>Regimi temporali</h3>
+  <div class="two-col">
+    <div>
+      <p><strong>Regime balistico</strong> ($t \ll \tau$): la particella conserva la memoria della velocità iniziale, $\langle r^2\rangle \approx \langle v^2\rangle t^2$. La curva MSD è parabolica.</p>
+    </div>
+    <div>
+      <p><strong>Regime diffusivo</strong> ($t \gg \tau$): $\langle r^2\rangle = 4Dt$, lineare in $t$, con $\text{RMS} \propto \sqrt{t}$. La transizione avviene attorno a $t\sim\tau = M/\gamma_\text{eff}$.</p>
+    </div>
+  </div>
+
+  <div class="tnote">
+    <strong>Note sulla simulazione.</strong> La fisica è implementata tramite dinamica molecolare diretta: il moto browniano della tracciante emerge dagli urti espliciti con il solvente, senza imporre l'equazione di Langevin. La temperatura è mantenuta riscalando le velocità all'inizializzazione (termostatazione al reset). Con $M$ piccolo la tracciante è molto più reattiva agli urti e si muove velocemente; con $M$ grande si comporta come una particella massiva lentamente diffusa, il che corrisponde fisicamente a granuli colloidali di grandi dimensioni.
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  PARAMETRI
+// ================================================================
+let N=60, T_param=1.0, tracerM=4, tracerR=14, solventR=5, simSpeed=1.0;
+let paused=false, showTrail=true;
+
+// Scala velocità: a T=1, m=1 la velocità termica per componente è
+// v_th = sqrt(k_BT/m). Scegliamo k_B=1, m_solvente=1.
+// Per avere particelle visibilmente veloci: v_th ~ 120 px/s a T=1.
+const V_SCALE = 120;
+
+// Passo fisico fisso (s). Abbastanza piccolo da evitare tunneling a v_max.
+// v_max stimato ~ 4*V_SCALE*sqrt(T_max) ~ 4*120*sqrt(5) ~ 1073 px/s
+// Con DT=0.005 s, spostamento max ~ 5 px < 2*r_min=6 px → ok.
+const DT = 0.005;
+
+// ================================================================
+//  CANVAS
+// ================================================================
+const cvs    = document.getElementById('simCanvas');
+const ctx    = cvs.getContext('2d');
+const cMSD   = document.getElementById('cMSD');
+const ctxMSD = cMSD.getContext('2d');
+const cDist  = document.getElementById('cDist');
+const ctxD   = cDist.getContext('2d');
+const cVACF  = document.getElementById('cVACF');
+const ctxV   = cVACF.getContext('2d');
+
+function resize(){
+  const W = cvs.parentElement.clientWidth;
+  cvs.width  = W;
+  cvs.height = Math.round(W * 0.56);
+  cMSD.width  = cMSD.parentElement.clientWidth - 14;
+  cDist.width = cDist.parentElement.clientWidth - 14;
+  cVACF.width = cVACF.parentElement.clientWidth - 14;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ================================================================
+//  STATE
+// ================================================================
+let px, py, vx, vy;   // solvente Float32
+let tx, ty, tvx, tvy; // tracciante
+let tx0, ty0;
+let trailX=[], trailY=[];
+const TRAIL_MAX = 6000;
+
+let physTime=0, physSteps=0, collisions=0;
+let msdData=[];       // {t, msd}
+let dispSamples=[];   // Δx
+const VACF_LEN = 200;
+let vacfBuf=[];       // {vx,vy} ring buffer degli ultimi campioni
+let vacfSum=new Float64Array(VACF_LEN);
+let vacfCnt=new Int32Array(VACF_LEN);
+
+// ================================================================
+//  BOX-MULLER
+// ================================================================
+function randn(){
+  let u,v;
+  do{u=Math.random();}while(u===0);
+  do{v=Math.random();}while(v===0);
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+function init(){
+  const W=cvs.width, H=cvs.height;
+  tx=W/2; ty=H/2; tvx=0; tvy=0;
+  tx0=tx; ty0=ty;
+  trailX=[tx]; trailY=[ty];
+  physTime=0; physSteps=0; collisions=0;
+  msdData=[]; dispSamples=[];
+  vacfBuf=[];
+  vacfSum=new Float64Array(VACF_LEN);
+  vacfCnt=new Int32Array(VACF_LEN);
+
+  px=new Float32Array(N);
+  py=new Float32Array(N);
+  vx=new Float32Array(N);
+  vy=new Float32Array(N);
+
+  const v_th = V_SCALE * Math.sqrt(T_param); // deviazione std per componente
+
+  // piazzamento senza overlap
+  const minSS = 2*solventR + 1;
+  const minST = tracerR + solventR + 2;
+  for(let i=0;i<N;i++){
+    let ok=false, tries=0;
+    while(!ok && tries<3000){
+      const cx = solventR + Math.random()*(W - 2*solventR);
+      const cy = solventR + Math.random()*(H - 2*solventR);
+      if(Math.hypot(cx-tx, cy-ty) < minST){ tries++; continue; }
+      let clash=false;
+      for(let j=0;j<i;j++){
+        if(Math.hypot(cx-px[j], cy-py[j]) < minSS){ clash=true; break; }
+      }
+      if(clash){ tries++; continue; }
+      px[i]=cx; py[i]=cy; ok=true;
+    }
+    // fallback (può accadere con N molto alto)
+    if(!ok){ px[i]=solventR+Math.random()*(W-2*solventR); py[i]=solventR+Math.random()*(H-2*solventR); }
+    vx[i]=randn()*v_th;
+    vy[i]=randn()*v_th;
+  }
+
+  // sottrai velocità del centro di massa e riscala a T esatta
+  let vcmx=0, vcmy=0;
+  for(let i=0;i<N;i++){ vcmx+=vx[i]; vcmy+=vy[i]; }
+  vcmx/=N; vcmy/=N;
+  let ke=0;
+  for(let i=0;i<N;i++){
+    vx[i]-=vcmx; vy[i]-=vcmy;
+    ke += vx[i]*vx[i] + vy[i]*vy[i];
+  }
+  // equipartizione: KE_tot = N * 2 * (1/2) * k_BT = N * T (con k_B=1, m=1)
+  // ke è la somma di vx²+vy² = 2*KE/m = 2*KE → ke = N * 2 * T_param * V_SCALE²
+  // (V_SCALE² perché v_th² = V_SCALE²*T)
+  const ke_target = N * 2 * T_param * V_SCALE * V_SCALE;
+  const sc = Math.sqrt(ke_target / (ke || 1));
+  for(let i=0;i<N;i++){ vx[i]*=sc; vy[i]*=sc; }
+}
+
+// ================================================================
+//  COLLISIONE ELASTICA GENERICA
+// Indici: >= 0 → solvente[i]; -1 → tracciante
+// Restituisce true se effettivamente collidono (si avvicinavano)
+// ================================================================
+function collide(a, b){
+  const aIsT=(a===-1), bIsT=(b===-1);
+  let ax=aIsT?tx:px[a], ay=aIsT?ty:py[a];
+  let avx=aIsT?tvx:vx[a], avy=aIsT?tvy:vy[a];
+  const am=aIsT?tracerM:1.0, ar=aIsT?tracerR:solventR;
+
+  let bx=bIsT?tx:px[b], by=bIsT?ty:py[b];
+  let bvx=bIsT?tvx:vx[b], bvy=bIsT?tvy:vy[b];
+  const bm=bIsT?tracerM:1.0, br=bIsT?tracerR:solventR;
+
+  const dx=bx-ax, dy=by-ay;
+  const dist2=dx*dx+dy*dy;
+  const minD=ar+br;
+  if(dist2>=minD*minD || dist2<1e-10) return false;
+
+  const dist=Math.sqrt(dist2);
+  const nx=dx/dist, ny=dy/dist;
+  const dvx=avx-bvx, dvy=avy-bvy;
+  const dot=dvx*nx+dvy*ny;
+  if(dot<=0) return false; // già in allontanamento
+
+  const J = 2*am*bm/(am+bm)*dot;
+  const newAvx = avx - J/am*nx;
+  const newAvy = avy - J/am*ny;
+  const newBvx = bvx + J/bm*nx;
+  const newBvy = bvy + J/bm*ny;
+
+  // separazione proporzionale alla massa
+  const overlap = minD - dist;
+  const fa = bm/(am+bm), fb = am/(am+bm);
+  const sx = nx*overlap, sy = ny*overlap;
+
+  if(aIsT){ tx-=sx*fa; ty-=sy*fa; tvx=newAvx; tvy=newAvy; }
+  else{ px[a]-=sx*fa; py[a]-=sy*fa; vx[a]=newAvx; vy[a]=newAvy; }
+
+  if(bIsT){ tx+=sx*fb; ty+=sy*fb; tvx=newBvx; tvy=newBvy; }
+  else{ px[b]+=sx*fb; py[b]+=sy*fb; vx[b]=newBvx; vy[b]=newBvy; }
+
+  return true;
+}
+
+// ================================================================
+//  PASSO FISICO
+// ================================================================
+function physStep(dt){
+  const W=cvs.width, H=cvs.height;
+
+  // integra
+  for(let i=0;i<N;i++){ px[i]+=vx[i]*dt; py[i]+=vy[i]*dt; }
+  tx+=tvx*dt; ty+=tvy*dt;
+
+  // pareti solvente
+  for(let i=0;i<N;i++){
+    const r=solventR;
+    if(px[i]<r){px[i]=2*r-px[i];vx[i]=Math.abs(vx[i]);}
+    else if(px[i]>W-r){px[i]=2*(W-r)-px[i];vx[i]=-Math.abs(vx[i]);}
+    if(py[i]<r){py[i]=2*r-py[i];vy[i]=Math.abs(vy[i]);}
+    else if(py[i]>H-r){py[i]=2*(H-r)-py[i];vy[i]=-Math.abs(vy[i]);}
+  }
+  // pareti tracciante
+  const tR=tracerR;
+  if(tx<tR){tx=2*tR-tx;tvx=Math.abs(tvx);}
+  else if(tx>W-tR){tx=2*(W-tR)-tx;tvx=-Math.abs(tvx);}
+  if(ty<tR){ty=2*tR-ty;tvy=Math.abs(tvy);}
+  else if(ty>H-tR){ty=2*(H-tR)-ty;tvy=-Math.abs(tvy);}
+
+  // collisioni solvente-solvente
+  for(let i=0;i<N-1;i++){
+    for(let j=i+1;j<N;j++){
+      const dx=px[j]-px[i], dy=py[j]-py[i];
+      const minD=2*solventR;
+      if(dx*dx+dy*dy < minD*minD) collide(i,j);
+    }
+  }
+  // collisioni solvente-tracciante
+  for(let i=0;i<N;i++){
+    const dx=px[i]-tx, dy=py[i]-ty;
+    const minD=solventR+tracerR;
+    if(dx*dx+dy*dy < minD*minD){
+      if(collide(i,-1)) collisions++;
+    }
+  }
+
+  // trail
+  if(showTrail){
+    trailX.push(tx); trailY.push(ty);
+    if(trailX.length>TRAIL_MAX){trailX.shift();trailY.shift();}
+  }
+
+  physSteps++;
+  physTime+=dt;
+
+  // campiona ogni 5 passi
+  if(physSteps%5===0){
+    const dx2=(tx-tx0)*(tx-tx0)+(ty-ty0)*(ty-ty0);
+    msdData.push({t:physTime,msd:dx2});
+    if(msdData.length>800) msdData.shift();
+    dispSamples.push(tx-tx0);
+    if(dispSamples.length>4000) dispSamples.shift();
+
+    // VACF
+    vacfBuf.push({vx:tvx,vy:tvy});
+    if(vacfBuf.length>VACF_LEN*3) vacfBuf.shift();
+    const L=vacfBuf.length;
+    for(let lag=0;lag<Math.min(VACF_LEN,L);lag++){
+      const k=L-1-lag;
+      vacfSum[lag]+=tvx*vacfBuf[k].vx + tvy*vacfBuf[k].vy;
+      vacfCnt[lag]++;
+    }
+  }
+}
+
+// ================================================================
+//  DRAW SIM
+// ================================================================
+function drawSim(){
+  const W=cvs.width, H=cvs.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fffdf8'; ctx.fillRect(0,0,W,H);
+
+  // griglia
+  ctx.strokeStyle='rgba(200,191,176,.18)'; ctx.lineWidth=0.5;
+  for(let x2=0;x2<W;x2+=50){ctx.beginPath();ctx.moveTo(x2,0);ctx.lineTo(x2,H);ctx.stroke();}
+  for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // croce origine
+  ctx.strokeStyle='rgba(139,58,42,.3)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath();ctx.moveTo(tx0-12,ty0);ctx.lineTo(tx0+12,ty0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx0,ty0-12);ctx.lineTo(tx0,ty0+12);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // trail
+  if(showTrail && trailX.length>1){
+    const L=trailX.length;
+    ctx.lineWidth=1.2;
+    for(let i=1;i<L;i++){
+      const a=0.05+0.6*(i/L);
+      ctx.strokeStyle=`rgba(42,92,139,${a*0.7})`;
+      ctx.beginPath(); ctx.moveTo(trailX[i-1],trailY[i-1]); ctx.lineTo(trailX[i],trailY[i]); ctx.stroke();
+    }
+  }
+
+  // solvente — colorato per velocità
+  const vth=V_SCALE*Math.sqrt(T_param);
+  for(let i=0;i<N;i++){
+    const spd=Math.hypot(vx[i],vy[i]);
+    const rel=Math.min(spd/(2.5*vth),1);
+    const r=Math.round(100+rel*80), g=Math.round(38-rel*20);
+    ctx.beginPath(); ctx.arc(px[i],py[i],solventR,0,2*Math.PI);
+    ctx.fillStyle=`rgba(${r},${g},28,0.68)`;
+    ctx.fill();
+    ctx.strokeStyle=`rgba(${r-20},${g},20,.9)`;
+    ctx.lineWidth=0.7; ctx.stroke();
+  }
+
+  // tracciante
+  const gr=ctx.createRadialGradient(tx-tracerR*.3,ty-tracerR*.3,tracerR*.07,tx,ty,tracerR);
+  gr.addColorStop(0,'rgba(110,175,240,.97)');
+  gr.addColorStop(1,'rgba(28,68,135,.93)');
+  ctx.beginPath(); ctx.arc(tx,ty,tracerR,0,2*Math.PI);
+  ctx.fillStyle=gr; ctx.fill();
+  ctx.strokeStyle='rgba(15,45,105,.9)'; ctx.lineWidth=1.5; ctx.stroke();
+
+  const fs=Math.max(7,Math.round(tracerR*0.55));
+  ctx.fillStyle='rgba(220,240,255,.92)';
+  ctx.font=`bold ${fs}px IBM Plex Mono`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('M='+tracerM, tx, ty);
+  ctx.textBaseline='alphabetic';
+
+  document.getElementById('timeBadge').textContent='t = '+physTime.toFixed(3)+' s';
+}
+
+// ================================================================
+//  GRAFICI
+// ================================================================
+
+function drawMSD(){
+  const c=cMSD, ct=ctxMSD;
+  const W=c.width, H=c.height;
+  ct.clearRect(0,0,W,H);
+  ct.fillStyle='#fffdf8'; ct.fillRect(0,0,W,H);
+  if(msdData.length<8){
+    ct.fillStyle='#c8bfb0'; ct.font='10px IBM Plex Mono'; ct.textAlign='center';
+    ct.fillText('In attesa di dati...', W/2, H/2); return;
+  }
+  const pad={l:48,r:14,t:12,b:24};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const maxT=msdData[msdData.length-1].t||1;
+  const maxM=Math.max(...msdData.map(d=>d.msd))*1.12||1;
+
+  // assi
+  ct.strokeStyle='#c8bfb0'; ct.lineWidth=1;
+  ct.beginPath(); ct.moveTo(pad.l,pad.t); ct.lineTo(pad.l,pad.t+ph); ct.lineTo(pad.l+pw,pad.t+ph); ct.stroke();
+  ct.fillStyle='#6b5a4e'; ct.font='8.5px IBM Plex Mono';
+  ct.textAlign='center'; ct.fillText('t (s)', pad.l+pw/2, H-3);
+  ct.textAlign='right'; ct.fillText(maxM.toFixed(0), pad.l-3, pad.t+8);
+  ct.fillText('0', pad.l-3, pad.t+ph);
+  ct.textAlign='center'; ct.fillText('0',pad.l,pad.t+ph+12); ct.fillText(maxT.toFixed(2),pad.l+pw,pad.t+ph+12);
+  ct.save(); ct.translate(10,pad.t+ph/2); ct.rotate(-Math.PI/2); ct.fillText('<r²> (px²)',0,0); ct.restore();
+
+  // fit lineare sull'ultimo 70% dei punti
+  const skip=Math.floor(msdData.length*0.30);
+  const slice=msdData.slice(skip);
+  const fn=slice.length;
+  let st=0,sm=0,stt=0,stm=0;
+  for(const d of slice){st+=d.t;sm+=d.msd;stt+=d.t*d.t;stm+=d.t*d.msd;}
+  const denom=fn*stt-st*st;
+  let slope=0, intercept=0, D_fit=0;
+  if(Math.abs(denom)>1e-10){
+    slope=(fn*stm-st*sm)/denom;
+    intercept=(sm-slope*st)/fn;
+    D_fit=slope/4;
+  }
+  document.getElementById('sDfit').textContent = D_fit>0 ? D_fit.toFixed(1)+' px²/s' : '—';
+
+  // linea fit
+  if(D_fit>0){
+    ct.strokeStyle='rgba(139,58,42,0.75)'; ct.setLineDash([5,3]); ct.lineWidth=1.4;
+    ct.beginPath();
+    const y0f=pad.t+ph*(1-(slope*0+intercept)/maxM);
+    const y1f=pad.t+ph*(1-(slope*maxT+intercept)/maxM);
+    ct.moveTo(pad.l,y0f); ct.lineTo(pad.l+pw,y1f); ct.stroke(); ct.setLineDash([]);
+    ct.fillStyle='rgba(139,58,42,.8)'; ct.font='8px IBM Plex Mono'; ct.textAlign='left';
+    ct.fillText('D ≈ '+D_fit.toFixed(1)+' px²/s', pad.l+4, pad.t+12);
+  }
+
+  // dati
+  ct.strokeStyle='rgba(42,92,139,0.85)'; ct.lineWidth=1.6;
+  ct.beginPath(); let first=true;
+  for(const d of msdData){
+    const x=pad.l+(d.t/maxT)*pw;
+    const y=pad.t+ph*(1-d.msd/maxM);
+    if(first){ct.moveTo(x,y);first=false;}else ct.lineTo(x,y);
+  }
+  ct.stroke();
+}
+
+function drawDist(){
+  const c=cDist, ct=ctxD;
+  const W=c.width, H=c.height;
+  ct.clearRect(0,0,W,H);
+  ct.fillStyle='#fffdf8'; ct.fillRect(0,0,W,H);
+  if(dispSamples.length<30){
+    ct.fillStyle='#c8bfb0'; ct.font='10px IBM Plex Mono'; ct.textAlign='center';
+    ct.fillText('In attesa di dati...', W/2, H/2); return;
+  }
+  const pad={l:28,r:10,t:8,b:22};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const BINS=30;
+  const maxAbs=Math.max(...dispSamples.map(Math.abs))*1.05||1;
+  const bins=new Array(BINS).fill(0);
+  for(const d of dispSamples){
+    const idx=Math.floor((d+maxAbs)/(2*maxAbs)*BINS);
+    if(idx>=0&&idx<BINS) bins[idx]++;
+  }
+  const maxB=Math.max(...bins)||1;
+  const bw=pw/BINS;
+  for(let i=0;i<BINS;i++){
+    const h=(bins[i]/maxB)*ph;
+    ct.fillStyle=`rgba(42,92,139,${0.25+0.6*bins[i]/maxB})`;
+    ct.fillRect(pad.l+i*bw+0.5, pad.t+ph-h, bw-1, h);
+  }
+  // gaussiana
+  const sig=Math.sqrt(dispSamples.reduce((s,d)=>s+d*d,0)/dispSamples.length)||1;
+  ct.strokeStyle='rgba(139,58,42,.9)'; ct.lineWidth=1.7;
+  ct.beginPath(); let first=true;
+  for(let p=0;p<=pw;p++){
+    const d=-maxAbs+2*maxAbs*(p/pw);
+    const g=Math.exp(-d*d/(2*sig*sig));
+    const yn=pad.t+ph*(1-g);
+    if(first){ct.moveTo(pad.l+p,yn);first=false;}else ct.lineTo(pad.l+p,yn);
+  }
+  ct.stroke();
+  // assi minimali
+  ct.strokeStyle='#c8bfb0'; ct.lineWidth=1;
+  ct.beginPath(); ct.moveTo(pad.l,pad.t); ct.lineTo(pad.l,pad.t+ph); ct.lineTo(pad.l+pw,pad.t+ph); ct.stroke();
+  ct.fillStyle='#6b5a4e'; ct.font='8px IBM Plex Mono'; ct.textAlign='center';
+  ct.fillText('Dx', pad.l+pw/2, H-4);
+  ct.fillText((-maxAbs).toFixed(0),pad.l,pad.t+ph+12);
+  ct.fillText((+maxAbs).toFixed(0),pad.l+pw,pad.t+ph+12);
+}
+
+function drawVACF(){
+  const c=cVACF, ct=ctxV;
+  const W=c.width, H=c.height;
+  ct.clearRect(0,0,W,H);
+  ct.fillStyle='#fffdf8'; ct.fillRect(0,0,W,H);
+  if(vacfCnt[0]<5){
+    ct.fillStyle='#c8bfb0'; ct.font='10px IBM Plex Mono'; ct.textAlign='center';
+    ct.fillText('In attesa di dati...', W/2, H/2); return;
+  }
+  const pad={l:30,r:10,t:8,b:22};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+
+  const vacf=[];
+  for(let i=0;i<VACF_LEN;i++){
+    vacf.push(vacfCnt[i]>0 ? vacfSum[i]/vacfCnt[i] : 0);
+  }
+  const C0=vacf[0]||1;
+  const minV=-0.3, maxV=1.1, range=maxV-minV;
+
+  // asse zero
+  const y0=pad.t+ph*(maxV/range);
+  ct.strokeStyle='rgba(200,191,176,.6)'; ct.lineWidth=1;
+  ct.beginPath(); ct.moveTo(pad.l,y0); ct.lineTo(pad.l+pw,y0); ct.stroke();
+
+  // assi
+  ct.strokeStyle='#c8bfb0'; ct.lineWidth=1;
+  ct.beginPath(); ct.moveTo(pad.l,pad.t); ct.lineTo(pad.l,pad.t+ph); ct.lineTo(pad.l+pw,pad.t+ph); ct.stroke();
+
+  // curva
+  ct.strokeStyle='rgba(42,92,139,.85)'; ct.lineWidth=1.6;
+  ct.beginPath(); let first=true;
+  for(let i=0;i<VACF_LEN;i++){
+    if(vacfCnt[i]===0) break;
+    const x=pad.l+(i/(VACF_LEN-1))*pw;
+    const yn=pad.t+ph*((maxV-vacf[i]/C0)/range);
+    if(first){ct.moveTo(x,yn);first=false;}else ct.lineTo(x,yn);
+  }
+  ct.stroke();
+
+  ct.fillStyle='#6b5a4e'; ct.font='8px IBM Plex Mono';
+  ct.textAlign='center'; ct.fillText('lag (campioni)', pad.l+pw/2, H-4);
+  ct.textAlign='right'; ct.fillText('1',pad.l-2,pad.t+8); ct.fillText('0',pad.l-2,y0+4);
+}
+
+// ================================================================
+//  STATS
+// ================================================================
+function updateStats(){
+  const msd=msdData.length>0?msdData[msdData.length-1].msd:0;
+  document.getElementById('sMSD').textContent=msd.toFixed(1)+' px²';
+  document.getElementById('sRMS').textContent=Math.sqrt(msd).toFixed(1)+' px';
+  let ke=0;
+  for(let i=0;i<N;i++) ke+=vx[i]*vx[i]+vy[i]*vy[i];
+  // KE per dof: ke/(2N) in unità V_SCALE², dividiamo per V_SCALE² per avere in unità T
+  const kbt=(ke/(2*N*V_SCALE*V_SCALE)).toFixed(3);
+  document.getElementById('sKE').textContent=kbt+' (att. '+T_param.toFixed(2)+')';
+  document.getElementById('sVt').textContent=Math.hypot(tvx,tvy).toFixed(1)+' px/s';
+  document.getElementById('sColl').textContent=collisions;
+  document.getElementById('sTime').textContent=physTime.toFixed(3)+' s';
+  document.getElementById('sSteps').textContent=physSteps;
+}
+
+// ================================================================
+//  LOOP
+// ================================================================
+let lastTS=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(paused) return;
+  const wallDt=Math.min((ts-lastTS)/1000, 0.05);
+  lastTS=ts;
+  // numero di substep: ~ wallDt*simSpeed / DT, capped per non bloccare il browser
+  const nSteps=Math.min(60, Math.max(1, Math.round(wallDt*simSpeed/DT)));
+  for(let s=0;s<nSteps;s++) physStep(DT);
+  drawSim();
+  drawMSD();
+  drawDist();
+  drawVACF();
+  updateStats();
+}
+
+// ================================================================
+//  CONTROLLI
+// ================================================================
+document.getElementById('btnPlay').addEventListener('click',function(){
+  paused=!paused;
+  this.textContent=paused?'Avvia':'Pausa';
+  this.classList.toggle('active',!paused);
+});
+document.getElementById('btnReset').addEventListener('click',init);
+document.getElementById('btnClear').addEventListener('click',()=>{trailX=[tx];trailY=[ty];});
+document.getElementById('btnTrail').addEventListener('click',function(){
+  showTrail=!showTrail;
+  this.textContent=showTrail?'Trail ON':'Trail OFF';
+  this.classList.toggle('active',showTrail);
+});
+
+function bindSl(slId,valId,parse,cb){
+  const sl=document.getElementById(slId);
+  const vl=document.getElementById(valId);
+  sl.addEventListener('input',()=>{
+    const v=parse(sl.value);
+    vl.textContent=Number.isInteger(v)?v:v.toFixed(2);
+    cb(v);
+  });
+}
+bindSl('sN','vN',parseInt,  v=>{N=v;init();});
+bindSl('sT','vT',parseFloat,v=>{T_param=v;});  // cambia T "al volo", si manifesta al prossimo reset
+bindSl('sM','vM',parseInt,  v=>{tracerM=v;});
+bindSl('sR','vR',parseInt,  v=>{tracerR=v;init();});
+bindSl('sr','vr',parseInt,  v=>{solventR=v;init();});
+bindSl('sSpd','vSpd',parseFloat,v=>{simSpeed=v;});
+
+// start
+init();
+requestAnimationFrame(ts=>{lastTS=ts; requestAnimationFrame(loop);});
+</script>
+</body>
+</html>

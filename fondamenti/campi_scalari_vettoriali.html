@@ -557,18 +557,15 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
    COLORMAP PER CAMPO SCALARE (dipende dallo scenario)
 ════════════════════════════════════════════ */
 function colormapMeteo(t) {
-  // viola/blu freddo → azzurro → verde → giallo → arancione → rosso caldo
+  // blu freddo → bianco → rosso caldo (scala divergente classica)
   const stops = [
-    [0.20, 0.00, 0.40],  // viola scuro (−10°C)
-    [0.00, 0.15, 0.70],  // blu
-    [0.05, 0.45, 0.85],  // azzurro
-    [0.10, 0.75, 0.75],  // ciano
-    [0.30, 0.85, 0.40],  // verde acqua
-    [0.60, 0.90, 0.20],  // giallo-verde
-    [0.95, 0.85, 0.10],  // giallo
-    [1.00, 0.55, 0.05],  // arancione
-    [0.90, 0.20, 0.05],  // rosso
-    [0.60, 0.05, 0.05],  // rosso scuro (38°C)
+    [0.05, 0.10, 0.55],  // blu scuro (−10°C)
+    [0.20, 0.40, 0.80],  // blu
+    [0.60, 0.78, 0.95],  // azzurro chiaro
+    [0.96, 0.96, 0.96],  // bianco (temperatura di riferimento)
+    [0.98, 0.72, 0.52],  // rosa/salmone
+    [0.88, 0.30, 0.18],  // rosso-arancio
+    [0.55, 0.05, 0.05],  // rosso scuro (38°C)
   ];
   const idx = clamp(t * (stops.length - 1), 0, stops.length - 1.001);
   const lo = Math.floor(idx), hi = lo + 1, f = idx - lo;
@@ -669,7 +666,7 @@ const scalarFields = {
     isoStep: 4,          // isoterme ogni 4°C
     isoLabelSuffix: '°',
     legendMin: '−10°C', legendMid: '14°C', legendMax: '38°C',
-    legendNote: 'Blu/viola → freddo   Rosso → caldo',
+    legendNote: 'Blu → freddo   Bianco → riferimento   Rosso → caldo',
     zones: [
       { cx:  0.15, cy: -0.35, label: 'Alta pressione (anticiclone)', threshold: 26 },
       { cx: -0.25, cy:  0.68, label: 'Fronte freddo', threshold: null },

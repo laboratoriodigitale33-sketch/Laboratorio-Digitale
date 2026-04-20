@@ -1,93 +1,1228 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>window.SIM_METADATA={"title":"Trasporto di particelle","description":"Simulazione Monte Carlo del trasporto di neutroni, fotoni ed elettroni in materiali diversi, con visualizzazione di tracce, fluenza, dose e principali processi di interazione.","category":"Fisica nucleare","icon":"☢️","order":10,"tags":["trasporto di particelle","monte carlo","neutroni","fotoni","elettroni","dose","fluenza","interazioni radiazione-materia"],"level":"avanzato"};</script>
 <title>Trasporto di particelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.getElementById('theory-content'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
 <style>
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:#081018;color:#dce9f3;font:14px/1.35 Segoe UI,sans-serif}body{overflow:hidden}#app{display:grid;grid-template-columns:minmax(330px,360px) minmax(0,1fr) minmax(320px,350px);grid-template-rows:52px minmax(0,1fr) minmax(124px,18vh);height:100vh;gap:1px;background:#1a2a38}#header,.panel,#footer,#center{background:#0d1722}#left,#right,#center,#footer{min-width:0;min-height:0}#header{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid #233646;flex-wrap:wrap}#header h1{margin:0;font-size:17px;color:#7ce2ff;text-transform:uppercase;letter-spacing:.08em}.chip{padding:5px 8px;border:1px solid #233646;border-radius:6px;color:#9ab0c2;font-size:11px}.chip b{color:#a5ff7b}#status-dot{width:10px;height:10px;border-radius:50%;background:#a5ff7b;box-shadow:0 0 8px #a5ff7b;margin-left:auto}#status-dot.paused{background:#ffcf59;box-shadow:0 0 8px #ffcf59}#status-label{font-size:12px;color:#9ab0c2}.panel{overflow-y:auto;overflow-x:hidden;padding:8px 8px 14px;display:flex;flex-direction:column;gap:8px;scrollbar-gutter:stable}.sec{border:1px solid #233646;border-radius:8px;overflow:hidden}.sec h2{margin:0;padding:7px 10px;background:#122030;color:#9ab0c2;font-size:11px;text-transform:uppercase;letter-spacing:.1em}.body{padding:8px;display:flex;flex-direction:column;gap:8px}.row{display:flex;align-items:center;gap:8px}.row label{width:78px;font-size:12px;color:#a3b8c8;flex:0 0 auto}.row output{min-width:50px;text-align:right;color:#7ce2ff;font-size:12px}select,button,input[type=range]{width:100%}select,button{background:#162635;border:1px solid #2d4658;color:#dce9f3;border-radius:6px;padding:7px}button.primary{background:#1d3a4b}button.warn{background:#4d3818}button:hover,select:hover{border-color:#4d768d}input[type=range]{accent-color:#7ce2ff}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mat{display:flex;align-items:center;gap:8px;padding:7px;border:1px solid #2d4658;border-radius:6px;background:#13202c;cursor:pointer}.mat.on{border-color:#7ce2ff;box-shadow:inset 0 0 0 1px #7ce2ff}.sw{width:16px;height:16px;border-radius:4px}.note{font-size:12px;color:#9ab0c2}.pillnote{padding:8px 10px;border:1px dashed #355065;border-radius:6px;background:#101a24;color:#b9cad7;font-size:12px;line-height:1.4}#center{position:relative;background:linear-gradient(180deg,#132536,#0f1a27)}canvas{position:absolute;inset:0}#track,#overlay{pointer-events:none}#tooltip{position:absolute;display:none;pointer-events:none;background:rgba(7,12,18,.95);border:1px solid #44627a;border-radius:6px;padding:8px 10px;font-size:12px;z-index:5}#footer{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-top:1px solid #233646;overflow:auto}.chart{padding:6px 8px}.chart h3{margin:0 0 5px;font-size:10px;color:#9ab0c2;text-transform:uppercase;letter-spacing:.08em}.chart canvas{position:static;width:100%;height:86px;background:rgba(255,255,255,.04);border-radius:6px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.card{padding:7px;border:1px solid #233646;border-radius:6px;background:#13202c}.k{font-size:10px;color:#9ab0c2;text-transform:uppercase}.v{font-size:15px;font-weight:600}@media(max-height:900px){#app{grid-template-rows:52px minmax(0,1fr) 116px}.chart canvas{height:76px}.panel{padding:7px 7px 12px}.body{gap:7px}}@media(max-width:1320px){#app{grid-template-columns:300px minmax(0,1fr) 300px}}@media(max-width:1100px){#app{grid-template-columns:290px 1fr;grid-template-rows:52px minmax(0,1fr) 220px 180px}#right{grid-column:1/-1;grid-row:3}#footer{grid-row:4}.stats{grid-template-columns:repeat(3,1fr)}}@media(max-width:820px){body{overflow:auto}#app{grid-template-columns:1fr;grid-template-rows:52px auto 52vh auto 470px;height:auto;min-height:100vh}#left,#center,#right,#footer{grid-column:1}.grid3,.stats{grid-template-columns:1fr 1fr}}@media(max-width:580px){.grid3,.stats{grid-template-columns:1fr}}
-</style></head><body>
-<div id="app"><div id="header"><h1>Trasporto di particelle</h1><div class="chip">fps <b id="hd-fps">0</b></div><div class="chip">storie <b id="hd-hist">0</b></div><div class="chip">fissioni <b id="hd-fiss">0</b></div><div class="chip">catture <b id="hd-capt">0</b></div><div class="chip">scatter <b id="hd-scat">0</b></div><div id="status-dot"></div><div id="status-label">CARICAMENTO</div></div>
-<div class="panel" id="left">
-<div class="sec"><h2>Sorgente</h2><div class="body"><div class="row"><label>Particella</label><select id="src-type"><option value="0">Neutrone</option><option value="1">Fotone</option><option value="2">Elettrone</option></select></div><div class="row"><label>Energia</label><input id="src-energy" type="range" min="0.01" max="10" step="0.01" value="2"><output id="src-energy-val">2.00</output></div><div class="row"><label>Emissione</label><select id="src-mode"><option value="1">Isotropica</option><option value="0">Direzionale</option></select></div><div class="row"><label>Primarie/frame</label><input id="n-primary" type="range" min="1" max="200" step="1" value="20"><output id="n-primary-val">20</output></div><div class="grid2"><button id="btn-play" class="primary" onclick="toggleRun()">Pausa</button><button onclick="resetSim()">Reset</button></div><div class="note">Click destro sul canvas per spostare la sorgente.</div></div></div>
-<div class="sec"><h2>Vista</h2><div class="body"><div class="row"><label>Mappa</label><select id="view-mode"><option value="material">Materiali</option><option value="dose">Dose</option><option value="fluence_n">Fluenza n</option><option value="fluence_p">Fluenza g</option><option value="fluence_e">Fluenza e</option></select></div><div class="row"><label>Scala</label><input id="dose-scale" type="range" min="0.1" max="4" step="0.1" value="1.2"><output id="dose-scale-val">1.2x</output></div><div class="row"><label>Fade</label><input id="track-fade" type="range" min="0.82" max="0.992" step="0.001" value="0.947"><output id="track-fade-val">0.947</output></div><div class="row"><label>Tracce</label><select id="track-mode"><option value="all">Tutte</option><option value="neutron">Solo n</option><option value="photon">Solo g</option><option value="electron">Solo e</option><option value="none">Nessuna</option></select></div><div class="row"><label>Griglia</label><input id="show-grid" type="checkbox"><output></output></div></div></div>
-<div class="sec"><h2>Materiali</h2><div class="body"><div id="mat-palette" class="grid2"></div><div class="row"><label>Pennello</label><input id="brush-size" type="range" min="1" max="10" step="1" value="3"><output><span id="brush-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid #7ce2ff"></span></output></div><div class="note">Disegna sul canvas. Alla fine del tratto le tally vengono azzerate per non mischiare geometrie diverse.</div></div></div>
-<div class="sec"><h2>Preset</h2><div class="body"><div class="grid3"><button onclick="loadPreset('filters')">Filtri</button><button onclick="loadPreset('default')">Reattore</button><button onclick="loadPreset('shield')">Schermo</button></div><div class="pillnote" id="preset-note">Sequenza didattica: piombo, ferro e acqua davanti a un fascio direzionale.</div><button class="warn" onclick="clearGeometry()">Svuota geometria</button></div></div>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0f14;
+  --bg2:#0f1820;
+  --bg3:#141f2a;
+  --bg4:#1a2736;
+  --border:#1e3044;
+  --border2:#264055;
+  --accent:#7ce2ff;
+  --accent2:#a5ff7b;
+  --accent3:#ffd257;
+  --accent4:#ff8f63;
+  --text:#c8dce8;
+  --text2:#7a9ab0;
+  --text3:#4e6e84;
+  --heading:#e8f4fa;
+  --red:#ff6b6b;
+  --panel-w:300px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;line-height:1.4;overflow:hidden}
+
+/* ── LAYOUT ROOT ── */
+#app{display:grid;grid-template-columns:var(--panel-w) 1fr var(--panel-w);grid-template-rows:48px 1fr 130px;height:100vh;gap:1px;background:var(--border)}
+
+/* ── HEADER ── */
+#header{
+  grid-column:1/-1;
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+#header h1{
+  font-family:'EB Garamond',serif;
+  font-size:18px;font-weight:500;
+  color:var(--heading);
+  letter-spacing:.03em;
+  flex-shrink:0;
+}
+.chip{
+  padding:3px 8px;
+  border:1px solid var(--border2);border-radius:4px;
+  color:var(--text2);font-family:'IBM Plex Mono',monospace;font-size:11px;
+  flex-shrink:0;
+}
+.chip b{color:var(--accent)}
+#status-wrap{margin-left:auto;display:flex;align-items:center;gap:8px}
+#status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 7px var(--accent2)}
+#status-dot.paused{background:var(--accent3);box-shadow:0 0 7px var(--accent3)}
+#status-dot.error{background:var(--red);box-shadow:0 0 7px var(--red)}
+#status-label{font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+#btn-theory{
+  padding:4px 12px;border:1px solid var(--border2);border-radius:4px;
+  background:transparent;color:var(--accent);font-family:'IBM Plex Mono',monospace;
+  font-size:11px;cursor:pointer;letter-spacing:.04em;transition:background .15s,border-color .15s;
+  flex-shrink:0;
+}
+#btn-theory:hover{background:var(--bg4);border-color:var(--accent)}
+
+/* ── PANELS ── */
+.panel{
+  background:var(--bg2);
+  overflow-y:auto;overflow-x:hidden;
+  padding:10px;
+  display:flex;flex-direction:column;gap:8px;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
+}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── SECTION CARDS ── */
+.sec{border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0}
+.sec-head{
+  padding:6px 10px;
+  background:var(--bg3);
+  color:var(--text2);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.sec-head span{color:var(--accent);font-size:12px}
+.sec-body{padding:8px;display:flex;flex-direction:column;gap:7px}
+
+/* ── FORM ELEMENTS ── */
+.row{display:flex;align-items:center;gap:8px}
+.row label{
+  width:86px;flex:0 0 auto;
+  font-size:11px;color:var(--text2);
+  font-family:'IBM Plex Sans',sans-serif;
+}
+.row output{
+  min-width:54px;text-align:right;
+  color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;
+}
+select,button,input[type=range]{width:100%}
+select,button{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text);border-radius:4px;padding:6px 8px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:12px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+select:hover,select:focus{border-color:var(--accent);outline:none}
+button:hover{border-color:var(--border2);background:var(--bg4)}
+button.primary{background:var(--bg4);border-color:var(--accent);color:var(--accent)}
+button.primary:hover{background:#1a3a4a}
+button.warn{background:#2a1408;border-color:#6a3010;color:#ffaa60}
+button.warn:hover{background:#3a1a08}
+input[type=range]{accent-color:var(--accent);height:3px}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+
+/* ── MATERIAL PALETTE ── */
+.mat{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 7px;border:1px solid var(--border2);border-radius:4px;
+  background:var(--bg3);cursor:pointer;transition:border-color .12s;
+  font-size:11px;color:var(--text2);
+}
+.mat.on{border-color:var(--accent);color:var(--text);box-shadow:inset 0 0 0 1px var(--accent)20}
+.mat:hover{border-color:var(--border2);background:var(--bg4)}
+.sw{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+/* ── NOTE / PILL ── */
+.note{font-size:11px;color:var(--text3);line-height:1.45}
+.pillnote{
+  padding:7px 9px;border:1px dashed var(--border2);border-radius:4px;
+  background:var(--bg3);color:var(--text2);font-size:11px;line-height:1.5;
+}
+
+/* ── SOURCE BADGE ── */
+.src-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 9px;border:1px solid var(--border2);border-radius:4px;
+  background:var(--bg3);
+}
+.src-iso{
+  width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#7ce2ff44,#7ce2ff11);
+  border:1px solid var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);flex-shrink:0;
+}
+.src-info{flex:1;min-width:0}
+.src-name{font-size:12px;color:var(--heading);font-family:'EB Garamond',serif}
+.src-detail{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+
+/* ── CENTER ── */
+#center{position:relative;background:#081018;overflow:hidden}
+canvas{position:absolute;inset:0}
+#track,#overlay{pointer-events:none}
+#tooltip{
+  position:absolute;display:none;pointer-events:none;
+  background:rgba(5,10,16,.96);border:1px solid var(--border2);border-radius:5px;
+  padding:8px 10px;font-size:11px;z-index:5;
+  font-family:'IBM Plex Mono',monospace;color:var(--text);
+  line-height:1.6;
+}
+
+/* ── FOOTER ── */
+#footer{
+  grid-column:1/-1;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--border);
+  border-top:1px solid var(--border);
+}
+.chart{padding:6px 8px;background:var(--bg2)}
+.chart h3{
+  margin:0 0 4px;font-size:9px;
+  color:var(--text3);text-transform:uppercase;letter-spacing:.1em;
+  font-family:'IBM Plex Mono',monospace;
+}
+.chart canvas{position:static;width:100%;height:88px;background:rgba(255,255,255,.02);border-radius:4px}
+
+/* ── RIGHT PANEL STATS ── */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.card{padding:7px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg3)}
+.k{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace}
+.v{font-size:14px;font-weight:500;color:var(--heading);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+
+/* ── XS DISPLAY ── */
+#xs-display,#mat-info{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--text2);line-height:1.7;
+}
+#xs-display b{color:var(--accent)}
+
+/* ── THEORY MODAL ── */
+#theory-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(5,10,16,.92);
+  backdrop-filter:blur(4px);
+  display:none;align-items:flex-start;justify-content:center;
+  padding:24px;overflow-y:auto;
+}
+#theory-overlay.open{display:flex}
+#theory-modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:10px;
+  max-width:860px;width:100%;
+  padding:0;overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+#theory-modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 24px;border-bottom:1px solid var(--border);
+  background:var(--bg3);
+}
+#theory-modal-header h2{
+  font-family:'EB Garamond',serif;font-size:22px;font-weight:500;
+  color:var(--heading);
+}
+#btn-close-theory{
+  width:28px;height:28px;border-radius:4px;
+  background:transparent;border:1px solid var(--border2);
+  color:var(--text2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#btn-close-theory:hover{background:var(--bg4);color:var(--text)}
+#theory-content{
+  padding:24px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;line-height:1.75;
+  color:var(--text);
+  overflow-y:auto;max-height:calc(100vh - 120px);
+}
+#theory-content h3{
+  font-family:'EB Garamond',serif;font-size:19px;font-weight:500;
+  color:var(--heading);margin:24px 0 10px;
+  padding-bottom:5px;border-bottom:1px solid var(--border);
+}
+#theory-content h3:first-child{margin-top:0}
+#theory-content h4{
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;
+  color:var(--accent);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.05em;
+}
+#theory-content p{margin-bottom:10px;color:var(--text)}
+#theory-content .katex-display{
+  background:var(--bg3);border-left:3px solid var(--accent);
+  padding:12px 16px;border-radius:0 4px 4px 0;
+  margin:12px 0;overflow-x:auto;
+}
+#theory-content .note-box{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:5px;
+  padding:10px 14px;margin:10px 0;font-size:12.5px;color:var(--text2);
+}
+#theory-content table{
+  width:100%;border-collapse:collapse;margin:10px 0;font-size:12px;
+  font-family:'IBM Plex Mono',monospace;
+}
+#theory-content th{
+  background:var(--bg3);color:var(--accent);
+  padding:6px 10px;text-align:left;font-weight:500;font-size:11px;
+  border:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;
+}
+#theory-content td{
+  padding:5px 10px;border:1px solid var(--border);color:var(--text2);
+}
+#theory-content tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+
+/* responsive */
+@media(max-width:1100px){
+  :root{--panel-w:260px}
+}
+@media(max-width:900px){
+  body{overflow:auto}
+  #app{
+    grid-template-columns:1fr;
+    grid-template-rows:48px auto 55vh auto 140px;
+    height:auto;min-height:100vh;
+  }
+  #left,#right{grid-column:1}
+  #center{grid-column:1;min-height:55vh}
+  #footer{grid-column:1;grid-template-columns:repeat(2,1fr)}
+  body{overflow:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- THEORY MODAL -->
+<div id="theory-overlay">
+<div id="theory-modal">
+  <div id="theory-modal-header">
+    <h2>Fisica del trasporto di particelle</h2>
+    <button id="btn-close-theory" onclick="closeTheory()">✕</button>
+  </div>
+  <div id="theory-content">
+
+<h3>1. Il metodo Monte Carlo nel trasporto di radiazione</h3>
+<p>Il trasporto di particelle è descritto dall'<strong>equazione di Boltzmann per il trasporto</strong>, un'equazione integro-differenziale in 7 variabili (posizione, direzione, energia, tempo) la cui soluzione analitica è possibile solo in geometrie semplicissime. Il metodo Monte Carlo (MC) aggira questo ostacolo simulando singole storie di particelle tramite campionamento statistico delle leggi fisiche.</p>
+<p>In ogni storia, una particella primaria viene emessa dalla sorgente e trasportata passo dopo passo: ad ogni interazione si campionano probabilisticamente il cammino libero, il tipo di interazione, l'angolo di scattering e le energie dei secondari. Le grandezze di interesse (fluenza, dose, spettro) vengono accumulate come medie su un gran numero $N$ di storie.</p>
+<p>L'errore statistico relativo (deviazione standard della media) decresce come $1/\sqrt{N}$: raddoppiare la precisione costa quattro volte il tempo di calcolo. Questo è il compromesso fondamentale del metodo.</p>
+
+<h3>2. Campionamento del cammino libero e selezione dell'interazione</h3>
+<p>Per una particella che viaggia in un mezzo omogeneo con sezione d'urto macroscopica totale $\Sigma_t$ [cm$^{-1}$], la probabilità di compiere un cammino di lunghezza $\ell$ senza interagire segue una distribuzione esponenziale:</p>
+$$P(\ell) = \Sigma_t \, e^{-\Sigma_t \ell}$$
+<p>Il cammino libero viene campionato invertendo la CDF (Cumulative Distribution Function):</p>
+$$\ell = -\frac{\ln(\xi)}{\Sigma_t}$$
+<p>dove $\xi \in (0,1]$ è un numero casuale uniforme. Una volta avvenuta l'interazione, il tipo viene selezionato proporzionalmente alle sezioni d'urto parziali:</p>
+$$P(\text{scattering}) = \frac{\Sigma_s}{\Sigma_t}, \quad P(\text{cattura}) = \frac{\Sigma_c}{\Sigma_t}, \quad P(\text{fissione}) = \frac{\Sigma_f}{\Sigma_t}$$
+<p>In geometria eterogenea, come nella nostra simulazione a griglia, il cammino libero viene consumato cella per cella (ray marching): si calcola la distanza al confine di cella più vicino e si sottrae il cammino corrispondente fino all'esaurimento di $-\ln(\xi)$.</p>
+
+<h3>3. Neutroni</h3>
+<h4>Sezioni d'urto</h4>
+<p>Le sezioni d'urto macroscopiche dei neutroni si ottengono da quelle microscopiche $\sigma$ [barn] moltiplicando per la densità atomica $N = N_A \rho / A$ [atomi/cm³]:</p>
+$$\Sigma = N \cdot \sigma = \frac{N_A \, \rho}{A} \cdot \sigma$$
+<p>Per la cattura radiativa, domina la legge $1/v$ (legge $1/v$ o "legge delle sezioni d'urto termiche"):</p>
+$$\sigma_c(E) = \sigma_c^{(0)} \sqrt{\frac{E_0}{E}}$$
+<p>dove $E_0 = 0.0253$ eV è l'energia termica di riferimento. Questa dipendenza riflette il fatto che un neutrone lento trascorre più tempo nelle vicinanze del nucleo, aumentando la probabilità di cattura.</p>
+<h4>Scattering elastico — cinematica nel sistema del centro di massa</h4>
+<p>Il trasferimento di energia nello scattering elastico neutrone-nucleo si analizza nel sistema del centro di massa (CM). Definendo $\alpha = \left(\frac{A-1}{A+1}\right)^2$, l'energia del neutrone dopo lo scattering vale:</p>
+$$E' = E \cdot \frac{1 + \alpha + (1-\alpha)\cos\theta_{CM}}{2}$$
+<p>dove $\theta_{CM}$ è campionato isotropicamente in $[0,\pi]$ (buona approssimazione a bassa energia). Il massimo trasferimento di energia avviene per nuclei leggeri: per H ($A=1$, $\alpha=0$) un singolo urto può portare via tutta l'energia del neutrone, il che spiega l'efficacia dell'acqua come moderatore.</p>
+
+<h4>Fissione nucleare</h4>
+<p>Per l'U-235, la fissione termica ($E < 1$ eV) rilascia in media $\bar{\nu} = 2.43$ neutroni veloci (detti neutroni di fissione o neutroni veloci) con uno spettro di Watt:</p>
+$$\chi(E) \propto e^{-E/a} \sinh(\sqrt{bE}), \quad a=0.965 \text{ MeV}, \; b=2.29 \text{ MeV}^{-1}$$
+<p>approssimato in questa simulazione con una distribuzione di Maxwell con temperatura $T = 1.33$ MeV. Il fattore di moltiplicazione effettivo $k_\text{eff}$ rappresenta il numero di neutroni della seconda generazione per ogni neutrone della prima: $k_\text{eff} > 1$ implica una reazione a catena divergente.</p>
+
+<h3>4. Fotoni</h3>
+<p>I fotoni interagiscono con la materia principalmente attraverso tre meccanismi, la cui rilevanza dipende dall'energia e dal numero atomico $Z$ del materiale.</p>
+<h4>Effetto fotoelettrico</h4>
+<p>Un fotone viene completamente assorbito da un atomo, che emette un elettrone (fotoelettrone) con energia $E_e = h\nu - E_b$, dove $E_b$ è l'energia di legame dello strato K. La sezione d'urto scala approssimativamente come:</p>
+$$\sigma_{PE} \propto \frac{Z^{4.5}}{(h\nu)^{3.5}}$$
+<p>Domina a basse energie ($< 100$ keV) e per materiali ad alto $Z$ come il piombo, rendendolo un eccellente schermante per i raggi X.</p>
+<h4>Scattering Compton</h4>
+<p>Un fotone diffonde su un elettrone (libero o quasi-libero), cedendo parte della propria energia. L'energia del fotone diffuso è data dalla formula di Compton:</p>
+$$E' = \frac{E}{1 + \frac{E}{m_e c^2}(1 - \cos\theta)}$$
+<p>La sezione d'urto differenziale è descritta dalla formula di Klein-Nishina, esatta nell'ambito dell'elettrodinamica quantistica (QED):</p>
+$$\frac{d\sigma_{KN}}{d\Omega} = \frac{r_e^2}{2}\left(\frac{E'}{E}\right)^2\left(\frac{E'}{E} + \frac{E}{E'} - \sin^2\theta\right)$$
+<p>dove $r_e = 2.818 \times 10^{-13}$ cm è il raggio classico dell'elettrone. Per campionare $\theta$ da questa distribuzione si utilizza il metodo di rigetto di Kahn. Lo scattering Compton domina a energie intermedie (0.1–10 MeV) ed è il meccanismo principale di attenuazione dei raggi gamma medicali.</p>
+<h4>Produzione di coppie</h4>
+<p>Sopra la soglia $E_{th} = 2m_ec^2 = 1.022$ MeV, un fotone nel campo coulombiano di un nucleo può materializzarsi in una coppia elettrone-positrone. Il positrone, una volta termalizzato, si annichila con un elettrone producendo due fotoni da 511 keV back-to-back. La sezione d'urto cresce logaritmicamente con l'energia:</p>
+$$\sigma_{pair} \propto Z^2 \ln\left(\frac{2E}{m_ec^2}\right)$$
+
+<h4>Attenuazione totale</h4>
+<p>Il coefficiente di attenuazione lineare totale è la somma dei contributi:</p>
+$$\mu_{tot} = \mu_{PE} + \mu_{C} + \mu_{pair}$$
+<p>e l'intensità di un fascio monoenergetico decresce esponenzialmente: $I = I_0 e^{-\mu x}$. Lo strato emivalente (HVL, Half Value Layer) è la spessore che riduce l'intensità della metà: $\text{HVL} = \ln 2 / \mu$.</p>
+
+<h3>5. Elettroni e positroni</h3>
+<h4>Stopping power di Bethe-Bloch</h4>
+<p>Gli elettroni perdono energia principalmente per ionizzazione e eccitazione degli atomi del mezzo (perdita collisionale). La formula di Bethe-Bloch per elettroni relativistici è:</p>
+$$-\left\langle\frac{dE}{dx}\right\rangle = \frac{K Z}{A} \frac{\rho}{\beta^2}\left[\frac{1}{2}\ln\frac{E^2(E+2m_ec^2)}{2I^2m_ec^2} - \beta^2 - \frac{\delta}{2}\right]$$
+<p>dove $K = 0.307$ MeV cm² g⁻¹, $\beta = v/c$, $I$ è il potenziale medio di ionizzazione del materiale, e $\delta$ è la correzione di densità di Sternheimer (importante per materiali densi a alta energia).</p>
+<h4>Scattering multiplo di Molière</h4>
+<p>Un elettrone subisce innumerevoli piccoli scattering coulombiani (scattering multiplo di Coulomb). L'angolo RMS (Root Mean Square) accumulato in uno spessore $x$ è dato dall'approssimazione di Highland:</p>
+$$\theta_{rms} = \frac{13.6 \text{ MeV}}{\beta p} \sqrt{\frac{x}{X_0}}\left[1 + 0.038\ln\frac{x}{X_0}\right]$$
+<p>dove $p$ è il momento, $\beta c$ la velocità, e $X_0$ è la lunghezza di radiazione del materiale. Questa è la grandezza che determina la diffusione laterale del fascio di elettroni e la loro corta portata rispetto ai fotoni della stessa energia.</p>
+<h4>Bremsstrahlung</h4>
+<p>Per interazione con il campo coulombiano nucleare, gli elettroni emettono fotoni ("radiazione di frenamento"). La probabilità di emissione per unità di percorso scala con $1/X_0$:</p>
+$$P_{brem} \approx \frac{4}{3}\frac{x}{X_0}\left(\ln\frac{2E}{m_ec^2} - \frac{1}{3}\right)$$
+<p>La lunghezza di radiazione approssimata vale $X_0 \approx \frac{716.4 A}{Z(Z+1)\ln(287/\sqrt{Z})}$ g/cm². Per il piombo $X_0 \approx 5.6$ g/cm², per l'acqua $X_0 \approx 36$ g/cm².</p>
+
+<h3>6. Sorgenti radioattive implementate</h3>
+<p>Le sorgenti preimpostate nella simulazione corrispondono a isotopi reali, con le energie dei principali fotoni o particelle emesse.</p>
+<table>
+<tr><th>Isotopo</th><th>T½</th><th>Tipo</th><th>Energia principale</th><th>Applicazione tipica</th></tr>
+<tr><td>Ra-226</td><td>1600 a</td><td>α + γ</td><td>0.186 MeV (γ), 4.87 MeV (α)</td><td>Radioterapia storica</td></tr>
+<tr><td>Co-60</td><td>5.27 a</td><td>β + γ</td><td>1.17, 1.33 MeV (γ)</td><td>Radioterapia, NDT</td></tr>
+<tr><td>Cs-137</td><td>30.1 a</td><td>β + γ</td><td>0.662 MeV (γ)</td><td>Calibrazione, radioterapia</td></tr>
+<tr><td>Am-241</td><td>432 a</td><td>α + γ</td><td>0.060 MeV (γ), 5.49 MeV (α)</td><td>Rivelatori di fumo</td></tr>
+<tr><td>I-131</td><td>8.02 d</td><td>β + γ</td><td>0.364 MeV (γ), 0.606 MeV (β)</td><td>Terapia tiroidea</td></tr>
+<tr><td>Tc-99m</td><td>6.01 h</td><td>γ (isomero)</td><td>0.140 MeV (γ)</td><td>Medicina nucleare (SPECT)</td></tr>
+<tr><td>Sorgente n fast</td><td>—</td><td>n</td><td>2.0 MeV (fissione)</td><td>Reattore, ricerca</td></tr>
+</table>
+
+<h3>7. Dose e fluenza</h3>
+<p>La <strong>fluenza</strong> $\Phi$ [particelle/cm²] è il numero di particelle che attraversano una sfera di sezione unitaria per unità di area. La simulazione la accumula nella griglia depositando il peso $w \cdot \Delta\ell / \Delta x$ per ogni segmento di percorso di lunghezza $\Delta\ell$ in una cella di lato $\Delta x$.</p>
+<p>La <strong>dose assorbita</strong> $D$ [Gray = J/kg] è l'energia depositata per unità di massa nel mezzo:</p>
+$$D = \frac{\Delta E}{\rho \, V_{cell}}$$
+<p>dove $\rho$ è la densità del materiale e $V_{cell}$ il volume della cella. Un gray corrisponde a 1 J/kg; in radioterapia le dosi terapeutiche sono tipicamente di 50–70 Gy, frazionati in sedute da ~2 Gy.</p>
+
+<div class="note-box">
+<strong>Nota metodologica:</strong> Questa simulazione è didattica e opera in 2D con sezioni d'urto semplificate ma fisicamente motivate. I valori assoluti di fluenza e dose non sono direttamente confrontabili con risultati di codici di produzione (MCNP, Geant4, EGSnrc), ma le tendenze qualitative e i rapporti relativi sono corretti.
 </div>
-<div id="center"><canvas id="main"></canvas><canvas id="track"></canvas><canvas id="overlay"></canvas><div id="tooltip"></div></div>
-<div class="panel" id="right"><div class="sec"><h2>Diagnostica</h2><div class="body" style="font:12px/1.45 Consolas,monospace"><div id="xs-display">In attesa del WASM...</div><div id="mat-info"></div></div></div><div class="sec"><h2>Statistiche</h2><div class="body stats"><div class="card"><div class="k">Storie</div><div class="v" id="stat-hist">0</div></div><div class="card"><div class="k">Fissioni</div><div class="v" id="stat-fiss">0</div></div><div class="card"><div class="k">Catture</div><div class="v" id="stat-capt">0</div></div><div class="card"><div class="k">Scatter</div><div class="v" id="stat-scat">0</div></div><div class="card"><div class="k">k eff</div><div class="v" id="stat-keff">0.000</div></div><div class="card"><div class="k">Dose max</div><div class="v" id="stat-dose">0.00e+0</div></div></div></div></div>
-<div id="footer"><div class="chart"><h3>Spettro n</h3><canvas id="chart-neut"></canvas></div><div class="chart"><h3>Spettro g</h3><canvas id="chart-phot"></canvas></div><div class="chart"><h3>Profilo dose</h3><canvas id="chart-dose"></canvas></div><div class="chart"><h3>Fissioni / catture</h3><canvas id="chart-hist"></canvas></div></div></div>
+
+  </div>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<!-- HEADER -->
+<div id="header">
+  <h1>☢ Trasporto di particelle</h1>
+  <div class="chip">fps <b id="hd-fps">0</b></div>
+  <div class="chip">storie <b id="hd-hist">0</b></div>
+  <div class="chip">fissioni <b id="hd-fiss">0</b></div>
+  <div class="chip">scatter <b id="hd-scat">0</b></div>
+  <div id="status-wrap">
+    <div id="status-dot"></div>
+    <div id="status-label">CARICAMENTO</div>
+    <button id="btn-theory" onclick="openTheory()">Teoria ▸</button>
+  </div>
+</div>
+
+<!-- LEFT PANEL -->
+<div class="panel" id="left">
+
+  <!-- SORGENTE RADIOATTIVA -->
+  <div class="sec">
+    <div class="sec-head"><span>⚛</span> Sorgente radioattiva</div>
+    <div class="sec-body">
+      <div class="row">
+        <label>Isotopo</label>
+        <select id="src-isotope" onchange="applyIsotopePreset()">
+          <option value="co60">Co-60 (γ 1.25 MeV)</option>
+          <option value="cs137">Cs-137 (γ 0.662 MeV)</option>
+          <option value="am241">Am-241 (γ 60 keV)</option>
+          <option value="tc99m">Tc-99m (γ 140 keV)</option>
+          <option value="i131">I-131 (γ 364 keV)</option>
+          <option value="ra226">Ra-226 (γ 186 keV)</option>
+          <option value="nfast">Sorgente n veloci (2 MeV)</option>
+          <option value="custom">Personalizzata…</option>
+        </select>
+      </div>
+      <div id="src-badge-wrap"><!-- populated by JS --></div>
+      <div class="row">
+        <label>Tipo part.</label>
+        <select id="src-type">
+          <option value="1">Fotone γ</option>
+          <option value="0">Neutrone</option>
+          <option value="2">Elettrone e⁻</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Energia</label>
+        <input id="src-energy" type="range" min="0.01" max="10" step="0.01" value="1.25">
+        <output id="src-energy-val">1.25 MeV</output>
+      </div>
+      <div class="row">
+        <label>Emissione</label>
+        <select id="src-mode">
+          <option value="1">Isotropica</option>
+          <option value="0">Direzionale →</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Part./frame</label>
+        <input id="n-primary" type="range" min="1" max="40" step="1" value="3">
+        <output id="n-primary-val">3</output>
+      </div>
+      <div class="grid2">
+        <button id="btn-play" class="primary" onclick="toggleRun()">Pausa</button>
+        <button onclick="resetSim()">Reset</button>
+      </div>
+      <div class="note">Click destro sul canvas per spostare la sorgente.</div>
+    </div>
+  </div>
+
+  <!-- VISTA -->
+  <div class="sec">
+    <div class="sec-head"><span>👁</span> Vista</div>
+    <div class="sec-body">
+      <div class="row">
+        <label>Mappa</label>
+        <select id="view-mode">
+          <option value="material">Materiali</option>
+          <option value="dose">Dose</option>
+          <option value="fluence_n">Fluenza n</option>
+          <option value="fluence_p">Fluenza γ</option>
+          <option value="fluence_e">Fluenza e⁻</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Scala</label>
+        <input id="dose-scale" type="range" min="0.1" max="4" step="0.1" value="1.2">
+        <output id="dose-scale-val">1.2×</output>
+      </div>
+      <div class="row">
+        <label>Fade</label>
+        <input id="track-fade" type="range" min="0.82" max="0.998" step="0.001" value="0.96">
+        <output id="track-fade-val">0.960</output>
+      </div>
+      <div class="row">
+        <label>Tracce</label>
+        <select id="track-mode">
+          <option value="all">Tutte</option>
+          <option value="neutron">Solo n</option>
+          <option value="photon">Solo γ</option>
+          <option value="electron">Solo e⁻</option>
+          <option value="none">Nessuna</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Griglia</label>
+        <input id="show-grid" type="checkbox">
+      </div>
+    </div>
+  </div>
+
+  <!-- MATERIALI -->
+  <div class="sec">
+    <div class="sec-head"><span>🧱</span> Materiali</div>
+    <div class="sec-body">
+      <div id="mat-palette" style="display:grid;grid-template-columns:1fr 1fr;gap:5px"></div>
+      <div class="row">
+        <label>Pennello</label>
+        <input id="brush-size" type="range" min="1" max="10" step="1" value="3">
+        <output><span id="brush-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid var(--accent)"></span></output>
+      </div>
+      <div class="note">Disegna sul canvas con click sinistro. I contatori si azzerano al termine del tratto.</div>
+    </div>
+  </div>
+
+  <!-- PRESET GEOMETRIE -->
+  <div class="sec">
+    <div class="sec-head"><span>⚡</span> Preset geometrie</div>
+    <div class="sec-body">
+      <div class="grid3">
+        <button onclick="loadPreset('filters')">Filtri</button>
+        <button onclick="loadPreset('default')">Reattore</button>
+        <button onclick="loadPreset('shield')">Schermo</button>
+      </div>
+      <div class="pillnote" id="preset-note">Sequenza didattica: piombo, ferro e acqua davanti a un fascio direzionale.</div>
+      <button class="warn" onclick="clearGeometry()">Svuota geometria</button>
+    </div>
+  </div>
+
+</div><!-- /left -->
+
+<!-- CENTER CANVAS -->
+<div id="center">
+  <canvas id="main"></canvas>
+  <canvas id="track"></canvas>
+  <canvas id="overlay"></canvas>
+  <div id="tooltip"></div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="panel" id="right">
+
+  <!-- DIAGNOSTICA XS -->
+  <div class="sec">
+    <div class="sec-head"><span>🔬</span> Sezioni d'urto (hover sul canvas)</div>
+    <div class="sec-body">
+      <div id="xs-display" style="color:var(--text3)">In attesa del WASM…</div>
+      <div id="mat-info"></div>
+    </div>
+  </div>
+
+  <!-- STATISTICHE -->
+  <div class="sec">
+    <div class="sec-head"><span>📊</span> Statistiche</div>
+    <div class="sec-body">
+      <div class="stats">
+        <div class="card"><div class="k">Storie</div><div class="v" id="stat-hist">0</div></div>
+        <div class="card"><div class="k">Fissioni</div><div class="v" id="stat-fiss">0</div></div>
+        <div class="card"><div class="k">Catture</div><div class="v" id="stat-capt">0</div></div>
+        <div class="card"><div class="k">Scatter</div><div class="v" id="stat-scat">0</div></div>
+        <div class="card"><div class="k">k<sub>eff</sub></div><div class="v" id="stat-keff">—</div></div>
+        <div class="card"><div class="k">Dose max</div><div class="v" id="stat-dose">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGENDA COLORI TRACCE -->
+  <div class="sec">
+    <div class="sec-head"><span>🎨</span> Legenda tracce</div>
+    <div class="sec-body">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div class="row" style="gap:8px">
+          <span style="display:inline-block;width:28px;height:2px;background:#a5ff7b;border-radius:1px;flex-shrink:0"></span>
+          <span style="font-size:11px;color:var(--text2)">Neutroni (verde)</span>
+        </div>
+        <div class="row" style="gap:8px">
+          <span style="display:inline-block;width:28px;height:2px;background:#ffd257;border-radius:1px;flex-shrink:0"></span>
+          <span style="font-size:11px;color:var(--text2)">Fotoni γ (giallo)</span>
+        </div>
+        <div class="row" style="gap:8px">
+          <span style="display:inline-block;width:28px;height:2px;background:#68caff;border-radius:1px;flex-shrink:0"></span>
+          <span style="font-size:11px;color:var(--text2)">Elettroni e⁻ (azzurro)</span>
+        </div>
+        <div class="row" style="gap:8px">
+          <span style="display:inline-block;width:28px;height:2px;background:#ff98d1;border-radius:1px;flex-shrink:0"></span>
+          <span style="font-size:11px;color:var(--text2)">Positroni e⁺ (rosa)</span>
+        </div>
+      </div>
+      <div class="note" style="margin-top:4px">Il punto bianco sul canvas indica la posizione della sorgente. L'etichetta mostra tipo e energia.</div>
+    </div>
+  </div>
+
+  <!-- ISTRUZIONI -->
+  <div class="sec">
+    <div class="sec-head"><span>ℹ</span> Istruzioni rapide</div>
+    <div class="sec-body">
+      <div class="note" style="line-height:1.8">
+        <b style="color:var(--text)">Click destro</b> sul canvas → sposta la sorgente<br>
+        <b style="color:var(--text)">Click sinistro</b> → disegna materiale selezionato<br>
+        <b style="color:var(--text)">Hover</b> → sezioni d'urto nella cella<br>
+        <b style="color:var(--text)">Part./frame</b> → regola la densità delle tracce<br>
+        <b style="color:var(--text)">Fade alto</b> → tracce persistenti nel tempo
+      </div>
+    </div>
+  </div>
+
+</div><!-- /right -->
+
+<!-- FOOTER CHARTS -->
+<div id="footer">
+  <div class="chart"><h3>Spettro neutroni</h3><canvas id="chart-neut"></canvas></div>
+  <div class="chart"><h3>Spettro fotoni γ</h3><canvas id="chart-phot"></canvas></div>
+  <div class="chart"><h3>Profilo dose (assiale)</h3><canvas id="chart-dose"></canvas></div>
+  <div class="chart"><h3>Fissioni / catture</h3><canvas id="chart-hist"></canvas></div>
+</div>
+
+</div><!-- /app -->
+
 <script>
+/* ═══════════════════════════════════════════
+   COSTANTI E CONFIGURAZIONE
+═══════════════════════════════════════════ */
 const GRID_W=200,GRID_H=200,CELL_CM=0.1,DOMAIN_W=GRID_W*CELL_CM,DOMAIN_H=GRID_H*CELL_CM,MAX_TR=360,N_BINS=80,TWO_PI=Math.PI*2;
 const MAT={VACUUM:0,AIR:1,WATER:2,IRON:3,LEAD:4,U235:5,CONCRETE:6};
 const MAT_NAMES=['Vuoto','Aria','Acqua','Ferro','Piombo','U-235','Calcestruzzo'];
-const MAT_COLORS=['#30485d','#587892','#78d7ff','#c9d3dc','#b596d3','#ff8f63','#d4bf98'];
-const MATERIALS=[{density:0,Z:0,A:0,I_eV:0,sig_s:0,sig_c:0,sig_f:0,nu:0,Ef:0},{density:1.293e-3,Z:7.36,A:14.5,I_eV:85.7,sig_s:10,sig_c:1,sig_f:0,nu:0,Ef:0},{density:1,Z:7.22,A:11.9,I_eV:75,sig_s:20,sig_c:.3,sig_f:0,nu:0,Ef:0},{density:7.874,Z:26,A:55.85,I_eV:286,sig_s:2.5,sig_c:2.6,sig_f:0,nu:0,Ef:0},{density:11.35,Z:82,A:207.2,I_eV:823,sig_s:11,sig_c:.17,sig_f:0,nu:0,Ef:0},{density:18.95,Z:92,A:235,I_eV:890,sig_s:4,sig_c:99,sig_f:584,nu:2.43,Ef:200},{density:2.3,Z:11,A:22,I_eV:135.7,sig_s:3,sig_c:.1,sig_f:0,nu:0,Ef:0}];
+const MAT_COLORS=['#1a2e3d','#3d6070','#5bbddc','#b8c8d4','#9b80c8','#ff7040','#c4ad88'];
+const MATERIALS=[
+  {density:0,Z:0,A:0,I_eV:0,sig_s:0,sig_c:0,sig_f:0,nu:0,Ef:0},
+  {density:1.293e-3,Z:7.36,A:14.5,I_eV:85.7,sig_s:10,sig_c:1,sig_f:0,nu:0,Ef:0},
+  {density:1,Z:7.22,A:11.9,I_eV:75,sig_s:20,sig_c:.3,sig_f:0,nu:0,Ef:0},
+  {density:7.874,Z:26,A:55.85,I_eV:286,sig_s:2.5,sig_c:2.6,sig_f:0,nu:0,Ef:0},
+  {density:11.35,Z:82,A:207.2,I_eV:823,sig_s:11,sig_c:.17,sig_f:0,nu:0,Ef:0},
+  {density:18.95,Z:92,A:235,I_eV:890,sig_s:4,sig_c:99,sig_f:584,nu:2.43,Ef:200},
+  {density:2.3,Z:11,A:22,I_eV:135.7,sig_s:3,sig_c:.1,sig_f:0,nu:0,Ef:0}
+];
+
+/* ═══════════════════════════════════════════
+   ISOTOPI RADIOATTIVI
+═══════════════════════════════════════════ */
+const ISOTOPES={
+  co60:{name:'Co-60',symbol:'Co',mass:60,halflife:'5.27 a',type:1,energy:1.25,iso:1,
+    detail:'γ: 1.173 + 1.332 MeV | β⁻ → Ni-60',desc:'Usato in radioterapia e radiografia industriale (NDT)'},
+  cs137:{name:'Cs-137',symbol:'Cs',mass:137,halflife:'30.1 a',type:1,energy:0.662,iso:1,
+    detail:'γ: 0.662 MeV | β⁻ → Ba-137m',desc:'Isotopo di calibrazione, radioterapia, industria'},
+  am241:{name:'Am-241',symbol:'Am',mass:241,halflife:'432 a',type:1,energy:0.0595,iso:0,
+    detail:'γ: 0.0595 MeV | α → Np-237',desc:'Rivelatori di fumo, fluorescenza X (XRF)'},
+  tc99m:{name:'Tc-99m',symbol:'Tc',mass:'99m',halflife:'6.01 h',type:1,energy:0.140,iso:1,
+    detail:'γ: 0.140 MeV | isomero nucleare → Tc-99',desc:'Medicina nucleare: scintigrafia, SPECT'},
+  i131:{name:'I-131',symbol:'I',mass:131,halflife:'8.02 d',type:1,energy:0.364,iso:1,
+    detail:'γ: 0.364 MeV | β⁻ 0.606 MeV → Xe-131',desc:'Terapia del cancro alla tiroide'},
+  ra226:{name:'Ra-226',symbol:'Ra',mass:226,halflife:'1600 a',type:1,energy:0.186,iso:1,
+    detail:'γ: 0.186 MeV | α → Rn-222',desc:'Sorgente storica di radioterapia brachiterapica'},
+  nfast:{name:'Sorgente n veloci',symbol:'n',mass:'',halflife:'—',type:0,energy:2.0,iso:1,
+    detail:'n: spettro di fissione, ~2 MeV picco',desc:'Reattore nucleare / sorgente Am-Be'},
+  custom:{name:'Personalizzata',symbol:'?',mass:'',halflife:'—',type:1,energy:2.0,iso:1,
+    detail:'Configurazione manuale',desc:'Imposta manualmente tipo ed energia'}
+};
+
+/* ═══════════════════════════════════════════
+   STATO
+═══════════════════════════════════════════ */
 let matGrid=new Uint8Array(GRID_W*GRID_H),fluenceN=new Float32Array(GRID_W*GRID_H),fluenceP=new Float32Array(GRID_W*GRID_H),fluenceE=new Float32Array(GRID_W*GRID_H),doseMap=new Float32Array(GRID_W*GRID_H),specNeut=new Float32Array(N_BINS),specPhot=new Float32Array(N_BINS);
 let totalHist=0,totalFiss=0,totalCapt=0,totalScat=0,fissHistory=[],captHistory=[];
-let srcX=6,srcY=10,srcE=2,srcType=0,srcIso=1,srcDx=1,srcDy=0,wasmReady=false,wasmAPI=null,wasmPtrs=null,frameTrackBuf=[],activePreset='filters',sceneLabels=[];
-let trackFade=.947,showTrackMode='all',running=true,lastT=0,fps=0,fpsCount=0,fpsT=0,paintMat=MAT.WATER,isPainting=false,brushSize=3,pendingGeometryReset=false,lastChartUpdate=0,lastStatsUpdate=0;
-const cMain=document.getElementById('main'),cTrack=document.getElementById('track'),cOverlay=document.getElementById('overlay'),ctxMain=cMain.getContext('2d'),ctxTrack=cTrack.getContext('2d'),ctxOvr=cOverlay.getContext('2d'),tooltip=document.getElementById('tooltip');
-const materialLayer=document.createElement('canvas'),materialCtx=materialLayer.getContext('2d'),outlineLayer=document.createElement('canvas'),outlineCtx=outlineLayer.getContext('2d'),heatLayer=document.createElement('canvas'),heatCtx=heatLayer.getContext('2d');let materialDirty=true,CW=0,CH=0,scaleX=1,scaleY=1;
-function resizeFooterCharts(){['chart-neut','chart-phot','chart-dose','chart-hist'].forEach(id=>{const c=document.getElementById(id),r=c.parentElement.getBoundingClientRect();c.width=Math.max(120,Math.floor(r.width-4));c.height=118})}
-function resizeCanvases(){const r=document.getElementById('center').getBoundingClientRect();CW=Math.max(160,Math.floor(r.width));CH=Math.max(160,Math.floor(r.height));[cMain,cTrack,cOverlay].forEach(c=>{c.width=CW;c.height=CH});[ctxMain,ctxTrack,ctxOvr].forEach(ctx=>ctx.imageSmoothingEnabled=false);materialLayer.width=GRID_W;materialLayer.height=GRID_H;outlineLayer.width=GRID_W;outlineLayer.height=GRID_H;heatLayer.width=GRID_W;heatLayer.height=GRID_H;[materialCtx,outlineCtx,heatCtx].forEach(ctx=>ctx.imageSmoothingEnabled=false);scaleX=CW/DOMAIN_W;scaleY=CH/DOMAIN_H;materialDirty=true;renderFrame()}
-function getHeaps(){const heapU8=Module.HEAPU8||(typeof HEAPU8!=='undefined'?HEAPU8:null),heapF32=Module.HEAPF32||(typeof HEAPF32!=='undefined'?HEAPF32:null);if(!heapU8||!heapF32)throw new Error('Heap WASM non accessibile');return{heapU8,heapF32}}
-function refreshWasmViews(){if(!wasmReady||!wasmPtrs)return;const n=GRID_W*GRID_H,{heapU8,heapF32}=getHeaps();matGrid=new Uint8Array(heapU8.buffer,wasmPtrs.matGrid,n);fluenceN=new Float32Array(heapF32.buffer,wasmPtrs.fluenceN,n);fluenceP=new Float32Array(heapF32.buffer,wasmPtrs.fluenceP,n);fluenceE=new Float32Array(heapF32.buffer,wasmPtrs.fluenceE,n);doseMap=new Float32Array(heapF32.buffer,wasmPtrs.dose,n);specNeut=new Float32Array(heapF32.buffer,wasmPtrs.specNeut,N_BINS);specPhot=new Float32Array(heapF32.buffer,wasmPtrs.specPhot,N_BINS)}
-function applySourceToWasm(){if(wasmReady&&wasmAPI&&wasmAPI.setSource)wasmAPI.setSource(srcX,srcY,srcE,srcType,srcIso,srcDx,srcDy)}
-function getMaterialPhysics(mid,e){if(!wasmReady||!wasmAPI||!wasmAPI.queryMaterial)return null;const ptr=wasmAPI.queryMaterial(mid,e),{heapF32}=getHeaps();return Array.from(new Float32Array(heapF32.buffer,ptr,9))}
-function resetAccumulators(){if(wasmReady&&wasmAPI&&wasmAPI.resetTallies){wasmAPI.resetTallies();refreshWasmViews();applySourceToWasm()}else{fluenceN.fill(0);fluenceP.fill(0);fluenceE.fill(0);doseMap.fill(0);specNeut.fill(0);specPhot.fill(0)}totalHist=0;totalFiss=0;totalCapt=0;totalScat=0;frameTrackBuf.length=0;fissHistory=[];captHistory=[];lastChartUpdate=0;lastStatsUpdate=0}
-function commitGeometryReset(){if(!pendingGeometryReset)return;pendingGeometryReset=false;resetAccumulators();renderFrame()}
-function setPresetNote(text){const el=document.getElementById('preset-note');if(el)el.textContent=text}
+let srcX=6,srcY=10,srcE=1.25,srcType=1,srcIso=1,srcDx=1,srcDy=0;
+let wasmReady=false,wasmAPI=null,wasmPtrs=null,frameTrackBuf=[],activePreset='filters',sceneLabels=[];
+let trackFade=.96,showTrackMode='all',running=true,lastT=0,fps=0,fpsCount=0,fpsT=0;
+let paintMat=MAT.WATER,isPainting=false,brushSize=3,pendingGeometryReset=false;
+let lastChartUpdate=0,lastStatsUpdate=0,currentIsotope='co60';
+
+const cMain=document.getElementById('main'),cTrack=document.getElementById('track'),cOverlay=document.getElementById('overlay');
+const ctxMain=cMain.getContext('2d'),ctxTrack=cTrack.getContext('2d'),ctxOvr=cOverlay.getContext('2d');
+const tooltip=document.getElementById('tooltip');
+const materialLayer=document.createElement('canvas'),materialCtx=materialLayer.getContext('2d');
+const outlineLayer=document.createElement('canvas'),outlineCtx=outlineLayer.getContext('2d');
+const heatLayer=document.createElement('canvas'),heatCtx=heatLayer.getContext('2d');
+let materialDirty=true,CW=0,CH=0,scaleX=1,scaleY=1;
+
+/* ═══════════════════════════════════════════
+   TEORIA MODAL
+═══════════════════════════════════════════ */
+function openTheory(){document.getElementById('theory-overlay').classList.add('open')}
+function closeTheory(){document.getElementById('theory-overlay').classList.remove('open')}
+document.getElementById('theory-overlay').addEventListener('click',function(e){if(e.target===this)closeTheory()});
+
+/* ═══════════════════════════════════════════
+   ISOTOPI
+═══════════════════════════════════════════ */
+function updateSrcBadge(){
+  const iso=ISOTOPES[currentIsotope]||ISOTOPES.co60;
+  const wrap=document.getElementById('src-badge-wrap');
+  wrap.innerHTML=`<div class="src-badge">
+    <div class="src-iso">${iso.symbol}<br><span style="font-size:8px">${iso.mass}</span></div>
+    <div class="src-info">
+      <div class="src-name">${iso.name}</div>
+      <div class="src-detail">${iso.detail}</div>
+      <div class="src-detail" style="color:var(--text3);margin-top:2px">${iso.desc}</div>
+    </div>
+  </div>`;
+}
+
+function applyIsotopePreset(){
+  const key=document.getElementById('src-isotope').value;
+  currentIsotope=key;
+  const iso=ISOTOPES[key];
+  if(!iso)return;
+  if(key!=='custom'){
+    srcE=iso.energy;
+    srcType=iso.type;
+    srcIso=iso.iso;
+    document.getElementById('src-energy').value=iso.energy;
+    document.getElementById('src-type').value=String(iso.type);
+    document.getElementById('src-mode').value=String(iso.iso);
+    document.getElementById('src-energy-val').textContent=iso.energy.toFixed(3)+' MeV';
+  }
+  updateSrcBadge();
+  applySourceToWasm();
+}
+
+/* ═══════════════════════════════════════════
+   RESIZE E CANVAS
+═══════════════════════════════════════════ */
+function resizeFooterCharts(){
+  ['chart-neut','chart-phot','chart-dose','chart-hist'].forEach(id=>{
+    const c=document.getElementById(id),r=c.parentElement.getBoundingClientRect();
+    c.width=Math.max(80,Math.floor(r.width-4));c.height=88;
+  });
+}
+function resizeCanvases(){
+  const r=document.getElementById('center').getBoundingClientRect();
+  CW=Math.max(160,Math.floor(r.width));CH=Math.max(160,Math.floor(r.height));
+  [cMain,cTrack,cOverlay].forEach(c=>{c.width=CW;c.height=CH});
+  [ctxMain,ctxTrack,ctxOvr].forEach(ctx=>ctx.imageSmoothingEnabled=false);
+  materialLayer.width=GRID_W;materialLayer.height=GRID_H;
+  outlineLayer.width=GRID_W;outlineLayer.height=GRID_H;
+  heatLayer.width=GRID_W;heatLayer.height=GRID_H;
+  [materialCtx,outlineCtx,heatCtx].forEach(ctx=>ctx.imageSmoothingEnabled=false);
+  scaleX=CW/DOMAIN_W;scaleY=CH/DOMAIN_H;
+  materialDirty=true;renderFrame();
+}
+
+/* ═══════════════════════════════════════════
+   WASM INTERFACE
+═══════════════════════════════════════════ */
+function getHeaps(){
+  const heapU8=Module.HEAPU8||(typeof HEAPU8!=='undefined'?HEAPU8:null);
+  const heapF32=Module.HEAPF32||(typeof HEAPF32!=='undefined'?HEAPF32:null);
+  if(!heapU8||!heapF32)throw new Error('Heap WASM non accessibile');
+  return{heapU8,heapF32};
+}
+function refreshWasmViews(){
+  if(!wasmReady||!wasmPtrs)return;
+  const n=GRID_W*GRID_H,{heapU8,heapF32}=getHeaps();
+  matGrid=new Uint8Array(heapU8.buffer,wasmPtrs.matGrid,n);
+  fluenceN=new Float32Array(heapF32.buffer,wasmPtrs.fluenceN,n);
+  fluenceP=new Float32Array(heapF32.buffer,wasmPtrs.fluenceP,n);
+  fluenceE=new Float32Array(heapF32.buffer,wasmPtrs.fluenceE,n);
+  doseMap=new Float32Array(heapF32.buffer,wasmPtrs.dose,n);
+  specNeut=new Float32Array(heapF32.buffer,wasmPtrs.specNeut,N_BINS);
+  specPhot=new Float32Array(heapF32.buffer,wasmPtrs.specPhot,N_BINS);
+}
+function applySourceToWasm(){
+  if(wasmReady&&wasmAPI&&wasmAPI.setSource)wasmAPI.setSource(srcX,srcY,srcE,srcType,srcIso,srcDx,srcDy);
+}
+function getMaterialPhysics(mid,e){
+  if(!wasmReady||!wasmAPI||!wasmAPI.queryMaterial)return null;
+  const ptr=wasmAPI.queryMaterial(mid,e),{heapF32}=getHeaps();
+  return Array.from(new Float32Array(heapF32.buffer,ptr,9));
+}
+function resetAccumulators(){
+  if(wasmReady&&wasmAPI&&wasmAPI.resetTallies){wasmAPI.resetTallies();refreshWasmViews();applySourceToWasm();}
+  else{fluenceN.fill(0);fluenceP.fill(0);fluenceE.fill(0);doseMap.fill(0);specNeut.fill(0);specPhot.fill(0);}
+  totalHist=0;totalFiss=0;totalCapt=0;totalScat=0;
+  frameTrackBuf.length=0;fissHistory=[];captHistory=[];
+  lastChartUpdate=0;lastStatsUpdate=0;
+}
+function commitGeometryReset(){if(!pendingGeometryReset)return;pendingGeometryReset=false;resetAccumulators();renderFrame();}
+
+/* ═══════════════════════════════════════════
+   PRESET GEOMETRIE
+═══════════════════════════════════════════ */
+function setPresetNote(t){const el=document.getElementById('preset-note');if(el)el.textContent=t;}
+
 function loadPreset(name){
-activePreset=name;sceneLabels=[];matGrid.fill(MAT.AIR);
-if(name==='filters'){
-for(let y=36;y<164;y++)for(let x=38;x<42;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
-for(let y=30;y<170;y++)for(let x=78;x<90;x++)matGrid[y*GRID_W+x]=MAT.IRON;
-for(let y=24;y<176;y++)for(let x=128;x<164;x++)matGrid[y*GRID_W+x]=MAT.WATER;
-sceneLabels=[{x:4.0,y:3.2,text:'Pb: gamma',color:'#ffd257'},{x:8.4,y:3.2,text:'Fe: e-',color:'#68caff'},{x:14.6,y:3.2,text:'H2O: n',color:'#8dff67'}];
-srcX=1.5;srcY=10;srcE=2.5;srcType=1;srcIso=0;srcDx=1;srcDy=0;
-document.getElementById('src-type').value='1';document.getElementById('src-energy').value='2.5';document.getElementById('src-mode').value='0';document.getElementById('n-primary').value='18';document.getElementById('view-mode').value='material';document.getElementById('track-mode').value='all';
-setPresetNote('Demo filtri: piombo attenua soprattutto i fotoni, il ferro accorcia molto le tracce degli elettroni, l acqua rallenta e diffonde i neutroni.');
-}else if(name==='shield'){
-for(let y=30;y<170;y++)for(let x=80;x<100;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
-for(let y=30;y<170;y++)for(let x=110;x<130;x++)matGrid[y*GRID_W+x]=MAT.IRON;
-for(let y=30;y<170;y++)for(let x=140;x<170;x++)matGrid[y*GRID_W+x]=MAT.CONCRETE;
-srcX=2;srcY=10;srcE=1.25;srcType=1;srcIso=0;srcDx=1;srcDy=0;
-document.getElementById('src-type').value='1';document.getElementById('src-energy').value='1.25';document.getElementById('src-mode').value='0';document.getElementById('view-mode').value='dose';
-setPresetNote('Schermatura multistrato compatta per un fascio di fotoni direzionale.');
-}else{
-matGrid.fill(MAT.WATER);
-for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){const dx=x-60,dy=y-100;if(dx*dx+dy*dy<=225)matGrid[y*GRID_W+x]=MAT.U235}
-for(let y=60;y<140;y++)for(let x=120;x<160;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
-for(let y=80;y<120;y++)for(let x=160;x<185;x++)matGrid[y*GRID_W+x]=MAT.CONCRETE;
-srcX=60*CELL_CM;srcY=100*CELL_CM;srcE=2;srcType=0;srcIso=1;srcDx=1;srcDy=0;
-document.getElementById('src-type').value='0';document.getElementById('src-energy').value='2';document.getElementById('src-mode').value='1';document.getElementById('view-mode').value='material';
-setPresetNote('Preset reattore: nocciolo di U-235 immerso in acqua con schermi a valle.');
+  activePreset=name;sceneLabels=[];matGrid.fill(MAT.AIR);
+  if(name==='filters'){
+    for(let y=36;y<164;y++)for(let x=38;x<42;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
+    for(let y=30;y<170;y++)for(let x=78;x<90;x++)matGrid[y*GRID_W+x]=MAT.IRON;
+    for(let y=24;y<176;y++)for(let x=128;x<164;x++)matGrid[y*GRID_W+x]=MAT.WATER;
+    sceneLabels=[{x:4.0,y:3.0,text:'Pb: γ',color:'#ffdd70'},{x:8.6,y:3.0,text:'Fe: e⁻',color:'#80d8ff'},{x:15.0,y:3.0,text:'H₂O: n',color:'#90ff70'}];
+    srcX=1.5;srcY=10;srcE=1.25;srcType=1;srcIso=0;srcDx=1;srcDy=0;
+    document.getElementById('src-isotope').value='co60';
+    document.getElementById('src-type').value='1';
+    document.getElementById('src-energy').value='1.25';
+    document.getElementById('src-mode').value='0';
+    document.getElementById('n-primary').value='3';
+    document.getElementById('view-mode').value='material';
+    document.getElementById('track-mode').value='all';
+    currentIsotope='co60';
+    setPresetNote('Filtri didattici: il piombo assorbe i fotoni γ (fotoelettrico), il ferro ferma gli elettroni, l\'acqua modera e diffonde i neutroni.');
+  }else if(name==='shield'){
+    for(let y=30;y<170;y++)for(let x=80;x<100;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
+    for(let y=30;y<170;y++)for(let x=110;x<130;x++)matGrid[y*GRID_W+x]=MAT.IRON;
+    for(let y=30;y<170;y++)for(let x=140;x<170;x++)matGrid[y*GRID_W+x]=MAT.CONCRETE;
+    srcX=2;srcY=10;srcE=0.662;srcType=1;srcIso=0;srcDx=1;srcDy=0;
+    document.getElementById('src-isotope').value='cs137';
+    document.getElementById('src-type').value='1';
+    document.getElementById('src-energy').value='0.662';
+    document.getElementById('src-mode').value='0';
+    document.getElementById('view-mode').value='dose';
+    currentIsotope='cs137';
+    setPresetNote('Schermatura multistrato: Cs-137 con fascio direzionale su piombo + ferro + calcestruzzo. Osservare il profilo di dose.');
+  }else{
+    matGrid.fill(MAT.WATER);
+    for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){const dx=x-60,dy=y-100;if(dx*dx+dy*dy<=225)matGrid[y*GRID_W+x]=MAT.U235;}
+    for(let y=60;y<140;y++)for(let x=120;x<160;x++)matGrid[y*GRID_W+x]=MAT.LEAD;
+    for(let y=80;y<120;y++)for(let x=160;x<185;x++)matGrid[y*GRID_W+x]=MAT.CONCRETE;
+    srcX=60*CELL_CM;srcY=100*CELL_CM;srcE=2;srcType=0;srcIso=1;srcDx=1;srcDy=0;
+    document.getElementById('src-isotope').value='nfast';
+    document.getElementById('src-type').value='0';
+    document.getElementById('src-energy').value='2';
+    document.getElementById('src-mode').value='1';
+    document.getElementById('view-mode').value='material';
+    currentIsotope='nfast';
+    setPresetNote('Reattore: nocciolo U-235 in acqua (moderatore), schermi a valle. Osservare le fissioni e i secondari.');
+  }
+  updateSrcBadge();updateUI();materialDirty=true;resetAccumulators();renderFrame();
 }
-updateUI();materialDirty=true;resetAccumulators();renderFrame()
+
+function clearGeometry(){
+  activePreset='custom';sceneLabels=[];
+  setPresetNote('Geometria pulita. Disegna materiali con il mouse e imposta la sorgente.');
+  matGrid.fill(MAT.AIR);materialDirty=true;resetAccumulators();renderFrame();
 }
-function clearGeometry(){activePreset='custom';sceneLabels=[];setPresetNote('Geometria pulita. Disegna materiali e usa la sorgente per creare una scena personalizzata.');matGrid.fill(MAT.AIR);materialDirty=true;resetAccumulators();renderFrame()}
-function heatColor(t){const x=Math.max(0,Math.min(1,t)),s=[[0,[0,0,20]],[.18,[0,0,180]],[.35,[0,200,255]],[.55,[0,255,100]],[.72,[255,255,0]],[.86,[255,100,0]],[1,[255,255,255]]];for(let i=0;i<s.length-1;i++)if(x<=s[i+1][0]){const f=(x-s[i][0])/(s[i+1][0]-s[i][0]),a=s[i][1],b=s[i+1][1];return[Math.round(a[0]+(b[0]-a[0])*f),Math.round(a[1]+(b[1]-a[1])*f),Math.round(a[2]+(b[2]-a[2])*f)]}return[255,255,255]}
-function renderMaterial(){if(materialDirty){const img=materialCtx.createImageData(GRID_W,GRID_H),d=img.data;for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){const hex=MAT_COLORS[matGrid[y*GRID_W+x]]||'#30485d',i4=(y*GRID_W+x)*4;d[i4]=parseInt(hex.slice(1,3),16);d[i4+1]=parseInt(hex.slice(3,5),16);d[i4+2]=parseInt(hex.slice(5,7),16);d[i4+3]=255}materialCtx.putImageData(img,0,0);outlineCtx.clearRect(0,0,GRID_W,GRID_H);outlineCtx.beginPath();for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){const here=matGrid[y*GRID_W+x];if(x<GRID_W-1&&matGrid[y*GRID_W+x+1]!==here){outlineCtx.moveTo(x+1,y);outlineCtx.lineTo(x+1,y+1)}if(y<GRID_H-1&&matGrid[(y+1)*GRID_W+x]!==here){outlineCtx.moveTo(x,y+1);outlineCtx.lineTo(x+1,y+1)}}outlineCtx.strokeStyle='rgba(246,250,255,.52)';outlineCtx.lineWidth=1;outlineCtx.stroke();materialDirty=false}ctxMain.clearRect(0,0,CW,CH);ctxMain.fillStyle='#294156';ctxMain.fillRect(0,0,CW,CH);ctxMain.globalAlpha=.98;ctxMain.drawImage(materialLayer,0,0,CW,CH);ctxMain.globalAlpha=.78;ctxMain.drawImage(outlineLayer,0,0,CW,CH);ctxMain.globalAlpha=1}
-function renderHeatmap(buf,scale){let maxV=0;for(let i=0;i<buf.length;i++)if(buf[i]>maxV)maxV=buf[i];if(maxV<=0)return;const img=heatCtx.createImageData(GRID_W,GRID_H),d=img.data;for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){const v=buf[y*GRID_W+x];if(v<=0)continue;const col=heatColor(Math.min(1,Math.log10(1+v*scale/maxV*9)*scale)),i4=(y*GRID_W+x)*4;d[i4]=col[0];d[i4+1]=col[1];d[i4+2]=col[2];d[i4+3]=180}heatCtx.putImageData(img,0,0);ctxMain.drawImage(heatLayer,0,0,CW,CH)}
-function renderTracks(){ctxTrack.save();ctxTrack.globalCompositeOperation='destination-out';ctxTrack.fillStyle=`rgba(0,0,0,${Math.max(.01,1-trackFade)})`;ctxTrack.fillRect(0,0,CW,CH);ctxTrack.restore();const colors=['#8dff67','#ffd257','#68caff','#ff98d1'],w=[1.1,.95,.72,.72],a=[.42,.37,.28,.24];for(const trk of frameTrackBuf){if(showTrackMode==='none')continue;if(showTrackMode==='neutron'&&trk.type!==0)continue;if(showTrackMode==='photon'&&trk.type!==1)continue;if(showTrackMode==='electron'&&trk.type!==2&&trk.type!==3)continue;if(trk.pts.length<2)continue;ctxTrack.strokeStyle=colors[trk.type]||'#fff';ctxTrack.lineWidth=w[trk.type]||.8;ctxTrack.globalAlpha=a[trk.type]||.28;ctxTrack.shadowBlur=1.5;ctxTrack.shadowColor=colors[trk.type]||'#fff';ctxTrack.beginPath();ctxTrack.moveTo(trk.pts[0].x*scaleX,trk.pts[0].y*scaleY);for(let i=1;i<trk.pts.length;i++)ctxTrack.lineTo(trk.pts[i].x*scaleX,trk.pts[i].y*scaleY);ctxTrack.stroke()}ctxTrack.globalAlpha=1;ctxTrack.shadowBlur=0}
-function renderGridOverlay(){ctxOvr.strokeStyle='rgba(120,160,190,.18)';ctxOvr.lineWidth=.5;for(let x=0;x<=GRID_W;x+=10){ctxOvr.beginPath();ctxOvr.moveTo(x*CELL_CM*scaleX,0);ctxOvr.lineTo(x*CELL_CM*scaleX,CH);ctxOvr.stroke()}for(let y=0;y<=GRID_H;y+=10){ctxOvr.beginPath();ctxOvr.moveTo(0,y*CELL_CM*scaleY);ctxOvr.lineTo(CW,y*CELL_CM*scaleY);ctxOvr.stroke()}}
-function renderSceneLabels(){if(!sceneLabels.length)return;ctxOvr.save();ctxOvr.font='12px Segoe UI,sans-serif';ctxOvr.textAlign='center';ctxOvr.textBaseline='bottom';for(const l of sceneLabels){const x=l.x*CELL_CM*scaleX,y=l.y*CELL_CM*scaleY;ctxOvr.fillStyle='rgba(8,16,24,.82)';ctxOvr.fillRect(x-52,y-20,104,18);ctxOvr.strokeStyle=l.color||'rgba(124,226,255,.7)';ctxOvr.strokeRect(x-52,y-20,104,18);ctxOvr.fillStyle=l.color||'#dce9f3';ctxOvr.fillText(l.text,x,y-6)}ctxOvr.restore()}
-function renderSource(){ctxOvr.clearRect(0,0,CW,CH);const sx=srcX*scaleX,sy=srcY*scaleY;ctxOvr.fillStyle='rgba(255,255,255,.9)';ctxOvr.beginPath();ctxOvr.arc(sx,sy,5.5,0,TWO_PI);ctxOvr.fill();ctxOvr.strokeStyle='rgba(255,255,255,.45)';ctxOvr.lineWidth=1;ctxOvr.beginPath();ctxOvr.arc(sx,sy,9,0,TWO_PI);ctxOvr.stroke();ctxOvr.fillStyle='rgba(255,255,255,.72)';ctxOvr.font='12px Consolas';ctxOvr.fillText(['n','g','e-'][srcType]||'?',sx+11,sy-4);ctxOvr.fillText(srcE.toFixed(2)+' MeV',sx+11,sy+10);if(document.getElementById('show-grid').checked)renderGridOverlay();renderSceneLabels()}
-function renderFrame(){renderMaterial();const v=document.getElementById('view-mode').value;if(v!=='material'){const s=parseFloat(document.getElementById('dose-scale').value),buf=v==='dose'?doseMap:v==='fluence_n'?fluenceN:v==='fluence_p'?fluenceP:fluenceE;renderHeatmap(buf,s)}renderTracks();renderSource()}
-function drawBar(canvas,data,color){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);let max=0;for(let i=0;i<data.length;i++)if(data[i]>max)max=data[i];if(max<=0)return;const bw=canvas.width/data.length;ctx.fillStyle=color;for(let i=0;i<data.length;i++){if(data[i]<=0)continue;const v=Math.log10(1+data[i])/Math.log10(1+max);ctx.fillRect(i*bw,canvas.height*(1-v),Math.max(1,bw-1),canvas.height*v)}}
-function drawLine(canvas,d1,d2,c1,c2){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);const max=Math.max(1,...d1,...d2);[[d1,c1],[d2,c2]].forEach(([d,c])=>{if(d.length<2)return;ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.beginPath();for(let i=0;i<d.length;i++){const x=i/Math.max(1,d.length-1)*canvas.width,y=canvas.height*(1-d[i]/max);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()})}
-function drawDose(canvas){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);const p=new Float32Array(GRID_W);for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++)p[x]+=doseMap[y*GRID_W+x];let max=0;for(let x=0;x<GRID_W;x++)if(p[x]>max)max=p[x];if(max<=0)return;const bw=canvas.width/GRID_W;ctx.fillStyle='rgba(255,120,60,.75)';for(let x=0;x<GRID_W;x++){const v=Math.log10(1+p[x])/Math.log10(1+max);ctx.fillRect(x*bw,canvas.height*(1-v),bw,canvas.height*v)}}
-function updateCharts(){drawBar(document.getElementById('chart-neut'),specNeut,'rgba(141,255,103,.72)');drawBar(document.getElementById('chart-phot'),specPhot,'rgba(255,210,87,.72)');drawDose(document.getElementById('chart-dose'));drawLine(document.getElementById('chart-hist'),fissHistory,captHistory,'#ff7c3f','#ffe06b')}
-function updateStats(){[['hist',totalHist],['fiss',totalFiss],['capt',totalCapt],['scat',totalScat]].forEach(([k,v])=>{document.getElementById('hd-'+k).textContent=Number(v).toLocaleString('it');document.getElementById('stat-'+k).textContent=Number(v).toLocaleString('it')});document.getElementById('stat-keff').textContent=(totalHist>0?(totalFiss*2.43/totalHist):0).toFixed(3);let maxDose=0;for(let i=0;i<doseMap.length;i++)if(doseMap[i]>maxDose)maxDose=doseMap[i];document.getElementById('stat-dose').textContent=maxDose.toExponential(2)}
-function getPos(e){const r=cMain.getBoundingClientRect();return[Math.floor((e.clientX-r.left)/scaleX/CELL_CM),Math.floor((e.clientY-r.top)/scaleY/CELL_CM)]}
-function paintCell(e){const [cx,cy]=getPos(e);for(let dy=-brushSize;dy<=brushSize;dy++)for(let dx=-brushSize;dx<=brushSize;dx++){if(dx*dx+dy*dy>brushSize*brushSize)continue;const nx=cx+dx,ny=cy+dy;if(nx>=0&&nx<GRID_W&&ny>=0&&ny<GRID_H)matGrid[ny*GRID_W+nx]=paintMat}materialDirty=true;pendingGeometryReset=true;if(!running)renderFrame()}
-function showTooltip(e){const [cx,cy]=getPos(e);if(cx<0||cx>=GRID_W||cy<0||cy>=GRID_H){tooltip.style.display='none';return}const i=cy*GRID_W+cx;tooltip.style.display='block';tooltip.style.left=(e.offsetX+14)+'px';tooltip.style.top=(e.offsetY-10)+'px';tooltip.innerHTML=MAT_NAMES[matGrid[i]]+'<br>Dose: '+doseMap[i].toExponential(2)+' Gy<br>Phi_n='+fluenceN[i].toFixed(1)+' Phi_g='+fluenceP[i].toFixed(1)+' Phi_e='+fluenceE[i].toFixed(1)}
-function showXS(e){const [cx,cy]=getPos(e);if(cx<0||cx>=GRID_W||cy<0||cy>=GRID_H)return;const mid=matGrid[cy*GRID_W+cx],q=getMaterialPhysics(mid,srcE);if(!q)return;const m=MATERIALS[mid];document.getElementById('xs-display').innerHTML='<b>'+MAT_NAMES[mid]+'</b><br>rho = '+m.density.toFixed(3)+' g/cm^3<br>Sigma_s = '+q[0].toExponential(3)+' cm^-1<br>Sigma_c = '+q[1].toExponential(3)+' cm^-1<br>Sigma_f = '+q[2].toExponential(3)+' cm^-1<br>mu_pe = '+q[4].toExponential(3)+' cm^-1<br>mu_c = '+q[5].toExponential(3)+' cm^-1<br>mu_pp = '+q[6].toExponential(3)+' cm^-1<br>-dE/dx = '+q[8].toFixed(4)+' MeV/cm';document.getElementById('mat-info').innerHTML='Z_eff = '+m.Z+' | A = '+m.A+'<br>I = '+m.I_eV+' eV<br>sigma_s(1MeV) = '+m.sig_s+' barn<br>sigma_c(th) = '+m.sig_c+' barn<br>sigma_f(th) = '+m.sig_f+' barn<br>'+(m.nu?('nu = '+m.nu+' | E_f = '+m.Ef+' MeV'):'')}
-function buildPalette(){const pal=document.getElementById('mat-palette');pal.innerHTML='';MAT_NAMES.forEach((name,i)=>{const btn=document.createElement('div');btn.className='mat'+(i===paintMat?' on':'');btn.innerHTML='<div class="sw" style="background:'+MAT_COLORS[i]+'"></div>'+name;btn.onclick=()=>{paintMat=i;document.querySelectorAll('.mat').forEach(n=>n.classList.remove('on'));btn.classList.add('on')};pal.appendChild(btn)})}
-function updateUI(){srcE=parseFloat(document.getElementById('src-energy').value);srcType=parseInt(document.getElementById('src-type').value,10);srcIso=parseInt(document.getElementById('src-mode').value,10);brushSize=parseInt(document.getElementById('brush-size').value,10);trackFade=parseFloat(document.getElementById('track-fade').value);showTrackMode=document.getElementById('track-mode').value;document.getElementById('src-energy-val').textContent=srcE.toFixed(2);document.getElementById('n-primary-val').textContent=document.getElementById('n-primary').value;document.getElementById('dose-scale-val').textContent=parseFloat(document.getElementById('dose-scale').value).toFixed(1)+'x';document.getElementById('track-fade-val').textContent=trackFade.toFixed(3);const d=document.getElementById('brush-dot'),px=Math.min(34,brushSize*3);d.style.width=px+'px';d.style.height=px+'px';applySourceToWasm()}
-async function tryLoadWASM(){const dot=document.getElementById('status-dot'),label=document.getElementById('status-label'),xs=document.getElementById('xs-display');label.textContent='CARICAMENTO WASM';xs.textContent='Caricamento modulo in corso...';return new Promise((resolve,reject)=>{let settled=false,timeoutId=null;const finish=(ok,val)=>{if(settled)return;settled=true;if(timeoutId!==null)clearTimeout(timeoutId);ok?resolve(val):reject(val)};window.Module={locateFile(p){return p},onRuntimeInitialized(){try{overrideWithWASM();label.textContent=running?'IN ESECUZIONE':'IN PAUSA';xs.textContent='WASM pronto. Passa sul materiale per vedere le sezioni d\'urto.';finish(true)}catch(err){finish(false,err)}},onAbort(reason){finish(false,new Error(String(reason||'Abort del modulo WASM')))},printErr(text){if(text)console.error(text)}};timeoutId=setTimeout(()=>finish(false,new Error('Timeout durante l\'inizializzazione del modulo WASM')),12000);const s=document.createElement('script');s.src='transport.js';s.async=true;s.dataset.transportWasm='1';s.onerror=()=>{dot.className='paused';label.textContent='WASM NON DISPONIBILE';running=false;finish(false,new Error('transport.js non trovato'))};document.head.appendChild(s)}).catch(err=>{console.error(err);dot.className='paused';label.textContent='ERRORE WASM';running=false;document.getElementById('btn-play').textContent='Avvia';xs.innerHTML='<span style="color:#ffcf59">Modulo WASM non caricato.</span><br>'+err.message+'<br>Rigenera transport.js.'})}
-function overrideWithWASM(){wasmAPI={init:Module.cwrap('sim_init',null,[]),step:Module.cwrap('sim_step','number',['number']),setSource:Module.cwrap('set_source',null,['number','number','number','number','number','number','number']),resetTallies:Module.cwrap('reset_tallies',null,[]),getFluenceN:Module.cwrap('get_fluence_n','number',[]),getFluenceP:Module.cwrap('get_fluence_p','number',[]),getFluenceE:Module.cwrap('get_fluence_e','number',[]),getDose:Module.cwrap('get_dose','number',[]),getMatGrid:Module.cwrap('get_mat_grid','number',[]),getSpecNeut:Module.cwrap('get_spec_neut','number',[]),getSpecPhot:Module.cwrap('get_spec_phot','number',[]),getTracks:Module.cwrap('get_tracks_buffer','number',[]),getTrackCount:Module.cwrap('get_track_count','number',[]),getTrackStride:Module.cwrap('get_track_stride','number',[]),getHistories:Module.cwrap('get_total_histories','number',[]),getFissions:Module.cwrap('get_total_fissions','number',[]),getCaptures:Module.cwrap('get_total_captures','number',[]),getScatterings:Module.cwrap('get_total_scatterings','number',[]),queryMaterial:Module.cwrap('query_material_response','number',['number','number'])};const local=Uint8Array.from(matGrid);wasmAPI.init();wasmPtrs={matGrid:wasmAPI.getMatGrid(),fluenceN:wasmAPI.getFluenceN(),fluenceP:wasmAPI.getFluenceP(),fluenceE:wasmAPI.getFluenceE(),dose:wasmAPI.getDose(),specNeut:wasmAPI.getSpecNeut(),specPhot:wasmAPI.getSpecPhot()};wasmReady=true;refreshWasmViews();matGrid.set(local);materialDirty=true;applySourceToWasm();window.simStep=n=>{const{heapF32}=getHeaps();applySourceToWasm();wasmAPI.step(n);refreshWasmViews();totalHist=wasmAPI.getHistories();totalFiss=wasmAPI.getFissions();totalCapt=wasmAPI.getCaptures();totalScat=wasmAPI.getScatterings();frameTrackBuf.length=0;const stride=wasmAPI.getTrackStride(),nTr=Math.min(wasmAPI.getTrackCount(),MAX_TR),arr=new Float32Array(heapF32.buffer,wasmAPI.getTracks(),nTr*stride);for(let i=0;i<nTr;i++){const base=i*stride,type=Math.round(arr[base]),npts=Math.round(arr[base+1]),pts=[];for(let j=0;j<npts;j++)pts.push({x:arr[base+2+j*3],y:arr[base+3+j*3],e:arr[base+4+j*3]});frameTrackBuf.push({type,pts})}fissHistory.push(totalFiss);captHistory.push(totalCapt);if(fissHistory.length>200){fissHistory.shift();captHistory.shift()}};resetAccumulators();matGrid.set(local);materialDirty=true;renderFrame();updateStats();updateCharts()}
-function toggleRun(){running=!running;document.getElementById('btn-play').textContent=running?'Pausa':'Avvia';document.getElementById('status-dot').className=running?'':'paused';document.getElementById('status-label').textContent=running?'IN ESECUZIONE':'IN PAUSA'}
-function resetSim(){resetAccumulators();ctxTrack.clearRect(0,0,CW,CH);renderFrame()}
-function loop(ts){requestAnimationFrame(loop);if(!running||!wasmReady)return;const dt=ts-lastT;lastT=ts;fpsCount++;if(ts-fpsT>500){fps=Math.round(fpsCount*1000/Math.max(1,ts-fpsT));fpsT=ts;fpsCount=0;document.getElementById('hd-fps').textContent=String(fps)}const n=parseInt(document.getElementById('n-primary').value,10)||1;simStep(n);renderFrame();if(ts-lastChartUpdate>220){updateCharts();lastChartUpdate=ts}if(ts-lastStatsUpdate>160){updateStats();lastStatsUpdate=ts}}
-cMain.addEventListener('mousedown',e=>{if(e.button===2){const r=cMain.getBoundingClientRect();srcX=(e.clientX-r.left)/scaleX;srcY=(e.clientY-r.top)/scaleY;applySourceToWasm();renderFrame();return}isPainting=true;paintCell(e)});cMain.addEventListener('mousemove',e=>{if(isPainting)paintCell(e);showTooltip(e);showXS(e)});cMain.addEventListener('mouseup',()=>{isPainting=false;commitGeometryReset()});cMain.addEventListener('mouseleave',()=>{isPainting=false;tooltip.style.display='none';commitGeometryReset()});cMain.addEventListener('contextmenu',e=>e.preventDefault());['src-energy','n-primary','track-fade','dose-scale','track-mode','src-type','src-mode','brush-size','view-mode','show-grid'].forEach(id=>document.getElementById(id).addEventListener('input',updateUI));window.addEventListener('load',()=>{resizeCanvases();resizeFooterCharts();buildPalette();loadPreset('filters');updateUI();tryLoadWASM();requestAnimationFrame(loop)});window.addEventListener('resize',()=>{resizeCanvases();resizeFooterCharts()});
-</script></body></html>
+
+/* ═══════════════════════════════════════════
+   RENDERING
+═══════════════════════════════════════════ */
+function heatColor(t){
+  const x=Math.max(0,Math.min(1,t));
+  const s=[[0,[0,0,20]],[.18,[0,0,180]],[.35,[0,200,255]],[.55,[0,255,100]],[.72,[255,255,0]],[.86,[255,100,0]],[1,[255,255,255]]];
+  for(let i=0;i<s.length-1;i++)if(x<=s[i+1][0]){
+    const f=(x-s[i][0])/(s[i+1][0]-s[i][0]),a=s[i][1],b=s[i+1][1];
+    return[Math.round(a[0]+(b[0]-a[0])*f),Math.round(a[1]+(b[1]-a[1])*f),Math.round(a[2]+(b[2]-a[2])*f)];
+  }
+  return[255,255,255];
+}
+
+function renderMaterial(){
+  if(materialDirty){
+    const img=materialCtx.createImageData(GRID_W,GRID_H),d=img.data;
+    for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){
+      const hex=MAT_COLORS[matGrid[y*GRID_W+x]]||'#1a2e3d',i4=(y*GRID_W+x)*4;
+      d[i4]=parseInt(hex.slice(1,3),16);d[i4+1]=parseInt(hex.slice(3,5),16);d[i4+2]=parseInt(hex.slice(5,7),16);d[i4+3]=255;
+    }
+    materialCtx.putImageData(img,0,0);
+    outlineCtx.clearRect(0,0,GRID_W,GRID_H);
+    outlineCtx.beginPath();
+    for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){
+      const here=matGrid[y*GRID_W+x];
+      if(x<GRID_W-1&&matGrid[y*GRID_W+x+1]!==here){outlineCtx.moveTo(x+1,y);outlineCtx.lineTo(x+1,y+1);}
+      if(y<GRID_H-1&&matGrid[(y+1)*GRID_W+x]!==here){outlineCtx.moveTo(x,y+1);outlineCtx.lineTo(x+1,y+1);}
+    }
+    outlineCtx.strokeStyle='rgba(220,235,248,.38)';outlineCtx.lineWidth=1;outlineCtx.stroke();
+    materialDirty=false;
+  }
+  ctxMain.clearRect(0,0,CW,CH);
+  ctxMain.fillStyle='#060d14';ctxMain.fillRect(0,0,CW,CH);
+  ctxMain.globalAlpha=.98;ctxMain.drawImage(materialLayer,0,0,CW,CH);
+  ctxMain.globalAlpha=.65;ctxMain.drawImage(outlineLayer,0,0,CW,CH);
+  ctxMain.globalAlpha=1;
+}
+
+function renderHeatmap(buf,scale){
+  let maxV=0;
+  for(let i=0;i<buf.length;i++)if(buf[i]>maxV)maxV=buf[i];
+  if(maxV<=0)return;
+  const img=heatCtx.createImageData(GRID_W,GRID_H),d=img.data;
+  for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++){
+    const v=buf[y*GRID_W+x];if(v<=0)continue;
+    const col=heatColor(Math.min(1,Math.log10(1+v*scale/maxV*9)*scale)),i4=(y*GRID_W+x)*4;
+    d[i4]=col[0];d[i4+1]=col[1];d[i4+2]=col[2];d[i4+3]=180;
+  }
+  heatCtx.putImageData(img,0,0);ctxMain.drawImage(heatLayer,0,0,CW,CH);
+}
+
+function renderTracks(){
+  ctxTrack.save();
+  ctxTrack.globalCompositeOperation='destination-out';
+  ctxTrack.fillStyle=`rgba(0,0,0,${Math.max(.005,1-trackFade)})`;
+  ctxTrack.fillRect(0,0,CW,CH);
+  ctxTrack.restore();
+  const colors=['#a5ff7b','#ffd257','#68caff','#ff98d1'];
+  const w=[1.2,1.0,.75,.75];
+  const a=[.55,.50,.38,.32];
+  for(const trk of frameTrackBuf){
+    if(showTrackMode==='none')continue;
+    if(showTrackMode==='neutron'&&trk.type!==0)continue;
+    if(showTrackMode==='photon'&&trk.type!==1)continue;
+    if(showTrackMode==='electron'&&trk.type!==2&&trk.type!==3)continue;
+    if(trk.pts.length<2)continue;
+    ctxTrack.strokeStyle=colors[trk.type]||'#fff';
+    ctxTrack.lineWidth=w[trk.type]||.8;
+    ctxTrack.globalAlpha=a[trk.type]||.32;
+    ctxTrack.shadowBlur=2;ctxTrack.shadowColor=colors[trk.type]||'#fff';
+    ctxTrack.beginPath();
+    ctxTrack.moveTo(trk.pts[0].x*scaleX,trk.pts[0].y*scaleY);
+    for(let i=1;i<trk.pts.length;i++)ctxTrack.lineTo(trk.pts[i].x*scaleX,trk.pts[i].y*scaleY);
+    ctxTrack.stroke();
+  }
+  ctxTrack.globalAlpha=1;ctxTrack.shadowBlur=0;
+}
+
+function renderGridOverlay(){
+  ctxOvr.strokeStyle='rgba(100,150,180,.14)';ctxOvr.lineWidth=.5;
+  for(let x=0;x<=GRID_W;x+=10){ctxOvr.beginPath();ctxOvr.moveTo(x*CELL_CM*scaleX,0);ctxOvr.lineTo(x*CELL_CM*scaleX,CH);ctxOvr.stroke();}
+  for(let y=0;y<=GRID_H;y+=10){ctxOvr.beginPath();ctxOvr.moveTo(0,y*CELL_CM*scaleY);ctxOvr.lineTo(CW,y*CELL_CM*scaleY);ctxOvr.stroke();}
+}
+
+function renderSceneLabels(){
+  if(!sceneLabels.length)return;
+  ctxOvr.save();
+  ctxOvr.font='11px "IBM Plex Mono",monospace';ctxOvr.textAlign='center';ctxOvr.textBaseline='bottom';
+  for(const l of sceneLabels){
+    const x=l.x*CELL_CM*scaleX,y=l.y*CELL_CM*scaleY;
+    ctxOvr.fillStyle='rgba(5,10,16,.8)';ctxOvr.fillRect(x-40,y-18,80,16);
+    ctxOvr.strokeStyle=l.color||'rgba(124,226,255,.7)';ctxOvr.strokeRect(x-40,y-18,80,16);
+    ctxOvr.fillStyle=l.color||'#dce9f3';ctxOvr.fillText(l.text,x,y-5);
+  }
+  ctxOvr.restore();
+}
+
+function renderSource(){
+  ctxOvr.clearRect(0,0,CW,CH);
+  const sx=srcX*scaleX,sy=srcY*scaleY;
+  // glow
+  const grd=ctxOvr.createRadialGradient(sx,sy,0,sx,sy,16);
+  grd.addColorStop(0,'rgba(255,255,255,.25)');grd.addColorStop(1,'rgba(255,255,255,0)');
+  ctxOvr.fillStyle=grd;ctxOvr.beginPath();ctxOvr.arc(sx,sy,16,0,TWO_PI);ctxOvr.fill();
+  // dot
+  ctxOvr.fillStyle='rgba(255,255,255,.95)';
+  ctxOvr.beginPath();ctxOvr.arc(sx,sy,4.5,0,TWO_PI);ctxOvr.fill();
+  // ring
+  ctxOvr.strokeStyle='rgba(255,255,255,.35)';ctxOvr.lineWidth=1;
+  ctxOvr.beginPath();ctxOvr.arc(sx,sy,8,0,TWO_PI);ctxOvr.stroke();
+  // label
+  const iso=ISOTOPES[currentIsotope]||ISOTOPES.co60;
+  ctxOvr.fillStyle='rgba(255,255,255,.8)';
+  ctxOvr.font='11px "IBM Plex Mono",monospace';
+  ctxOvr.fillText(iso.name,sx+12,sy-3);
+  ctxOvr.font='10px "IBM Plex Mono",monospace';
+  ctxOvr.fillStyle='rgba(180,210,230,.7)';
+  ctxOvr.fillText(srcE.toFixed(3)+' MeV',sx+12,sy+10);
+  if(document.getElementById('show-grid').checked)renderGridOverlay();
+  renderSceneLabels();
+}
+
+function renderFrame(){
+  renderMaterial();
+  const v=document.getElementById('view-mode').value;
+  if(v!=='material'){
+    const s=parseFloat(document.getElementById('dose-scale').value);
+    const buf=v==='dose'?doseMap:v==='fluence_n'?fluenceN:v==='fluence_p'?fluenceP:fluenceE;
+    renderHeatmap(buf,s);
+  }
+  renderTracks();renderSource();
+}
+
+/* ═══════════════════════════════════════════
+   GRAFICI FOOTER
+═══════════════════════════════════════════ */
+function drawBar(canvas,data,color){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  let max=0;for(let i=0;i<data.length;i++)if(data[i]>max)max=data[i];
+  if(max<=0)return;
+  const bw=canvas.width/data.length;ctx.fillStyle=color;
+  for(let i=0;i<data.length;i++){
+    if(data[i]<=0)continue;
+    const v=Math.log10(1+data[i])/Math.log10(1+max);
+    ctx.fillRect(i*bw,canvas.height*(1-v),Math.max(1,bw-1),canvas.height*v);
+  }
+}
+function drawLine(canvas,d1,d2,c1,c2){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  const max=Math.max(1,...d1,...d2);
+  [[d1,c1],[d2,c2]].forEach(([d,c])=>{
+    if(d.length<2)return;
+    ctx.strokeStyle=c;ctx.lineWidth=1.6;ctx.beginPath();
+    for(let i=0;i<d.length;i++){
+      const x=i/Math.max(1,d.length-1)*canvas.width,y=canvas.height*(1-d[i]/max);
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+}
+function drawDose(canvas){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  const p=new Float32Array(GRID_W);
+  for(let y=0;y<GRID_H;y++)for(let x=0;x<GRID_W;x++)p[x]+=doseMap[y*GRID_W+x];
+  let max=0;for(let x=0;x<GRID_W;x++)if(p[x]>max)max=p[x];
+  if(max<=0)return;
+  const bw=canvas.width/GRID_W;
+  ctx.fillStyle='rgba(255,120,60,.7)';
+  for(let x=0;x<GRID_W;x++){
+    const v=Math.log10(1+p[x])/Math.log10(1+max);
+    ctx.fillRect(x*bw,canvas.height*(1-v),bw,canvas.height*v);
+  }
+}
+function updateCharts(){
+  drawBar(document.getElementById('chart-neut'),specNeut,'rgba(165,255,123,.7)');
+  drawBar(document.getElementById('chart-phot'),specPhot,'rgba(255,210,87,.7)');
+  drawDose(document.getElementById('chart-dose'));
+  drawLine(document.getElementById('chart-hist'),fissHistory,captHistory,'#ff7c3f','#ffe06b');
+}
+function updateStats(){
+  [['hist',totalHist],['fiss',totalFiss],['capt',totalCapt],['scat',totalScat]].forEach(([k,v])=>{
+    const s=Number(v).toLocaleString('it');
+    document.getElementById('hd-'+k).textContent=s;
+    document.getElementById('stat-'+k).textContent=s;
+  });
+  const keff=totalHist>0?(totalFiss*2.43/totalHist):0;
+  document.getElementById('stat-keff').textContent=keff>0?keff.toFixed(3):'—';
+  let maxDose=0;for(let i=0;i<doseMap.length;i++)if(doseMap[i]>maxDose)maxDose=doseMap[i];
+  document.getElementById('stat-dose').textContent=maxDose.toExponential(2);
+}
+
+/* ═══════════════════════════════════════════
+   INTERAZIONE CANVAS
+═══════════════════════════════════════════ */
+function getPos(e){
+  const r=cMain.getBoundingClientRect();
+  return[Math.floor((e.clientX-r.left)/scaleX/CELL_CM),Math.floor((e.clientY-r.top)/scaleY/CELL_CM)];
+}
+function paintCell(e){
+  const[cx,cy]=getPos(e);
+  for(let dy=-brushSize;dy<=brushSize;dy++)for(let dx=-brushSize;dx<=brushSize;dx++){
+    if(dx*dx+dy*dy>brushSize*brushSize)continue;
+    const nx=cx+dx,ny=cy+dy;
+    if(nx>=0&&nx<GRID_W&&ny>=0&&ny<GRID_H)matGrid[ny*GRID_W+nx]=paintMat;
+  }
+  materialDirty=true;pendingGeometryReset=true;if(!running)renderFrame();
+}
+function showTooltip(e){
+  const[cx,cy]=getPos(e);
+  if(cx<0||cx>=GRID_W||cy<0||cy>=GRID_H){tooltip.style.display='none';return;}
+  const i=cy*GRID_W+cx;
+  tooltip.style.display='block';tooltip.style.left=(e.offsetX+14)+'px';tooltip.style.top=(e.offsetY-10)+'px';
+  tooltip.innerHTML=`<b style="color:var(--accent)">${MAT_NAMES[matGrid[i]]}</b><br>Dose: ${doseMap[i].toExponential(2)} Gy<br>Φ_n=${fluenceN[i].toFixed(1)} &nbsp;Φ_γ=${fluenceP[i].toFixed(1)} &nbsp;Φ_e=${fluenceE[i].toFixed(1)}`;
+}
+function showXS(e){
+  const[cx,cy]=getPos(e);if(cx<0||cx>=GRID_W||cy<0||cy>=GRID_H)return;
+  const mid=matGrid[cy*GRID_W+cx],q=getMaterialPhysics(mid,srcE);if(!q)return;
+  const m=MATERIALS[mid];
+  document.getElementById('xs-display').innerHTML=`<b>${MAT_NAMES[mid]}</b><br>ρ = ${m.density.toFixed(3)} g/cm³<br>Σ_s = ${q[0].toExponential(3)} cm⁻¹<br>Σ_c = ${q[1].toExponential(3)} cm⁻¹<br>Σ_f = ${q[2].toExponential(3)} cm⁻¹<br>μ_PE = ${q[4].toExponential(3)} cm⁻¹<br>μ_C = ${q[5].toExponential(3)} cm⁻¹<br>μ_pp = ${q[6].toExponential(3)} cm⁻¹<br>−dE/dx = ${q[8].toFixed(4)} MeV/cm`;
+  document.getElementById('mat-info').innerHTML=`Z_eff=${m.Z} | A=${m.A}<br>I = ${m.I_eV} eV${m.nu?`<br>ν = ${m.nu} | E_f = ${m.Ef} MeV`:''}`;
+}
+
+/* ═══════════════════════════════════════════
+   PALETTE MATERIALI
+═══════════════════════════════════════════ */
+function buildPalette(){
+  const pal=document.getElementById('mat-palette');pal.innerHTML='';
+  MAT_NAMES.forEach((name,i)=>{
+    const btn=document.createElement('div');
+    btn.className='mat'+(i===paintMat?' on':'');
+    btn.innerHTML=`<div class="sw" style="background:${MAT_COLORS[i]}"></div>${name}`;
+    btn.onclick=()=>{paintMat=i;document.querySelectorAll('.mat').forEach(n=>n.classList.remove('on'));btn.classList.add('on');};
+    pal.appendChild(btn);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   UPDATE UI
+═══════════════════════════════════════════ */
+function updateUI(){
+  srcE=parseFloat(document.getElementById('src-energy').value);
+  srcType=parseInt(document.getElementById('src-type').value,10);
+  srcIso=parseInt(document.getElementById('src-mode').value,10);
+  brushSize=parseInt(document.getElementById('brush-size').value,10);
+  trackFade=parseFloat(document.getElementById('track-fade').value);
+  showTrackMode=document.getElementById('track-mode').value;
+  document.getElementById('src-energy-val').textContent=srcE.toFixed(3)+' MeV';
+  document.getElementById('n-primary-val').textContent=document.getElementById('n-primary').value;
+  document.getElementById('dose-scale-val').textContent=parseFloat(document.getElementById('dose-scale').value).toFixed(1)+'×';
+  document.getElementById('track-fade-val').textContent=trackFade.toFixed(3);
+  const d=document.getElementById('brush-dot'),px=Math.min(30,brushSize*3);
+  d.style.width=px+'px';d.style.height=px+'px';
+  applySourceToWasm();
+}
+
+/* ═══════════════════════════════════════════
+   WASM LOADING
+═══════════════════════════════════════════ */
+async function tryLoadWASM(){
+  const dot=document.getElementById('status-dot'),label=document.getElementById('status-label'),xs=document.getElementById('xs-display');
+  label.textContent='CARICAMENTO WASM';xs.textContent='Caricamento modulo in corso…';
+  return new Promise((resolve,reject)=>{
+    let settled=false,timeoutId=null;
+    const finish=(ok,val)=>{if(settled)return;settled=true;if(timeoutId!==null)clearTimeout(timeoutId);ok?resolve(val):reject(val);};
+    window.Module={
+      locateFile(p){return p},
+      onRuntimeInitialized(){
+        try{overrideWithWASM();label.textContent=running?'IN ESECUZIONE':'IN PAUSA';dot.className='';xs.textContent='WASM pronto. Passa sopra i materiali per vedere le sezioni d\'urto.';finish(true);}
+        catch(err){finish(false,err);}
+      },
+      onAbort(reason){finish(false,new Error(String(reason||'Abort del modulo WASM')));},
+      printErr(text){if(text)console.error(text);}
+    };
+    timeoutId=setTimeout(()=>finish(false,new Error('Timeout inizializzazione WASM')),12000);
+    const s=document.createElement('script');s.src='transport.js';s.async=true;
+    s.onerror=()=>{dot.className='error';label.textContent='WASM NON DISPONIBILE';running=false;finish(false,new Error('transport.js non trovato'));};
+    document.head.appendChild(s);
+  }).catch(err=>{
+    console.error(err);
+    document.getElementById('status-dot').className='error';
+    document.getElementById('status-label').textContent='ERRORE WASM';
+    running=false;document.getElementById('btn-play').textContent='Avvia';
+    document.getElementById('xs-display').innerHTML=`<span style="color:var(--accent3)">Modulo WASM non caricato.</span><br><span style="color:var(--text3)">${err.message}</span><br><br>Compila con:<br><code style="font-size:10px">emcc transport.c -O2 -o transport.js \\<br>-s EXPORTED_FUNCTIONS='[...]' \\<br>-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \\<br>-s ALLOW_MEMORY_GROWTH=1</code>`;
+  });
+}
+
+function overrideWithWASM(){
+  wasmAPI={
+    init:Module.cwrap('sim_init',null,[]),
+    step:Module.cwrap('sim_step','number',['number']),
+    setSource:Module.cwrap('set_source',null,['number','number','number','number','number','number','number']),
+    resetTallies:Module.cwrap('reset_tallies',null,[]),
+    getFluenceN:Module.cwrap('get_fluence_n','number',[]),
+    getFluenceP:Module.cwrap('get_fluence_p','number',[]),
+    getFluenceE:Module.cwrap('get_fluence_e','number',[]),
+    getDose:Module.cwrap('get_dose','number',[]),
+    getMatGrid:Module.cwrap('get_mat_grid','number',[]),
+    getSpecNeut:Module.cwrap('get_spec_neut','number',[]),
+    getSpecPhot:Module.cwrap('get_spec_phot','number',[]),
+    getTracks:Module.cwrap('get_tracks_buffer','number',[]),
+    getTrackCount:Module.cwrap('get_track_count','number',[]),
+    getTrackStride:Module.cwrap('get_track_stride','number',[]),
+    getHistories:Module.cwrap('get_total_histories','number',[]),
+    getFissions:Module.cwrap('get_total_fissions','number',[]),
+    getCaptures:Module.cwrap('get_total_captures','number',[]),
+    getScatterings:Module.cwrap('get_total_scatterings','number',[]),
+    queryMaterial:Module.cwrap('query_material_response','number',['number','number'])
+  };
+  const local=Uint8Array.from(matGrid);
+  wasmAPI.init();
+  wasmPtrs={
+    matGrid:wasmAPI.getMatGrid(),fluenceN:wasmAPI.getFluenceN(),fluenceP:wasmAPI.getFluenceP(),
+    fluenceE:wasmAPI.getFluenceE(),dose:wasmAPI.getDose(),specNeut:wasmAPI.getSpecNeut(),specPhot:wasmAPI.getSpecPhot()
+  };
+  wasmReady=true;refreshWasmViews();matGrid.set(local);materialDirty=true;applySourceToWasm();
+  window.simStep=n=>{
+    const{heapF32}=getHeaps();applySourceToWasm();wasmAPI.step(n);refreshWasmViews();
+    totalHist=wasmAPI.getHistories();totalFiss=wasmAPI.getFissions();
+    totalCapt=wasmAPI.getCaptures();totalScat=wasmAPI.getScatterings();
+    frameTrackBuf.length=0;
+    const stride=wasmAPI.getTrackStride(),nTr=Math.min(wasmAPI.getTrackCount(),MAX_TR);
+    const arr=new Float32Array(heapF32.buffer,wasmAPI.getTracks(),nTr*stride);
+    for(let i=0;i<nTr;i++){
+      const base=i*stride,type=Math.round(arr[base]),npts=Math.round(arr[base+1]),pts=[];
+      for(let j=0;j<npts;j++)pts.push({x:arr[base+2+j*3],y:arr[base+3+j*3],e:arr[base+4+j*3]});
+      frameTrackBuf.push({type,pts});
+    }
+    fissHistory.push(totalFiss);captHistory.push(totalCapt);
+    if(fissHistory.length>200){fissHistory.shift();captHistory.shift();}
+  };
+  resetAccumulators();matGrid.set(local);materialDirty=true;renderFrame();updateStats();updateCharts();
+}
+
+/* ═══════════════════════════════════════════
+   CONTROLLI SIMULAZIONE
+═══════════════════════════════════════════ */
+function toggleRun(){
+  running=!running;
+  document.getElementById('btn-play').textContent=running?'Pausa':'Avvia';
+  document.getElementById('status-dot').className=running?'':'paused';
+  document.getElementById('status-label').textContent=running?'IN ESECUZIONE':'IN PAUSA';
+}
+function resetSim(){resetAccumulators();ctxTrack.clearRect(0,0,CW,CH);renderFrame();}
+
+/* ═══════════════════════════════════════════
+   LOOP PRINCIPALE
+═══════════════════════════════════════════ */
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!running||!wasmReady)return;
+  const dt=ts-lastT;lastT=ts;fpsCount++;
+  if(ts-fpsT>500){fps=Math.round(fpsCount*1000/Math.max(1,ts-fpsT));fpsT=ts;fpsCount=0;document.getElementById('hd-fps').textContent=String(fps);}
+  const n=parseInt(document.getElementById('n-primary').value,10)||1;
+  simStep(n);renderFrame();
+  if(ts-lastChartUpdate>250){updateCharts();lastChartUpdate=ts;}
+  if(ts-lastStatsUpdate>180){updateStats();lastStatsUpdate=ts;}
+}
+
+/* ═══════════════════════════════════════════
+   EVENT LISTENERS
+═══════════════════════════════════════════ */
+cMain.addEventListener('mousedown',e=>{
+  if(e.button===2){const r=cMain.getBoundingClientRect();srcX=(e.clientX-r.left)/scaleX;srcY=(e.clientY-r.top)/scaleY;applySourceToWasm();renderFrame();return;}
+  isPainting=true;paintCell(e);
+});
+cMain.addEventListener('mousemove',e=>{if(isPainting)paintCell(e);showTooltip(e);showXS(e);});
+cMain.addEventListener('mouseup',()=>{isPainting=false;commitGeometryReset();});
+cMain.addEventListener('mouseleave',()=>{isPainting=false;tooltip.style.display='none';commitGeometryReset();});
+cMain.addEventListener('contextmenu',e=>e.preventDefault());
+
+['src-energy','n-primary','track-fade','dose-scale','track-mode','src-type','src-mode','brush-size','view-mode','show-grid']
+  .forEach(id=>document.getElementById(id).addEventListener('input',updateUI));
+
+window.addEventListener('load',()=>{
+  resizeCanvases();resizeFooterCharts();
+  buildPalette();
+  loadPreset('filters');
+  updateSrcBadge();
+  updateUI();
+  tryLoadWASM();
+  requestAnimationFrame(loop);
+});
+window.addEventListener('resize',()=>{resizeCanvases();resizeFooterCharts();});
+</script>
+</body>
+</html>

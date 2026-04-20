@@ -71,6 +71,13 @@ static inline float clampf(float x, float a, float b) {
     return (x < a) ? a : ((x > b) ? b : x);
 }
 
+static inline float effective_softening(void) {
+    if (phase <= 0) return g_soft;
+    if (phase == 1) return fmaxf(36.0f, g_soft * 0.18f);
+    if (phase == 2) return fmaxf(16.0f, g_soft * 0.08f);
+    return fmaxf(10.0f, g_soft * 0.05f);
+}
+
 static float kernel(float dist) {
     float h = g_hsmooth;
     float q = dist / h;
@@ -200,6 +207,7 @@ static void update_density_pressure(void) {
 
 static void update_forces_and_energy_rhs(void) {
     float h2 = 2.0f * g_hsmooth;
+    float soft2 = effective_softening();
 
     for (int i = 0; i < N; i++) {
         ax[i] = 0.0f;
@@ -218,7 +226,7 @@ static void update_forces_and_energy_rhs(void) {
             float r2 = rx*rx + ry*ry;
             float dist = sqrtf(r2 + 1e-12f);
 
-            float inv_dist = 1.0f / sqrtf(r2 + g_soft);
+            float inv_dist = 1.0f / sqrtf(r2 + soft2);
             float invr3 = inv_dist * inv_dist * inv_dist;
             float ag = g_G * g_mass * invr3;
 
@@ -379,22 +387,13 @@ void sim_step(int iterations) {
             vy[i] += 0.5f * dt * ay[i];
 
             u[i] += dt * du_dt[i];
-            u[i] *= (phase == 0) ? g_cool0 : g_cool1;
+            u[i] *= (phase <= 1) ? g_cool0 : g_cool1;
             u[i] = clampf(u[i], 1e-5f, 50.0f);
 
             if (rho[i] > max_rho) max_rho = rho[i];
             if (u[i] > max_u) max_u = u[i];
             sum_rho += rho[i];
 
-            if (px[i] < -0.25f * CANVAS_W || px[i] > 1.25f * CANVAS_W ||
-                py[i] < -0.25f * CANVAS_H || py[i] > 1.25f * CANVAS_H) {
-                float ccx = CANVAS_W * 0.5f;
-                float ccy = CANVAS_H * 0.5f;
-                float dx = ccx - px[i];
-                float dy = ccy - py[i];
-                vx[i] += 0.002f * dx;
-                vy[i] += 0.002f * dy;
-            }
         }
 
         float mean_rho = (diag_n_alive > 0) ? (sum_rho / (float)diag_n_alive) : 0.0f;

@@ -364,7 +364,6 @@ footer {
         <canvas id="scalarOverlay" width="660" height="500" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair"></canvas>
         <div class="canvas-label" id="scalarCanvasLabel">T(x, y) — temperatura [°C]</div>
       </div>
-      <img id="europeMap" src="mappa.png" style="display:none" alt="">
     </div>
     <div class="side-panel">
       <div class="info-box">
@@ -985,20 +984,18 @@ class ScalarRenderer {
     // sfondo mare azzurro
     ctx.fillStyle = '#daeaf5';
     ctx.fillRect(0, 0, this.W, this.H);
-    // mappa sotto la colormap: bianca opaca
-    const img = document.getElementById('europeMap');
-    if (img && img.complete && img.naturalWidth > 0) {
-      ctx.drawImage(img, 0, 0, this.W, this.H);
+    // mappa sotto la colormap
+    if (typeof europeMapImg !== 'undefined' && europeMapImg.complete && europeMapImg.naturalWidth > 0) {
+      ctx.drawImage(europeMapImg, 0, 0, this.W, this.H);
     }
   }
 
   drawGeoOverlay(ctx) {
-    // mappa sopra la colormap: solo i contorni scuri restano visibili
-    const img = document.getElementById('europeMap');
-    if (!img || !img.complete || img.naturalWidth === 0) return;
+    // contorni della mappa sovrapposti alla colormap
+    if (typeof europeMapImg === 'undefined' || !europeMapImg.complete || europeMapImg.naturalWidth === 0) return;
     ctx.save();
     ctx.globalAlpha = 0.55;
-    ctx.drawImage(img, 0, 0, this.W, this.H);
+    ctx.drawImage(europeMapImg, 0, 0, this.W, this.H);
     ctx.restore();
   }
 
@@ -1607,14 +1604,16 @@ class VectorRenderer {
 /* ═══════════════════════════════════════════
    INIZIALIZZAZIONE
 ════════════════════════════════════════════ */
+// Carica la mappa geografica prima di inizializzare i renderer
+const europeMapImg = new Image();
+europeMapImg.onerror = () => console.warn('mappa.png non trovata — sfondo geografico disabilitato');
+europeMapImg.src = 'mappa.png';
+
 const scalarRend = new ScalarRenderer('scalarCanvas');
 const vectorRend = new VectorRenderer('vectorCanvas');
 
-// Ridisegna quando la mappa geografica è caricata
-const europeMapEl = document.getElementById('europeMap');
-if (europeMapEl) {
-  europeMapEl.addEventListener('load', () => scalarRend.render());
-}
+// Ridisegna quando la mappa è pronta
+europeMapImg.onload = () => scalarRend.render();
 
 // Inizializza pannello proprietà con il campo di default
 document.getElementById('vectorProps').innerHTML =

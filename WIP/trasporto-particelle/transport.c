@@ -70,10 +70,12 @@
    POOL DI PARTICELLE
    ───────────────────────────────────────────── */
 
-#define MAX_PARTICLES   50000
-#define MAX_TRACKS      8000
-#define MAX_TRACK_PTS   64
-#define SECONDARY_QUEUE 20000
+#define MAX_PARTICLES       50000
+#define MAX_TRACKS          8000
+#define MAX_TRACK_PTS       128
+#define SECONDARY_QUEUE     20000
+#define TRACK_MIN_SPACING_CM 0.08
+#define TRANSPORT_EPS_CM    1e-5
 
 /* ─────────────────────────────────────────────
    TIPI DI PARTICELLE
@@ -302,6 +304,36 @@ static inline void deposit_dose(double x, double y, double dE_MeV, double rho) {
     /* converti MeV in J: 1 MeV = 1.602176634e-13 J; Gy = J/kg = J / (mass_g * 1e-3) */
     double dose_gy  = dE_MeV * 1.602176634e-13 / (mass_g * 1e-3);
     dose_map[cy][cx] += (float)dose_gy;
+}
+
+static inline double distance_to_next_cell_boundary(double x, double y,
+                                                    double dx, double dy) {
+    double tx = INFINITY;
+    double ty = INFINITY;
+
+    if (dx > 1e-12) {
+        int cx = get_cell_x(fmin(x, DOMAIN_W_CM - 1e-12));
+        double bx = (cx + 1) * CELL_SIZE_CM;
+        tx = (bx - x) / dx;
+    } else if (dx < -1e-12) {
+        int cx = get_cell_x(fmax(x - 1e-12, 0.0));
+        double bx = cx * CELL_SIZE_CM;
+        tx = (bx - x) / dx;
+    }
+
+    if (dy > 1e-12) {
+        int cy = get_cell_y(fmin(y, DOMAIN_H_CM - 1e-12));
+        double by = (cy + 1) * CELL_SIZE_CM;
+        ty = (by - y) / dy;
+    } else if (dy < -1e-12) {
+        int cy = get_cell_y(fmax(y - 1e-12, 0.0));
+        double by = cy * CELL_SIZE_CM;
+        ty = (by - y) / dy;
+    }
+
+    double step = fmin(tx, ty);
+    if (!isfinite(step)) return 1.0;
+    return fmax(step, TRANSPORT_EPS_CM);
 }
 
 static inline int spectrum_bin(double energy_MeV) {
@@ -603,7 +635,28 @@ static void push_secondary(double x, double y, double dx, double dy,
    ───────────────────────────────────────────── */
 
 static void track_add_point(Track *t, double x, double y, double e) {
-    if (!t || t->n_pts >= MAX_TRACK_PTS) return;
+    if (!t) return;
+
+    if (t->n_pts >= MAX_TRACK_PTS) {
+        int last = MAX_TRACK_PTS - 1;
+        t->px[last] = (float)x;
+        t->py[last] = (float)y;
+        t->pe[last] = (float)e;
+        return;
+    }
+
+    if (t->n_pts > 1) {
+        int last = t->n_pts - 1;
+        double dx = x - (double)t->px[last];
+        double dy = y - (double)t->py[last];
+        if (dx * dx + dy * dy < TRACK_MIN_SPACING_CM * TRACK_MIN_SPACING_CM) {
+            t->px[last] = (float)x;
+            t->py[last] = (float)y;
+            t->pe[last] = (float)e;
+            return;
+        }
+    }
+
     t->px[t->n_pts] = (float)x;
     t->py[t->n_pts] = (float)y;
     t->pe[t->n_pts] = (float)e;
@@ -619,37 +672,55 @@ static inline MaterialID mid_for(Particle *p);
 
 static void transport_neutron(Particle *p, Track *trk) {
     while (p->alive && p->energy > E_CUTOFF_NEUT) {
-        MaterialID mid = get_material(p->x, p->y);
-        if (mid == MAT_VACUUM && !in_domain(p->x, p->y)) { p->alive = 0; break; }
-
-        double sig_s, sig_c, sig_f;
-        neutron_xs(mid, p->energy, &sig_s, &sig_c, &sig_f);
-        double sig_tot = sig_s + sig_c + sig_f;
-
-        /* Sampling del cammino libero medio: d = -ln(ξ)/Σ_tot */
-        double step;
-        if (sig_tot < 1e-20) {
-            /* nel vuoto o materiale trasparente: propaga fino al bordo */
-            step = 1.0; /* 1 cm fisso nel vuoto */
-        } else {
-            step = -log(rng_double() + 1e-300) / sig_tot;
-        }
-        /* Clamp al bordo del dominio */
-        step = fmin(step, 10.0);
-
-        double new_x = p->x + p->dx * step;
-        double new_y = p->y + p->dy * step;
-
-        /* Deposita fluenza lungo il percorso */
-        deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0, PTYPE_NEUTRON, p->weight);
-        spec_neut[spectrum_bin(p->energy)] += (float)p->weight;
-        track_add_point(trk, new_x, new_y, p->energy);
-
-        p->x = new_x; p->y = new_y;
-
         if (!in_domain(p->x, p->y)) { p->alive = 0; break; }
 
-        if (sig_tot < 1e-20) continue; /* vuoto */
+        double tau = -log(rng_double() + 1e-300);
+        MaterialID mid = MAT_VACUUM;
+        double sig_s = 0.0, sig_c = 0.0, sig_f = 0.0, sig_tot = 0.0;
+        int interacted = 0;
+
+        /* L'ottica esponenziale viene "consumata" cella per cella fino al primo confine utile. */
+        while (p->alive) {
+            mid = get_material(p->x, p->y);
+            neutron_xs(mid, p->energy, &sig_s, &sig_c, &sig_f);
+            sig_tot = sig_s + sig_c + sig_f;
+
+            double boundary_step = distance_to_next_cell_boundary(p->x, p->y, p->dx, p->dy);
+            double interaction_step = (sig_tot > 1e-20) ? (tau / sig_tot) : INFINITY;
+            int will_interact = (sig_tot > 1e-20 && interaction_step <= boundary_step + 1e-9);
+            double step = will_interact ? interaction_step : boundary_step;
+            double old_x = p->x, old_y = p->y;
+            double stop_x = old_x + p->dx * step;
+            double stop_y = old_y + p->dy * step;
+            float path_weight = (float)(p->weight * step / CELL_SIZE_CM);
+
+            deposit_fluence((old_x + stop_x) * 0.5, (old_y + stop_y) * 0.5,
+                            PTYPE_NEUTRON, path_weight);
+            spec_neut[spectrum_bin(p->energy)] += path_weight;
+
+            if (will_interact) {
+                p->x = stop_x;
+                p->y = stop_y;
+                track_add_point(trk, p->x, p->y, p->energy);
+                interacted = 1;
+                break;
+            }
+
+            p->x = stop_x + p->dx * TRANSPORT_EPS_CM;
+            p->y = stop_y + p->dy * TRANSPORT_EPS_CM;
+            if (!in_domain(p->x, p->y)) {
+                track_add_point(trk, stop_x, stop_y, p->energy);
+                p->alive = 0;
+                break;
+            }
+
+            if (sig_tot > 1e-20) tau -= sig_tot * step;
+            if (get_material(p->x, p->y) != mid) {
+                track_add_point(trk, stop_x, stop_y, p->energy);
+            }
+        }
+
+        if (!p->alive || !interacted) continue;
 
         /* Selezione dell'interazione tramite roulette russa */
         double r = rng_double() * sig_tot;
@@ -737,27 +808,53 @@ static inline MaterialID mid_for(Particle *p) {
 
 static void transport_photon(Particle *p, Track *trk) {
     while (p->alive && p->energy > E_CUTOFF_PHOTON) {
-        MaterialID mid = get_material(p->x, p->y);
-        if (mid == MAT_VACUUM && !in_domain(p->x, p->y)) { p->alive = 0; break; }
-
-        double mu_pe, mu_c, mu_pp, mu_tot;
-        photon_xs(mid, p->energy, &mu_pe, &mu_c, &mu_pp, &mu_tot);
-
-        double step;
-        if (mu_tot < 1e-20) step = 1.0;
-        else step = -log(rng_double() + 1e-300) / mu_tot;
-        step = fmin(step, 10.0);
-
-        double new_x = p->x + p->dx * step;
-        double new_y = p->y + p->dy * step;
-
-        deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0, PTYPE_PHOTON, p->weight);
-        spec_phot[spectrum_bin(p->energy)] += (float)p->weight;
-        track_add_point(trk, new_x, new_y, p->energy);
-
-        p->x = new_x; p->y = new_y;
         if (!in_domain(p->x, p->y)) { p->alive = 0; break; }
-        if (mu_tot < 1e-20) continue;
+
+        double tau = -log(rng_double() + 1e-300);
+        MaterialID mid = MAT_VACUUM;
+        double mu_pe = 0.0, mu_c = 0.0, mu_pp = 0.0, mu_tot = 0.0;
+        int interacted = 0;
+
+        while (p->alive) {
+            mid = get_material(p->x, p->y);
+            photon_xs(mid, p->energy, &mu_pe, &mu_c, &mu_pp, &mu_tot);
+
+            double boundary_step = distance_to_next_cell_boundary(p->x, p->y, p->dx, p->dy);
+            double interaction_step = (mu_tot > 1e-20) ? (tau / mu_tot) : INFINITY;
+            int will_interact = (mu_tot > 1e-20 && interaction_step <= boundary_step + 1e-9);
+            double step = will_interact ? interaction_step : boundary_step;
+            double old_x = p->x, old_y = p->y;
+            double stop_x = old_x + p->dx * step;
+            double stop_y = old_y + p->dy * step;
+            float path_weight = (float)(p->weight * step / CELL_SIZE_CM);
+
+            deposit_fluence((old_x + stop_x) * 0.5, (old_y + stop_y) * 0.5,
+                            PTYPE_PHOTON, path_weight);
+            spec_phot[spectrum_bin(p->energy)] += path_weight;
+
+            if (will_interact) {
+                p->x = stop_x;
+                p->y = stop_y;
+                track_add_point(trk, p->x, p->y, p->energy);
+                interacted = 1;
+                break;
+            }
+
+            p->x = stop_x + p->dx * TRANSPORT_EPS_CM;
+            p->y = stop_y + p->dy * TRANSPORT_EPS_CM;
+            if (!in_domain(p->x, p->y)) {
+                track_add_point(trk, stop_x, stop_y, p->energy);
+                p->alive = 0;
+                break;
+            }
+
+            if (mu_tot > 1e-20) tau -= mu_tot * step;
+            if (get_material(p->x, p->y) != mid) {
+                track_add_point(trk, stop_x, stop_y, p->energy);
+            }
+        }
+
+        if (!p->alive || !interacted) continue;
 
         double r = rng_double() * mu_tot;
 
@@ -844,7 +941,8 @@ static void transport_electron(Particle *p, Track *trk) {
         double new_x = p->x + p->dx * step;
         double new_y = p->y + p->dy * step;
 
-        deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0, PTYPE_ELECTRON, p->weight);
+        deposit_fluence((p->x + new_x) / 2.0, (p->y + new_y) / 2.0,
+                        PTYPE_ELECTRON, p->weight * step / CELL_SIZE_CM);
         track_add_point(trk, new_x, new_y, p->energy);
 
         /* Perdita di energia continua */

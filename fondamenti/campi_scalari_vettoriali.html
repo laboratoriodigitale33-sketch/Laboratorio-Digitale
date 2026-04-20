@@ -982,17 +982,22 @@ class ScalarRenderer {
   }
 
   drawGeoBackground(ctx) {
-    // sfondo mare azzurro uniforme
+    // sfondo mare azzurro
     ctx.fillStyle = '#daeaf5';
     ctx.fillRect(0, 0, this.W, this.H);
+    // mappa sotto la colormap: bianca opaca
+    const img = document.getElementById('europeMap');
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, 0, 0, this.W, this.H);
+    }
   }
 
   drawGeoOverlay(ctx) {
-    // sovrappone la mappa dell'Europa sopra la colormap, con multiply
+    // mappa sopra la colormap: solo i contorni scuri restano visibili
     const img = document.getElementById('europeMap');
     if (!img || !img.complete || img.naturalWidth === 0) return;
     ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = 0.55;
     ctx.drawImage(img, 0, 0, this.W, this.H);
     ctx.restore();
   }

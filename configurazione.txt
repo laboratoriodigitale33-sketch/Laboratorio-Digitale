@@ -1,7 +1,18 @@
 SISTEMARE:
--sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico
+-sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico (forse fatto da codex)
+-trasporto:
+	calcolo d dose sbaglaito
+	aggingere preset per emettitori alpha, beta+ e - e neutroni 
+-gradienti, divergenza e rotore:
+	mettere link  a 3Blue1brown
+	controllare rotazione del rotore (secodo me ruota al contrario e spesso non cambai il verso quando dovrebbe)
+-campi scalari e vetoriali:
+	le isoterme non corrisondono visivamente ai colori mostrati
+	aggiungere mappa venti ai campi vetoriali com immagine e cercare di fare un algoritmo che riconosce il colore sotto (e il gradiente) e osstruisce una vettore relativo a quel cambaimento
+	migliorare fluidicta quando il muose e nel canvas
+	molti dei campi vettoriali hanno troppe linee di capo qusi sovrapposte
 -Camp magnetico:
-	simulazione lorentz non mlto tile cosi
+	simulazione lorentz non molto utile cosi
 	avvicinare la telecamera al dipolo
 	moto elicoidale non sicronizzato con la spira mostrata, poi sarebbe dda fare la telecamera he la seguen nel moto retilineo, infine la spira si stringe lungo l'asse del moto per qualche ragione
 -Effetto fotoelettrico:
@@ -14,6 +25,8 @@ SISTEMARE:
 	asse y primo grafico non simmetrico
 -Eletrostatica:
 	sistemare linee equipotenziale
+	linee di campo sbagliate con carche negatice
+	condensatore non ha campo elettrico costante al suo interno
 -Turbolena-instabilita:
 	per ora rimanda ad un odice fato in html dentro la cartella old, da rimuovere quando sara pronto il file c
 	ancora da compilare e la build non la vede
@@ -26,7 +39,9 @@ SISTEMARE:
 	per ora va quella vecchia in cui la fisica e sdoppiata nell'html
 	il file c mi sa che fa solo trasporto neutroni e elettroni(mancano fotoni)
         però il file html sembra gestire bene la fisica
--Interefernza 2d onde per dppia fendditura o ostacolo, possibilemnte in c
+-Interefernza:
+	2d onde per dppia fendditura o ostacolo, possibilemnte in c
+	battimenti
 -Decadimento radioattivo:
 	non funiona la tab delle catene del decadimento
 -Meccanica quantistica:
@@ -40,6 +55,8 @@ SISTEMARE:
 	sistemare la grafica
 -Macchina fotografica:
 	cambiare i parametri con cui inizia la simulazione
+-Orbitali
+	mlti orbitli non mi tonrano, o vanno bene solo in parte (tipo che hanno nodi radiali ma non hanno nuvola nei dintorni
 
 
 DA FARE:
@@ -150,8 +167,10 @@ Ottica:
 
 Elettromagnetismo:
 - Campo elettrico
-- Elettrostatica
 - Magnetismo
+
+Astrofisica:
+- Traiettorie di missioni spaziali
 
 Matematica per la Fisica:
 - Gradiente, divergenza e rotore
@@ -173,6 +192,9 @@ WIP:
 - Collasso stellare
 - Trasporto di particelle
 - Circuiti
+- Moto Browniano
+- Onde di Faraday
 - Trasformazioni cicliche
 - Entropia
+- Traiettorie Orbitali
 - Onde gravitazionali

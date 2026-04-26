@@ -63,14 +63,14 @@ MODULES = {
         "label": "Trasporto particelle",
         "cwd": ROOT / "WIP" / "trasporto-particelle",
         "temp": ROOT / "emscripten_tmp" / "transport",
-        "outputs": ["transport.js", "transport.wasm"],
+        "outputs": ["transport.js"],
         "args": [
             "transport.c",
             "-O3",
             "-o",
             "transport.js",
             "-s",
-            'EXPORTED_FUNCTIONS=["_sim_init","_sim_step","_sim_reset","_set_source","_get_fluence_n","_get_fluence_p","_get_fluence_e","_get_dose","_get_tracks_buffer","_get_track_count","_get_track_stride","_get_total_histories","_get_total_fissions","_get_total_captures","_get_total_scatterings","_set_geometry","_get_mat_grid"]',
+                'EXPORTED_FUNCTIONS=["_sim_init","_sim_step","_sim_reset","_reset_tallies","_set_source","_get_fluence_n","_get_fluence_p","_get_fluence_e","_get_dose","_get_tracks_buffer","_get_track_count","_get_track_stride","_get_total_histories","_get_total_fissions","_get_total_captures","_get_total_scatterings","_set_geometry","_get_mat_grid","_get_spec_neut","_get_spec_phot","_query_material_response"]',
             "-s",
             'EXPORTED_RUNTIME_METHODS=["ccall","cwrap"]',
             "-s",
@@ -79,6 +79,8 @@ MODULES = {
             "INITIAL_MEMORY=67108864",
             "-s",
             "ENVIRONMENT=web",
+            "-s",
+            "SINGLE_FILE=1",
         ],
     },
     "fluid": {
@@ -199,4 +201,3 @@ if __name__ == "__main__":
         raise SystemExit(main(sys.argv[1:]))
     except subprocess.CalledProcessError as exc:
         raise SystemExit(exc.returncode)
-

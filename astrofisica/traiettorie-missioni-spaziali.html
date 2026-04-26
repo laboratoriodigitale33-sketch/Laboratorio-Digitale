@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  title: "Traiettorie di missioni spaziali",
+  description: "Viewer interattivo di traiettorie spaziali basato su dataset statici NASA/JPL Horizons per missioni come Artemis, Apollo, Voyager e Parker Solar Probe.",
+  category: "Astrofisica",
+  icon: "\ud83d\ude80",
+  order: 12,
+  tags: [
+    "NASA/JPL Horizons",
+    "missioni spaziali",
+    "traiettorie",
+    "orbite",
+    "Artemis",
+    "Apollo",
+    "Voyager",
+    "Parker Solar Probe",
+    "ephemerides"
+  ],
+  level: "intermedio"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traiettorie di missioni spaziali</title>
+<meta name="description" content="Esplora traiettorie reali di missioni spaziali a partire da vettori di stato NASA/JPL Horizons precaricati nel sito.">
+<meta name="keywords" content="NASA JPL Horizons, missioni spaziali, traiettorie spaziali, Artemis, Apollo, Voyager, Parker Solar Probe, orbite">
+<meta name="theme-color" content="#06090f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #06090f;
+  --bg-1: #0a0f1a;
+  --bg-2: #0f1623;
+  --bg-3: #152033;
+  --surface: rgba(255,255,255,0.05);
+  --surface-hi: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.1);
+  --border-hi: rgba(255,255,255,0.2);
+  --text: #e8edf7;
+  --text-soft: #9aa9c3;
+  --text-dim: #5e6d86;
+  --gold: #f0c060;
+  --gold-dim: rgba(240,192,96,0.16);
+  --cyan: #7dd3fc;
+  --trail: #fb923c;
+  --future: #60a5fa;
+  --ok: #86efac;
+  --danger: #f87171;
+  --mono: "DM Mono", monospace;
+  --sans: "DM Sans", sans-serif;
+  --display: "Crimson Pro", Georgia, serif;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 75% 55% at 10% 5%, rgba(125,211,252,0.08), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 92% 0%, rgba(240,192,96,0.08), transparent 55%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 45%, var(--bg-2) 100%);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, rgba(0,0,0,0.8), transparent 78%);
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  width: min(1320px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 36px 0 64px;
+}
+
+.topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.wordmark,
+.section-kicker,
+.meta-chip,
+.badge,
+.card-k,
+.minor {
+  font-family: var(--mono);
+}
+
+.wordmark {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.wordmark span { color: var(--gold); }
+
+.hero {
+  padding: 20px 8px 34px;
+}
+
+.hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(240,192,96,0.26);
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-label::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 14px rgba(240,192,96,0.7);
+}
+
+h1 {
+  margin: 18px 0 14px;
+  font-family: var(--display);
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 1.02;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  max-width: 860px;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 1.04rem;
+  line-height: 1.8;
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.meta-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.meta-chip strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.info-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 8px 18px;
+}
+
+.info-card,
+.panel,
+.theory-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+}
+
+.info-card {
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+
+.card-k {
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 8px;
+}
+
+.card-v {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.viewer-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin: 0 8px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel {
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.section-kicker {
+  color: var(--text-dim);
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 12px;
+}
+
+.panel p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+label {
+  display: block;
+  margin: 12px 0 6px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+select,
+input,
+button {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+select option {
+  background: #101827;
+  color: var(--text);
+}
+
+input[type="range"] {
+  padding: 0;
+  accent-color: var(--gold);
+}
+
+button {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-hi);
+}
+
+button.primary {
+  background: linear-gradient(135deg, #1d4ed8, #0891b2);
+  border-color: transparent;
+  font-weight: 700;
+}
+
+button.secondary {
+  background: rgba(255,255,255,0.05);
+}
+
+.row2,
+.row3 {
+  display: grid;
+  gap: 8px;
+}
+
+.row2 { grid-template-columns: 1fr 1fr; }
+.row3 { grid-template-columns: repeat(3, 1fr); }
+
+.status {
+  min-height: 54px;
+  margin-top: 12px;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.status b { color: var(--text); }
+
+.dataset-info {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.dataset-info strong { color: var(--text); }
+
+.badge-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.badge {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+  color: var(--text-soft);
+  font-size: 0.67rem;
+  letter-spacing: 0.04em;
+}
+
+.viewer-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(5,8,16,0.95), rgba(3,6,12,0.98));
+  min-height: 720px;
+}
+
+.viewer-card canvas {
+  display: block;
+  width: 100%;
+  height: 720px;
+  background: #01030a;
+  touch-action: none;
+}
+
+.canvas-overlay {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.overlay-chip {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(7,12,25,0.72);
+  color: var(--text-soft);
+  font-size: 0.68rem;
+  backdrop-filter: blur(10px);
+}
+
+.hud {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(132px, auto));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.hud-card {
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(7,12,25,0.74);
+  backdrop-filter: blur(14px);
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(7,12,25,0.6);
+  color: rgba(232,237,247,0.76);
+  font-size: 0.82rem;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.minor {
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.theory {
+  margin: 28px 8px 0;
+}
+
+.theory-head {
+  max-width: 760px;
+  margin-bottom: 16px;
+}
+
+.theory-head h2 {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.theory-head p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.8;
+}
+
+.theory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.theory-card {
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.theory-card h3 {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 1.32rem;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+.theory-card p {
+  margin: 0 0 10px;
+  color: var(--text-soft);
+  line-height: 1.75;
+  font-size: 0.94rem;
+}
+
+.formula {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  background: rgba(255,255,255,0.04);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+code {
+  color: #cae9ff;
+  background: rgba(125,211,252,0.08);
+  padding: 0.08rem 0.3rem;
+  border-radius: 0.35rem;
+}
+
+@media (max-width: 1100px) {
+  .viewer-grid,
+  .info-strip,
+  .theory-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .viewer-card,
+  .viewer-card canvas {
+    min-height: 560px;
+    height: 560px;
+  }
+
+  .hud {
+    top: auto;
+    right: 16px;
+    left: 16px;
+    bottom: 18px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hint { display: none; }
+}
+
+@media (max-width: 640px) {
+  .page { width: min(100%, calc(100% - 20px)); }
+  .topline { margin-bottom: 14px; }
+  .hero { padding-top: 10px; }
+  .row2,
+  .row3 { grid-template-columns: 1fr; }
+  .hud { grid-template-columns: 1fr 1fr; }
+  .viewer-card,
+  .viewer-card canvas {
+    min-height: 460px;
+    height: 460px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topline">
+    <div class="wordmark">fisica.<span>sim</span></div>
+    <div class="minor">Astrofisica / dataset statici NASA-JPL</div>
+  </div>
+
+  <header class="hero">
+    <div class="hero-label">Traiettorie reali di missione</div>
+    <h1>Traiettorie di missioni spaziali</h1>
+    <p>
+      Questa pagina non integra orbite "inventate" nel browser: visualizza vettori di stato
+      precaricati da NASA/JPL Horizons e permette di confrontare missioni storiche e moderne
+      in riferimento geocentrico o eliocentrico. Il risultato e` un viewer statico, adatto a
+      essere pubblicato direttamente nel sito senza backend.
+    </p>
+    <div class="hero-meta">
+      <div class="meta-chip"><strong>Sorgente</strong> NASA/JPL Horizons</div>
+      <div class="meta-chip"><strong>Frame</strong> ECLIPTIC J2000</div>
+      <div class="meta-chip"><strong>Unita`</strong> km e km/s</div>
+      <div class="meta-chip"><strong>Formato</strong> dataset JSON statici</div>
+    </div>
+  </header>
+
+  <section class="info-strip">
+    <article class="info-card">
+      <div class="card-k">Cosa stai guardando</div>
+      <div class="card-v">
+        Ogni curva nasce da una sequenza di vettori cartesiani <code>(x, y, z, vx, vy, vz)</code>
+        calcolati da Horizons, non da una integrazione numerica locale.
+      </div>
+    </article>
+    <article class="info-card">
+      <div class="card-k">Perche` statico</div>
+      <div class="card-v">
+        Il browser legge <code>../data/horizons/manifest.json</code> e i dataset associati:
+        la pagina resta compatibile con hosting statico e GitHub Pages.
+      </div>
+    </article>
+    <article class="info-card">
+      <div class="card-k">Come leggerlo</div>
+      <div class="card-v">
+        Dataset geocentrici mostrano il moto rispetto alla Terra; dataset eliocentrici
+        mostrano il moto rispetto al Sole. Il significato della traiettoria dipende dal centro.
+      </div>
+    </article>
+  </section>
+
+  <section class="viewer-grid">
+    <aside class="stack">
+      <div class="panel">
+        <div class="section-kicker">Dataset</div>
+        <label for="datasetSelect">Dataset precaricato</label>
+        <select id="datasetSelect">
+          <option value="">Caricamento manifest...</option>
+        </select>
+        <div class="row2" style="margin-top:10px;">
+          <button id="loadDataset" class="primary">Carica dataset</button>
+          <button id="reloadManifest" class="secondary">Ricarica lista</button>
+        </div>
+        <div class="status" id="status">
+          <b>Stato.</b> In attesa di leggere <code>../data/horizons/manifest.json</code>.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-kicker">Scheda missione</div>
+        <div class="dataset-info" id="datasetInfo">Nessun dataset caricato.</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-kicker">Controlli</div>
+        <label for="time">Tempo</label>
+        <input id="time" type="range" min="0" max="1000" value="0" step="1">
+        <div class="row3" style="margin-top:10px;">
+          <button id="play" class="primary">Avvia</button>
+          <button id="reset" class="secondary">Reset tempo</button>
+          <button id="view" class="secondary">Reset camera</button>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label for="speed">Velocita`</label>
+            <input id="speed" type="range" min="0.1" max="12" value="2.2" step="0.1">
+          </div>
+          <div>
+            <label for="zoom">Zoom</label>
+            <input id="zoom" type="range" min="0.2" max="12" value="1" step="0.01">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label for="trailLength">Scia</label>
+            <input id="trailLength" type="range" min="30" max="2500" value="800" step="1">
+          </div>
+          <div>
+            <label for="starDensity">Stelle</label>
+            <input id="starDensity" type="range" min="120" max="1800" value="850" step="10">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label for="showFull">Orbita completa</label>
+            <select id="showFull">
+              <option value="yes">si</option>
+              <option value="no">no</option>
+            </select>
+          </div>
+          <div>
+            <label for="showPlane">Piano XY</label>
+            <select id="showPlane">
+              <option value="yes">si</option>
+              <option value="no">no</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="badge-wrap">
+          <span class="badge">drag = ruota</span>
+          <span class="badge">rotella = zoom</span>
+          <span class="badge">spazio = play/pausa</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="viewer-card">
+      <canvas id="canvas"></canvas>
+      <div class="canvas-overlay">
+        <div class="overlay-chip">viewer statico basato su Horizons</div>
+        <div class="overlay-chip">nessuna chiamata live dal browser</div>
+      </div>
+      <div class="hud">
+        <div class="hud-card">
+          <div class="card-k">Sorgente</div>
+          <div class="card-v" id="hSource">-</div>
+        </div>
+        <div class="hud-card">
+          <div class="card-k">Data</div>
+          <div class="card-v" id="hDate">-</div>
+        </div>
+        <div class="hud-card">
+          <div class="card-k">Distanza r</div>
+          <div class="card-v" id="hR">-</div>
+        </div>
+        <div class="hud-card">
+          <div class="card-k">Velocita` v</div>
+          <div class="card-v" id="hV">-</div>
+        </div>
+      </div>
+      <div class="hint">Trascina per ruotare la camera · rotella per zoom</div>
+    </div>
+  </section>
+
+  <section class="theory">
+    <div class="theory-head">
+      <div class="section-kicker">Quadro teorico</div>
+      <h2>Un viewer orbitale costruito su ephemerides reali</h2>
+      <p>
+        Il cuore fisico della pagina non e` l'integrazione numerica in tempo reale, ma il fatto che
+        le traiettorie arrivano da un database astrodinamico professionale. La parte interattiva serve
+        a leggere quei dati in modo didattico: cambiare punto di vista, seguire il tempo e confrontare
+        missioni con riferimenti diversi.
+      </p>
+    </div>
+
+    <div class="theory-grid">
+      <article class="theory-card">
+        <h3>Vettori di stato</h3>
+        <p>
+          Horizons restituisce tabelle <code>VECTORS</code>, cioe` posizione e velocita` cartesiana in un dato
+          riferimento. Per ogni istante il dataset contiene coordinate <code>x, y, z</code> e componenti
+          <code>vx, vy, vz</code>, tutte espresse in km e km/s.
+        </p>
+        <div class="formula">
+          r = (x, y, z)<br>
+          v = (vx, vy, vz)<br>
+          |r| = sqrt(x^2 + y^2 + z^2), |v| = sqrt(vx^2 + vy^2 + vz^2)
+        </div>
+      </article>
+
+      <article class="theory-card">
+        <h3>Centro e frame</h3>
+        <p>
+          Una traiettoria geocentrica e una eliocentrica dello stesso oggetto non hanno la stessa forma,
+          perche` cambiano il centro e il sistema di riferimento. Qui i dataset usano il piano
+          <code>ECLIPTIC</code> e il sistema <code>J2000</code>, quindi il significato geometrico va sempre letto
+          insieme a centro, intervallo e passo temporale.
+        </p>
+        <div class="formula">
+          frame: ECLIPTIC J2000<br>
+          center = Earth oppure Sun<br>
+          step = campionamento temporale del dataset
+        </div>
+      </article>
+
+      <article class="theory-card">
+        <h3>Didattica e limiti</h3>
+        <p>
+          La curva visualizzata e` una successione discreta di campioni, non una soluzione analitica completa.
+          Se il passo e` largo, la traiettoria appare piu` sintetica; se e` stretto, segue meglio le variazioni
+          rapide. Questo rende il viewer ottimo per confronto qualitativo, cronologia e ordine di grandezza.
+        </p>
+        <div class="formula">
+          precisione visiva ~ passo temporale + finestra scelta<br>
+          utilita` didattica = confronto tra scale, centri e velocita`
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const DATA_BASE_URL = new URL('../data/horizons/', window.location.href);
+const MANIFEST_URL = new URL('manifest.json', DATA_BASE_URL);
+const MANIFEST_LABEL = '../data/horizons/manifest.json';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+const $ = id => document.getElementById(id);
+const els = {
+  datasetSelect: $('datasetSelect'),
+  loadDataset: $('loadDataset'),
+  reloadManifest: $('reloadManifest'),
+  status: $('status'),
+  datasetInfo: $('datasetInfo'),
+  time: $('time'),
+  play: $('play'),
+  reset: $('reset'),
+  view: $('view'),
+  speed: $('speed'),
+  zoom: $('zoom'),
+  trailLength: $('trailLength'),
+  starDensity: $('starDensity'),
+  showFull: $('showFull'),
+  showPlane: $('showPlane'),
+  hSource: $('hSource'),
+  hDate: $('hDate'),
+  hR: $('hR'),
+  hV: $('hV')
+};
+
+let W = 0;
+let H = 0;
+let dpr = 1;
+let stars = [];
+let manifest = null;
+let datasets = [];
+let currentDataset = null;
+let data = [];
+let projected = [];
+let activeName = '-';
+let source = '-';
+let unitPosition = 'km';
+let unitVelocity = 'km/s';
+let tIndex = 0;
+let playing = false;
+let last = performance.now();
+let scaleBase = 1;
+let ctr = { x: 0, y: 0, z: 0 };
+let rad = 1;
+let cam = { yaw: -0.82, pitch: 0.48 };
+let dragging = false;
+let lastPointer = { x: 0, y: 0 };
+
+function setStatus(kind, message) {
+  els.status.innerHTML = '<b>' + kind + '.</b> ' + message;
+}
+
+function makeStars() {
+  stars = [];
+  const density = Number(els.starDensity.value);
+  for (let i = 0; i < density; i += 1) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      z: Math.random(),
+      alpha: 0.25 + 0.75 * Math.random(),
+      size: Math.random() > 0.985 ? 2.5 + Math.random() * 2 : 0.45 + Math.random() * 1.35,
+      hue: Math.random() < 0.08 ? 'warm' : (Math.random() < 0.16 ? 'cold' : 'white')
+    });
+  }
+}
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  dpr = Math.max(1, window.devicePixelRatio || 1);
+  W = Math.max(320, Math.floor(rect.width));
+  H = Math.max(320, Math.floor(rect.height));
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  makeStars();
+  fit();
+  draw();
+}
+
+function safeRelativeLabel(urlString) {
+  try {
+    const url = new URL(urlString, window.location.href);
+    return url.pathname.replace(window.location.pathname.replace(/[^/]*$/, ''), '');
+  } catch (error) {
+    return urlString;
+  }
+}
+
+async function loadManifest() {
+  setStatus('Manifest', 'lettura di <code>' + MANIFEST_LABEL + '</code>.');
+  try {
+    const res = await fetch(MANIFEST_URL, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status + '. Controlla che esista ' + MANIFEST_LABEL + '.');
+    }
+    manifest = await res.json();
+    if (!manifest.datasets || !Array.isArray(manifest.datasets)) {
+      throw new Error('manifest.json non contiene un array datasets.');
+    }
+    datasets = manifest.datasets;
+    populateDatasetSelect();
+    const failures = Array.isArray(manifest.errors) ? manifest.errors.length : 0;
+    const detail = failures > 0 ? ' e ' + failures + ' errori registrati' : '';
+    setStatus('Manifest', 'caricati ' + datasets.length + ' dataset disponibili' + detail + '.');
+    if (datasets.length > 0) {
+      els.datasetSelect.value = datasets[0].slug;
+      await loadSelectedDataset();
+    }
+  } catch (error) {
+    els.datasetSelect.innerHTML = '<option value="">Manifest non trovato</option>';
+    setStatus(
+      'Errore',
+      error.message + '. Se stai testando in locale, avvia un server statico dalla root del progetto con <code>python -m http.server</code>.'
+    );
+    draw();
+  }
+}
+
+function populateDatasetSelect() {
+  els.datasetSelect.innerHTML = '';
+  if (datasets.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Nessun dataset nel manifest';
+    els.datasetSelect.appendChild(option);
+    return;
+  }
+
+  for (const dataset of datasets) {
+    const option = document.createElement('option');
+    option.value = dataset.slug;
+    const center = dataset.centerName || dataset.center || '';
+    const count = dataset.pointCount ? ' · ' + dataset.pointCount + ' punti' : '';
+    option.textContent = dataset.name + ' - ' + center + count;
+    els.datasetSelect.appendChild(option);
+  }
+}
+
+async function loadSelectedDataset() {
+  const slug = els.datasetSelect.value;
+  if (!slug) {
+    setStatus('Errore', 'nessun dataset selezionato.');
+    return;
+  }
+
+  const meta = datasets.find(item => item.slug === slug);
+  if (!meta) {
+    setStatus('Errore', 'dataset non trovato nel manifest: ' + slug + '.');
+    return;
+  }
+
+  const file = meta.file || (slug + '.json');
+  const url = new URL(file, DATA_BASE_URL);
+  const label = safeRelativeLabel(url.toString()) || file;
+  setStatus('Dataset', 'lettura di <code>' + label + '</code>.');
+
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status + '. File non trovato: ' + label);
+    }
+    const dataset = await res.json();
+    validateDataset(dataset);
+    currentDataset = dataset;
+    data = dataset.points.map(point => ({
+      date: point.date,
+      jd: Number(point.jd),
+      x: Number(point.x),
+      y: Number(point.y),
+      z: Number(point.z),
+      vx: Number(point.vx),
+      vy: Number(point.vy),
+      vz: Number(point.vz)
+    })).filter(point =>
+      Number.isFinite(point.x) &&
+      Number.isFinite(point.y) &&
+      Number.isFinite(point.z) &&
+      Number.isFinite(point.vx) &&
+      Number.isFinite(point.vy) &&
+      Number.isFinite(point.vz)
+    );
+
+    if (data.length < 2) {
+      throw new Error('il dataset contiene meno di due punti validi.');
+    }
+
+    activeName = dataset.name || meta.name || slug;
+    source = dataset.source && dataset.source.name ? dataset.source.name : 'NASA/JPL Horizons';
+    unitPosition = dataset.units && dataset.units.position ? dataset.units.position : 'km';
+    unitVelocity = dataset.units && dataset.units.velocity ? dataset.units.velocity : 'km/s';
+    resetAll();
+    updateDatasetInfo(dataset);
+    setStatus('Dataset', activeName + ': caricati ' + data.length + ' vettori di stato.');
+  } catch (error) {
+    setStatus('Errore', error.message);
+  }
+}
+
+function validateDataset(dataset) {
+  if (!dataset || typeof dataset !== 'object') {
+    throw new Error('JSON non valido.');
+  }
+  if (!Array.isArray(dataset.points)) {
+    throw new Error("Il dataset non contiene l'array points.");
+  }
+}
+
+function updateDatasetInfo(dataset) {
+  const desc = dataset.description || 'Nessuna descrizione.';
+  const targetName = dataset.target && dataset.target.name ? dataset.target.name : (dataset.name || '-');
+  const command = dataset.target && dataset.target.command ? dataset.target.command : '-';
+  const centerName = dataset.center && dataset.center.name ? dataset.center.name : '-';
+  const centerCode = dataset.center && dataset.center.code ? dataset.center.code : '';
+  const start = dataset.time && dataset.time.start ? dataset.time.start : '-';
+  const stop = dataset.time && dataset.time.stop ? dataset.time.stop : '-';
+  const step = dataset.time && dataset.time.step ? dataset.time.step : '-';
+  const frame = [
+    dataset.frame && dataset.frame.referencePlane ? dataset.frame.referencePlane : '-',
+    dataset.frame && dataset.frame.referenceSystem ? dataset.frame.referenceSystem : ''
+  ].join(' ').trim();
+
+  els.datasetInfo.innerHTML =
+    '<strong>' + targetName + '</strong><br>' +
+    desc + '<br><br>' +
+    '<strong>COMMAND:</strong> <code>' + command + '</code><br>' +
+    '<strong>Centro:</strong> ' + centerName + (centerCode ? ' <code>' + centerCode + '</code>' : '') + '<br>' +
+    '<strong>Intervallo:</strong> ' + start + ' -> ' + stop + '<br>' +
+    '<strong>Passo:</strong> ' + step + '<br>' +
+    '<strong>Frame:</strong> ' + frame + '<br>' +
+    '<strong>Unita`:</strong> posizione in ' + unitPosition + ', velocita` in ' + unitVelocity;
+}
+
+function resetAll() {
+  tIndex = 0;
+  playing = false;
+  els.play.textContent = 'Avvia';
+  els.time.max = Math.max(1, (data.length - 1) * 1000);
+  els.time.value = 0;
+  fit();
+  draw();
+}
+
+function bounds() {
+  if (!data.length) {
+    return { cx: 0, cy: 0, cz: 0, r: 1 };
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+
+  for (const point of data) {
+    minX = Math.min(minX, point.x);
+    maxX = Math.max(maxX, point.x);
+    minY = Math.min(minY, point.y);
+    maxY = Math.max(maxY, point.y);
+    minZ = Math.min(minZ, point.z);
+    maxZ = Math.max(maxZ, point.z);
+  }
+
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const cz = (minZ + maxZ) / 2;
+  let radius = 0;
+
+  for (const point of data) {
+    radius = Math.max(radius, Math.hypot(point.x - cx, point.y - cy, point.z - cz));
+  }
+
+  return { cx, cy, cz, r: Math.max(radius, 1e-9) };
+}
+
+function fit() {
+  const b = bounds();
+  ctr = { x: b.cx, y: b.cy, z: b.cz };
+  rad = b.r;
+  scaleBase = Math.min(W, H) * 0.43 / rad;
+}
+
+function rotate(v) {
+  const cy = Math.cos(cam.yaw);
+  const sy = Math.sin(cam.yaw);
+  const cp = Math.cos(cam.pitch);
+  const sp = Math.sin(cam.pitch);
+  const x1 = cy * v.x + sy * v.z;
+  const z1 = -sy * v.x + cy * v.z;
+  const y1 = v.y;
+  return {
+    x: x1,
+    y: cp * y1 - sp * z1,
+    z: sp * y1 + cp * z1
+  };
+}
+
+function project(point) {
+  const v = rotate({ x: point.x - ctr.x, y: point.y - ctr.y, z: point.z - ctr.z });
+  const zn = v.z / rad;
+  const persp = 1 / (1 + 0.22 * zn);
+  const scale = scaleBase * Number(els.zoom.value) * persp;
+  return {
+    x: W / 2 + v.x * scale,
+    y: H / 2 - v.y * scale,
+    z: v.z,
+    depth: zn
+  };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function interp(f) {
+  if (!data.length) {
+    return null;
+  }
+  const i = Math.floor(f);
+  const q = f - i;
+  const a = data[Math.max(0, Math.min(data.length - 1, i))];
+  const b = data[Math.max(0, Math.min(data.length - 1, i + 1))];
+  return {
+    date: q < 0.5 ? a.date : b.date,
+    jd: q < 0.5 ? a.jd : b.jd,
+    x: lerp(a.x, b.x, q),
+    y: lerp(a.y, b.y, q),
+    z: lerp(a.z, b.z, q),
+    vx: lerp(a.vx, b.vx, q),
+    vy: lerp(a.vy, b.vy, q),
+    vz: lerp(a.vz, b.vz, q)
+  };
+}
+
+function draw() {
+  ctx.fillStyle = '#01030a';
+  ctx.fillRect(0, 0, W, H);
+  drawStars();
+
+  if (!data.length) {
+    hud(null);
+    return;
+  }
+
+  projected = data.map(project);
+  if (els.showPlane.value === 'yes') {
+    drawPlane();
+  }
+  drawAxes();
+  if (els.showFull.value === 'yes') {
+    drawFullPath();
+  }
+  const f = Math.max(0, Math.min(data.length - 1, tIndex));
+  drawTrail(f);
+  const p = interp(f);
+  if (!p) {
+    hud(null);
+    return;
+  }
+  const s = project(p);
+  drawCenter();
+  drawVelocity(p);
+  drawCraft(s);
+  drawLabel(s, activeName);
+  hud(p);
+}
+
+function drawStars() {
+  const yawOffset = (cam.yaw * 18) % W;
+  const pitchOffset = (cam.pitch * 24) % H;
+  for (const star of stars) {
+    const x = (star.x + yawOffset * star.z + W) % W;
+    const y = (star.y + pitchOffset * star.z + H) % H;
+    let color = '255,255,255';
+    if (star.hue === 'warm') color = '255,226,184';
+    if (star.hue === 'cold') color = '190,215,255';
+    ctx.fillStyle = 'rgba(' + color + ',' + star.alpha + ')';
+    ctx.beginPath();
+    ctx.arc(x, y, star.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const gradient = ctx.createRadialGradient(W * 0.65, H * 0.45, 0, W * 0.65, H * 0.45, Math.max(W, H) * 0.55);
+  gradient.addColorStop(0, 'rgba(56,189,248,0.10)');
+  gradient.addColorStop(0.38, 'rgba(99,102,241,0.07)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawPlane() {
+  const length = rad * 1.35;
+  const step = length / 5;
+  for (let i = -5; i <= 5; i += 1) {
+    const q = i * step;
+    line3({ x: ctr.x - length, y: ctr.y + q, z: ctr.z }, { x: ctr.x + length, y: ctr.y + q, z: ctr.z }, 'rgba(125,211,252,0.10)', 1);
+    line3({ x: ctr.x + q, y: ctr.y - length, z: ctr.z }, { x: ctr.x + q, y: ctr.y + length, z: ctr.z }, 'rgba(125,211,252,0.10)', 1);
+  }
+}
+
+function drawAxes() {
+  const length = rad * 1.55;
+  line3({ x: ctr.x - length, y: ctr.y, z: ctr.z }, { x: ctr.x + length, y: ctr.y, z: ctr.z }, 'rgba(248,113,113,0.55)', 1.6);
+  line3({ x: ctr.x, y: ctr.y - length, z: ctr.z }, { x: ctr.x, y: ctr.y + length, z: ctr.z }, 'rgba(134,239,172,0.55)', 1.6);
+  line3({ x: ctr.x, y: ctr.y, z: ctr.z - length }, { x: ctr.x, y: ctr.y, z: ctr.z + length }, 'rgba(125,211,252,0.60)', 1.6);
+}
+
+function line3(a, b, color, width) {
+  const A = project(a);
+  const B = project(b);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.stroke();
+}
+
+function drawFullPath() {
+  if (projected.length < 2) {
+    return;
+  }
+  ctx.strokeStyle = 'rgba(96,165,250,0.38)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  for (let i = 0; i < projected.length; i += 1) {
+    const point = projected[i];
+    if (i === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  }
+  ctx.stroke();
+}
+
+function drawTrail(f) {
+  const end = Math.floor(f);
+  const start = Math.max(0, end - Number(els.trailLength.value));
+  if (end - start < 2) {
+    return;
+  }
+  for (let pass = 0; pass < 2; pass += 1) {
+    ctx.beginPath();
+    for (let i = start; i <= end; i += 1) {
+      const point = projected[i];
+      if (i === start) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    }
+    ctx.strokeStyle = pass ? 'rgba(251,191,36,0.88)' : 'rgba(251,146,60,0.14)';
+    ctx.lineWidth = pass ? 2.8 : 10;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+}
+
+function drawCenter() {
+  const c = project({ x: 0, y: 0, z: 0 });
+  const radiusGlow = 11;
+  const gradient = ctx.createRadialGradient(c.x - radiusGlow * 0.35, c.y - radiusGlow * 0.35, 1, c.x, c.y, radiusGlow * 2.2);
+  gradient.addColorStop(0, 'rgba(255,255,255,0.95)');
+  gradient.addColorStop(0.18, 'rgba(251,191,36,0.95)');
+  gradient.addColorStop(1, 'rgba(251,191,36,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, radiusGlow * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, radiusGlow, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCraft(s) {
+  const radiusGlow = 8;
+  const gradient = ctx.createRadialGradient(s.x - radiusGlow * 0.4, s.y - radiusGlow * 0.45, 1, s.x, s.y, radiusGlow * 2.8);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.22, 'rgba(125,211,252,1)');
+  gradient.addColorStop(1, 'rgba(56,189,248,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, radiusGlow * 2.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#e0f2fe';
+  ctx.strokeStyle = '#0ea5e9';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, radiusGlow, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawVelocity(p) {
+  const magnitude = Math.hypot(p.vx, p.vy, p.vz);
+  if (!Number.isFinite(magnitude) || magnitude === 0) {
+    return;
+  }
+  const length = rad * 0.16;
+  const q = {
+    x: p.x + (p.vx / magnitude) * length,
+    y: p.y + (p.vy / magnitude) * length,
+    z: p.z + (p.vz / magnitude) * length
+  };
+  const A = project(p);
+  const B = project(q);
+  ctx.strokeStyle = 'rgba(125,211,252,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.stroke();
+
+  const angle = Math.atan2(B.y - A.y, B.x - A.x);
+  ctx.fillStyle = 'rgba(125,211,252,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(B.x, B.y);
+  ctx.lineTo(B.x - 9 * Math.cos(angle - 0.45), B.y - 9 * Math.sin(angle - 0.45));
+  ctx.lineTo(B.x - 9 * Math.cos(angle + 0.45), B.y - 9 * Math.sin(angle + 0.45));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawLabel(s, text) {
+  ctx.font = '700 13px "DM Sans", sans-serif';
+  const tw = ctx.measureText(text).width;
+  ctx.fillStyle = 'rgba(7,12,25,0.72)';
+  roundRect(s.x + 14, s.y - 30, tw + 18, 28, 10);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(160,180,220,0.22)';
+  ctx.stroke();
+  ctx.fillStyle = '#e8edf7';
+  ctx.fillText(text, s.x + 23, s.y - 11);
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function hud(p) {
+  els.hSource.textContent = source;
+  if (!p) {
+    els.hDate.textContent = '-';
+    els.hR.textContent = '-';
+    els.hV.textContent = '-';
+    return;
+  }
+  const r = Math.hypot(p.x, p.y, p.z);
+  const v = Math.hypot(p.vx, p.vy, p.vz);
+  els.hDate.textContent = cleanDate(p.date);
+  els.hR.textContent = fmt(r) + ' ' + unitPosition;
+  els.hV.textContent = fmt(v) + ' ' + unitVelocity;
+}
+
+function cleanDate(value) {
+  return String(value || '-').replace(/^A\.D\.\s*/, '').replace(/\.\d+$/, '');
+}
+
+function fmt(value) {
+  if (!Number.isFinite(value)) return '-';
+  const abs = Math.abs(value);
+  if (abs === 0) return '0';
+  if (abs < 0.001 || abs >= 1e8) return value.toExponential(2);
+  if (abs < 0.1) return value.toFixed(4);
+  if (abs < 10) return value.toFixed(3);
+  if (abs < 1000) return value.toFixed(1);
+  return Math.round(value).toLocaleString('it-IT');
+}
+
+function animate(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (playing && data.length > 1) {
+    tIndex += dt * Number(els.speed.value) * 15;
+    if (tIndex >= data.length - 1) {
+      tIndex = data.length - 1;
+      playing = false;
+      els.play.textContent = 'Avvia';
+    }
+    els.time.value = Math.round(tIndex * 1000);
+    draw();
+  }
+  requestAnimationFrame(animate);
+}
+
+els.loadDataset.addEventListener('click', loadSelectedDataset);
+els.reloadManifest.addEventListener('click', loadManifest);
+els.play.addEventListener('click', () => {
+  if (!data.length) return;
+  playing = !playing;
+  els.play.textContent = playing ? 'Pausa' : 'Avvia';
+});
+els.reset.addEventListener('click', () => {
+  tIndex = 0;
+  playing = false;
+  els.play.textContent = 'Avvia';
+  els.time.value = 0;
+  draw();
+});
+els.view.addEventListener('click', () => {
+  cam.yaw = -0.82;
+  cam.pitch = 0.48;
+  draw();
+});
+els.time.addEventListener('input', () => {
+  tIndex = Number(els.time.value) / 1000;
+  playing = false;
+  els.play.textContent = 'Avvia';
+  draw();
+});
+els.zoom.addEventListener('input', draw);
+els.showFull.addEventListener('change', draw);
+els.showPlane.addEventListener('change', draw);
+els.trailLength.addEventListener('input', draw);
+els.starDensity.addEventListener('change', () => {
+  makeStars();
+  draw();
+});
+
+canvas.addEventListener('pointerdown', event => {
+  dragging = true;
+  lastPointer = { x: event.clientX, y: event.clientY };
+  canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointermove', event => {
+  if (!dragging) return;
+  const dx = event.clientX - lastPointer.x;
+  const dy = event.clientY - lastPointer.y;
+  lastPointer = { x: event.clientX, y: event.clientY };
+  cam.yaw += dx * 0.0075;
+  cam.pitch += dy * 0.0075;
+  cam.pitch = Math.max(-1.48, Math.min(1.48, cam.pitch));
+  draw();
+});
+
+canvas.addEventListener('pointerup', () => {
+  dragging = false;
+});
+canvas.addEventListener('pointercancel', () => {
+  dragging = false;
+});
+canvas.addEventListener('wheel', event => {
+  event.preventDefault();
+  const z = Number(els.zoom.value);
+  const factor = event.deltaY > 0 ? 0.88 : 1.14;
+  els.zoom.value = Math.max(Number(els.zoom.min), Math.min(Number(els.zoom.max), z * factor));
+  draw();
+}, { passive: false });
+
+window.addEventListener('keydown', event => {
+  if (event.code === 'Space') {
+    event.preventDefault();
+    els.play.click();
+  }
+});
+
+window.addEventListener('resize', resize);
+resize();
+loadManifest();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

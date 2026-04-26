@@ -1,0 +1,230 @@
+{
+  "schema": "horizons-manifest-v1",
+  "source": "NASA/JPL Horizons",
+  "generatedBy": "scarica_horizons.py",
+  "count": 13,
+  "datasets": [
+    {
+      "slug": "artemis1_orion_geocentric_2022",
+      "name": "Artemis I / Orion",
+      "description": "Traiettoria geocentrica di Artemis I / Orion.",
+      "command": "-1023",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "2022-NOV-16 08:46:00.3328",
+      "stop": "2022-Dec-11 17:20",
+      "step": "1 h",
+      "file": "artemis1_orion_geocentric_2022.json",
+      "pointCount": 609,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "artemis2_orion_geocentric_2026",
+      "name": "Artemis II / Orion Integrity",
+      "description": "Traiettoria geocentrica di Artemis II / Orion Integrity, se disponibile in Horizons.",
+      "command": "-1024",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "2026-Apr-02 03:30",
+      "stop": "2026-APR-10 23:54:22.8576",
+      "step": "1 h",
+      "file": "artemis2_orion_geocentric_2026.json",
+      "pointCount": 213,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo8_sivb_geocentric_1968",
+      "name": "Apollo 8 S-IVB",
+      "description": "Stadio S-IVB associato ad Apollo 8.",
+      "command": "-399080",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1968-DEC-21 16:04:38.5109",
+      "stop": "1968-Dec-28 18:00",
+      "step": "1 h",
+      "file": "apollo8_sivb_geocentric_1968.json",
+      "pointCount": 170,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo9_sivb_geocentric_1969",
+      "name": "Apollo 9 S-IVB",
+      "description": "Stadio S-IVB associato ad Apollo 9.",
+      "command": "-399090",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1969-Mar-03 23:38:30",
+      "stop": "1969-Mar-11 00:06:38",
+      "step": "1 h",
+      "file": "apollo9_sivb_geocentric_1969.json",
+      "pointCount": 169,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo10_sivb_geocentric_1969",
+      "name": "Apollo 10 S-IVB",
+      "description": "Stadio S-IVB associato ad Apollo 10.",
+      "command": "-399100",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1969-May-18 19:44:22",
+      "stop": "1969-May-26 18:00",
+      "step": "1 h",
+      "file": "apollo10_sivb_geocentric_1969.json",
+      "pointCount": 191,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo10_lm_snoopy_geocentric_1969",
+      "name": "Apollo 10 LM Snoopy",
+      "description": "Modulo lunare Snoopy di Apollo 10.",
+      "command": "-399101",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1969-MAY-23 05:37:54.1078",
+      "stop": "1969-May-24 12:00",
+      "step": "30 min",
+      "file": "apollo10_lm_snoopy_geocentric_1969.json",
+      "pointCount": 61,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo11_sivb_geocentric_1969",
+      "name": "Apollo 11 S-IVB",
+      "description": "Stadio S-IVB associato ad Apollo 11.",
+      "command": "-399110",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1969-JUL-16 16:40:02.7475",
+      "stop": "1969-Jul-24 18:00",
+      "step": "1 h",
+      "file": "apollo11_sivb_geocentric_1969.json",
+      "pointCount": 194,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "apollo12_sivb_geocentric_1969",
+      "name": "Apollo 12 S-IVB",
+      "description": "Stadio S-IVB associato ad Apollo 12.",
+      "command": "-399120",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "1969-Nov-14 19:32:45",
+      "stop": "1969-Nov-24 20:00",
+      "step": "1 h",
+      "file": "apollo12_sivb_geocentric_1969.json",
+      "pointCount": 241,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "voyager1_heliocentric_1977_1979",
+      "name": "Voyager 1",
+      "description": "Primo tratto eliocentrico della missione Voyager 1.",
+      "command": "-31",
+      "center": "@sun",
+      "centerName": "Sun",
+      "start": "1977-SEP-05 13:59:24.3830",
+      "stop": "1979-Mar-05",
+      "step": "5 d",
+      "file": "voyager1_heliocentric_1977_1979.json",
+      "pointCount": 110,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "voyager2_heliocentric_1977_1981",
+      "name": "Voyager 2",
+      "description": "Primo tratto eliocentrico della missione Voyager 2.",
+      "command": "-32",
+      "center": "@sun",
+      "centerName": "Sun",
+      "start": "1977-AUG-20 15:32:32.1830",
+      "stop": "1981-Aug-25",
+      "step": "8 d",
+      "file": "voyager2_heliocentric_1977_1981.json",
+      "pointCount": 184,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "parker_solar_probe_heliocentric_2018_2019",
+      "name": "Parker Solar Probe",
+      "description": "Traiettoria eliocentrica iniziale di Parker Solar Probe.",
+      "command": "-96",
+      "center": "@sun",
+      "centerName": "Sun",
+      "start": "2018-AUG-12 08:16:23.3431",
+      "stop": "2019-Apr-01",
+      "step": "8 h",
+      "file": "parker_solar_probe_heliocentric_2018_2019.json",
+      "pointCount": 695,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "moon_geocentric_2026",
+      "name": "Moon",
+      "description": "Traiettoria geocentrica della Luna, utile come riferimento.",
+      "command": "301",
+      "center": "@399",
+      "centerName": "Earth",
+      "start": "2026-Jan-01",
+      "stop": "2026-Mar-01",
+      "step": "3 h",
+      "file": "moon_geocentric_2026.json",
+      "pointCount": 473,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    },
+    {
+      "slug": "mars_heliocentric_2026_2028",
+      "name": "Mars",
+      "description": "Traiettoria eliocentrica di Marte come riferimento planetario.",
+      "command": "499",
+      "center": "@sun",
+      "centerName": "Sun",
+      "start": "2026-Jan-01",
+      "stop": "2028-Jan-01",
+      "step": "5 d",
+      "file": "mars_heliocentric_2026_2028.json",
+      "pointCount": 147,
+      "units": {
+        "position": "km",
+        "velocity": "km/s"
+      }
+    }
+  ],
+  "errors": []
+}

@@ -93,6 +93,27 @@
   ],
   "simulations": [
     {
+      "title": "Traiettorie di missioni spaziali",
+      "description": "Viewer interattivo di traiettorie spaziali basato su dataset statici NASA/JPL Horizons per missioni come Artemis, Apollo, Voyager e Parker Solar Probe.",
+      "category": "Astrofisica",
+      "icon": "🚀",
+      "order": 12,
+      "tags": [
+        "NASA/JPL Horizons",
+        "missioni spaziali",
+        "traiettorie",
+        "orbite",
+        "Artemis",
+        "Apollo",
+        "Voyager",
+        "Parker Solar Probe",
+        "ephemerides"
+      ],
+      "level": "intermedio",
+      "file": "astrofisica/traiettorie-missioni-spaziali.html",
+      "isWip": false
+    },
+    {
       "title": "Campo elettrico",
       "description": "Visualizzazione del campo elettrico generato da cariche puntiformi, linee di campo, superfici equipotenziali, flusso e circuitazione. Include template per dipolo, condensatore, sfera e cilindro.",
       "category": "Elettromagnetismo",
@@ -798,7 +819,7 @@
       "title": "Trasporto di particelle",
       "description": "Simulazione Monte Carlo del trasporto di neutroni, fotoni ed elettroni in materiali diversi, con visualizzazione di tracce, fluenza, dose e principali processi di interazione.",
       "category": "WIP",
-      "icon": "??",
+      "icon": "☢️",
       "order": 10,
       "tags": [
         "trasporto di particelle",

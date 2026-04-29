@@ -5,11 +5,11 @@
 <script>
 window.SIM_METADATA = {
   "title": "Diffrazione 2D",
-  "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
+  "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, affiancando una vista didattica top-down e una visualizzazione frontale del pattern numerico per doppia fenditura, reticolo e ostacolo circolare.",
   "category": "Ottica",
   "icon": "◌",
   "order": 20,
-  "tags": ["diffrazione", "ottica ondulatoria", "spettro angolare", "Fresnel", "Fraunhofer", "doppia fenditura", "reticolo", "Poisson-Arago", "WebAssembly"],
+  "tags": ["diffrazione", "ottica ondulatoria", "spettro angolare", "Fresnel", "Fraunhofer", "doppia fenditura", "reticolo", "Poisson-Arago", "Huygens-Fresnel", "WebAssembly"],
   "level": "intermedio"
 };
 </script>
@@ -371,6 +371,43 @@ input[type=range] {
   font-weight: 500;
 }
 
+
+/* ---- Mode selector ---- */
+.mode-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.mode-tab { flex: 1; padding: 7px 6px; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase; background: transparent; border: 1px solid var(--border); color: var(--ink-soft); cursor: pointer; border-radius: 3px; transition: all 0.15s; }
+.mode-tab:hover { border-color: var(--ink-mid); color: var(--ink); }
+.mode-tab.active { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+
+.didactic-area { flex: 1; display: grid; grid-template-columns: 1.12fr 0.88fr; grid-template-rows: 1fr; gap: 1px; background: var(--border); overflow: hidden; }
+.didactic-area[hidden], .canvas-area[hidden] { display: none !important; }
+.didactic-cell { background: #fbf8f1; }
+.didactic-cell canvas { image-rendering: auto; background: #fbf8f1; }
+.didactic-cell .canvas-label { color: rgba(26,20,16,0.68); background: rgba(251,248,241,0.86); border: 1px solid rgba(213,207,197,0.9); border-radius: 3px; padding: 5px 7px; }
+.didactic-cell .canvas-label span { color: rgba(26,20,16,0.48); }
+.didactic-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; z-index: 3; font-family: var(--mono); font-size: 0.58rem; line-height: 1.45; color: rgba(26,20,16,0.58); background: rgba(251,248,241,0.86); border: 1px solid rgba(213,207,197,0.9); border-radius: 3px; padding: 6px 8px; pointer-events: none; }
+
+/* ---- Extended theory ---- */
+.full-theory { max-width: 1100px; margin: 0 auto; padding: 44px 28px 64px; border-top: 1px solid var(--border); }
+.full-theory h2 { font-family: var(--serif); font-size: 2rem; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 10px; }
+.full-theory .lead { max-width: 860px; font-family: var(--serif); font-size: 1.08rem; color: var(--ink-mid); line-height: 1.75; margin-bottom: 28px; }
+.theory-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px; }
+.theory-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 18px 20px; }
+.theory-section.wide { grid-column: 1 / -1; }
+.theory-section h3 { font-family: var(--serif); font-size: 1.22rem; font-weight: 500; color: var(--ink); margin-bottom: 10px; }
+.theory-section p, .theory-section li { font-family: var(--serif); font-size: 1rem; line-height: 1.75; color: var(--ink-mid); margin-bottom: 10px; }
+.theory-section ul { padding-left: 1.1rem; }
+.formula-box { background: var(--cream); border-left: 3px solid var(--accent2); padding: 10px 14px; margin: 12px 0; overflow-x: auto; }
+.refs { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); line-height: 1.7; margin-top: 18px; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 73px); }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+  .didactic-area, .canvas-area { min-height: 780px; }
+  .didactic-area { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .theory-grid { grid-template-columns: 1fr; }
+  .theory-section.wide { grid-column: auto; }
+}
+
 /* Loading overlay */
 #loading-overlay {
   position: fixed; inset: 0;
@@ -416,7 +453,7 @@ input[type=range] {
 
 <header class="site-header">
   <h1>Diffrazione 2D</h1>
-  <span class="subtitle">Angular Spectrum Method &nbsp;·&nbsp; C / WebAssembly</span>
+  <span class="subtitle">Vista didattica &nbsp;·&nbsp; Angular Spectrum Method &nbsp;·&nbsp; C / WebAssembly</span>
 </header>
 
 <div class="layout">
@@ -518,13 +555,17 @@ input[type=range] {
     <!-- Visualizzazione -->
     <div class="card">
       <h3>Visualizzazione</h3>
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="didactic">Didattica</button>
+        <button class="mode-tab" data-mode="lab">Laboratorio</button>
+      </div>
       <div class="view-tabs">
         <button class="view-tab active" data-cmap="viridis">Intensità</button>
         <button class="view-tab"        data-cmap="phase">Fase</button>
         <button class="view-tab"        data-cmap="amplitude">Ampiezza</button>
       </div>
       <p style="font-family:var(--mono);font-size:0.62rem;color:var(--ink-soft);margin-top:8px">
-        I quattro pannelli mostrano sempre: apertura sorgente, campo propagato, spettro angolare |FFT|, fase ∠U.
+        La modalità didattica apre con vista top-down e schermo frontale. La modalità laboratorio mostra apertura, campo propagato, spettro angolare |FFT| e fase ∠U.
       </p>
     </div>
 
@@ -552,7 +593,20 @@ input[type=range] {
 
   <!-- ======= MAIN PANEL ======= -->
   <main class="main-panel">
-    <div class="canvas-area">
+    <div class="didactic-area" id="didactic-area">
+      <div class="canvas-cell didactic-cell">
+        <div class="canvas-label">Vista top-down<span>onda incidente, fenditure, cammini ottici e frange</span></div>
+        <canvas id="cv-topdown"></canvas>
+        <div class="didactic-hint" id="topdown-hint">Schema geometrico parametrico: le linee luminose indicano massimi approssimati della doppia fenditura, mentre le bande sullo schermo usano l'inviluppo della singola fenditura.</div>
+      </div>
+      <div class="canvas-cell didactic-cell">
+        <div class="canvas-label">Schermo frontale<span>intensità numerica calcolata con ASM</span></div>
+        <canvas id="cv-didactic-front"></canvas>
+        <div class="didactic-hint">Questa è la stessa distribuzione frontale calcolata dal core WebAssembly. Premi “Calcola propagazione” dopo aver cambiato i parametri.</div>
+      </div>
+    </div>
+
+    <div class="canvas-area" id="lab-area" hidden>
 
       <!-- Apertura sorgente -->
       <div class="canvas-cell">
@@ -592,6 +646,66 @@ input[type=range] {
     </div>
   </main>
 </div>
+
+<section id="teoria" class="full-theory">
+  <h2>Teoria fisica della diffrazione</h2>
+  <p class="lead">
+    La diffrazione è la deviazione dalla propagazione puramente geometrica che compare quando un'onda incontra aperture, bordi o ostacoli con dimensioni confrontabili con la lunghezza d'onda. In ottica è uno dei fenomeni più diretti per vedere la natura ondulatoria della luce: un'apertura non seleziona semplicemente un fascio rettilineo, ma genera una nuova distribuzione spaziale di ampiezza e fase.
+  </p>
+
+  <div class="theory-grid">
+    <article class="theory-section">
+      <h3>1. Principio di Huygens-Fresnel</h3>
+      <p>Il principio di Huygens-Fresnel afferma che ogni punto raggiunto da un fronte d'onda può essere trattato come sorgente secondaria di onde elementari. Il fronte successivo risulta dalla sovrapposizione coerente di tutte queste onde secondarie, con ampiezze e fasi determinate dal cammino ottico.</p>
+      <div class="formula-box">$$U(P) \propto \int_{\text{apertura}} A(Q)\,\frac{e^{ik r}}{r}\,K(\theta)\,dS$$</div>
+      <p>Qui $U(P)$ è il campo nel punto di osservazione $P$, $A(Q)$ è l'ampiezza sull'apertura nel punto $Q$, $r$ è la distanza tra $Q$ e $P$, $k=2\pi/\lambda$ è il numero d'onda, $\lambda$ è la lunghezza d'onda e $K(\theta)$ rappresenta il fattore obliquo della teoria scalare.</p>
+    </article>
+
+    <article class="theory-section">
+      <h3>2. Doppia fenditura</h3>
+      <p>Nel caso ideale della doppia fenditura, le due aperture agiscono come sorgenti coerenti. In un punto dello schermo arrivano due contributi con cammini ottici diversi. La differenza di cammino è</p>
+      <div class="formula-box">$$\Delta r = r_2-r_1$$</div>
+      <p>I massimi di interferenza si hanno quando $\Delta r=m\lambda$, mentre i minimi si hanno quando $\Delta r=(m+1/2)\lambda$, con $m$ intero. Nel limite di piccoli angoli:</p>
+      <div class="formula-box">$$x_m \simeq \frac{m\lambda z}{d}$$</div>
+      <p>dove $x_m$ è la posizione della frangia di ordine $m$, $z$ è la distanza tra fenditure e schermo, $d$ è la separazione centro-centro tra le fenditure e $\lambda$ è la lunghezza d'onda.</p>
+    </article>
+
+    <article class="theory-section">
+      <h3>3. Larghezza finita e inviluppo</h3>
+      <p>Una fenditura reale non è puntiforme. La sua larghezza $a$ produce un inviluppo di diffrazione da singola fenditura che modula le frange della doppia fenditura. Per una fenditura rettangolare, i minimi dell'inviluppo soddisfano approssimativamente</p>
+      <div class="formula-box">$$a\sin\theta = p\lambda, \qquad p=\pm1,\pm2,\dots$$</div>
+      <p>Questo spiega perché le frange non hanno tutte la stessa intensità: l'interferenza tra le due fenditure è moltiplicata dalla diffrazione prodotta dalla larghezza finita di ciascuna apertura.</p>
+    </article>
+
+    <article class="theory-section">
+      <h3>4. Fresnel e Fraunhofer</h3>
+      <p>La distinzione tra campo vicino e campo lontano è controllata dal numero di Fresnel</p>
+      <div class="formula-box">$$N_F=\frac{a^2}{\lambda z}$$</div>
+      <p>dove $a$ è una scala trasversale dell'apertura, $\lambda$ è la lunghezza d'onda e $z$ è la distanza di propagazione. Per $N_F\gtrsim1$ il pattern dipende fortemente dalla distanza e si parla di regime di Fresnel. Per $N_F\ll1$ si entra nel regime di Fraunhofer, in cui il pattern tende alla trasformata di Fourier dell'apertura.</p>
+    </article>
+
+    <article class="theory-section">
+      <h3>5. Reticolo di diffrazione</h3>
+      <p>Un reticolo con molte fenditure produce massimi molto più stretti rispetto alla doppia fenditura. La condizione principale dei massimi è</p>
+      <div class="formula-box">$$d\sin\theta=m\lambda$$</div>
+      <p>dove $d$ è il periodo del reticolo. Aumentando il numero di fenditure, i massimi principali diventano più selettivi: questo è il principio alla base della separazione spettrale nei reticoli ottici.</p>
+    </article>
+
+    <article class="theory-section">
+      <h3>6. Ostacolo circolare e macchia di Poisson-Arago</h3>
+      <p>Un disco opaco può produrre un massimo luminoso al centro della sua ombra geometrica. Questo effetto, noto come macchia di Poisson-Arago, è una conseguenza della sovrapposizione coerente dei contributi diffratti dal bordo circolare dell'ostacolo. Storicamente fu uno degli argomenti più forti a favore della teoria ondulatoria della luce.</p>
+    </article>
+
+    <article class="theory-section wide">
+      <h3>7. Collegamento con il metodo numerico</h3>
+      <p>La simulazione numerica usa l'ASM (Angular Spectrum Method), cioè il metodo dello spettro angolare. Il campo nel piano iniziale $U(x,y,0)$ viene scomposto in onde piane mediante trasformata di Fourier bidimensionale. Ogni componente viene propagata moltiplicando per una fase dipendente da $k_z$:</p>
+      <div class="formula-box">$$U(x,y,z)=\mathcal{F}^{-1}\left\{\mathcal{F}[U(x,y,0)]\,e^{ik_z z}\right\}$$</div>
+      <p>con $k_z=\sqrt{k^2-k_x^2-k_y^2}$. Quando $k_x^2+k_y^2>k^2$ il contributo è evanescente: decade molto rapidamente e, per le scale millimetriche qui usate, viene soppresso. Il modello resta scalare: descrive ampiezza e fase del campo, ma non include polarizzazione, spessore reale degli ostacoli o condizioni elettromagnetiche vettoriali complete.</p>
+    </article>
+  </div>
+
+  <div class="refs">Riferimenti consigliati: Eugene Hecht, <em>Optics</em>; Joseph W. Goodman, <em>Introduction to Fourier Optics</em>; Max Born e Emil Wolf, <em>Principles of Optics</em>.</div>
+</section>
 
 <script>
 /* ================================================================
@@ -787,7 +901,9 @@ function computeAndRenderSpectrum(canvas, wasm, N, fieldRe, fieldIm) {
   const samp = [];
   for(let r=0;r<S;r++) for(let c=0;c<S;c++) samp.push({r:re[(r*step)*N+(c*step)],i:im[(r*step)*N+(c*step)]});
 
-  /* FFT2D separabile: righe poi colonne */
+  /* Righe */
+  for(let r=0;r<S;r++) fft1d_js(samp.slice(r*S,(r+1)*S).forEach((v,i)=>{samp[r*S+i]=v,0})||samp.slice(r*S,(r+1)*S),(x=>x)(false));
+  /* Reset con veri valori */
   const tmp=[];
   for(let r=0;r<S;r++){const row=samp.slice(r*S,(r+1)*S);fft1d_js(row,false);for(let c=0;c<S;c++)tmp[r*S+c]=row[c];}
   const tmp2=[];
@@ -824,6 +940,256 @@ function computeAndRenderSpectrum(canvas, wasm, N, fieldRe, fieldIm) {
   ctx.putImageData(img,0,0);
 }
 
+
+/* ================================================================
+ * MODALITÀ DIDATTICA: VISTA TOP-DOWN E SCHERMO FRONTALE
+ * ================================================================ */
+function clamp(x, a, b) {
+  return Math.max(a, Math.min(b, x));
+}
+
+function rgbArrayFromWavelength(nm) {
+  const m = wavelengthToRGB(nm).match(/\d+/g);
+  return m ? m.slice(0,3).map(Number) : [60,120,220];
+}
+
+function setupResponsiveCanvas(canvas, fallbackW=720, fallbackH=460) {
+  const parent = canvas.parentElement;
+  const rect = parent ? parent.getBoundingClientRect() : {width:fallbackW, height:fallbackH};
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssW = Math.max(360, Math.floor(rect.width || fallbackW));
+  const cssH = Math.max(320, Math.floor(rect.height || fallbackH));
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return {ctx, W: cssW, H: cssH};
+}
+
+function drawDashedLine(ctx, x1, y1, x2, y2, dash=7, gap=6) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx,dy);
+  const ux = dx/len, uy = dy/len;
+  let t = 0;
+  ctx.beginPath();
+  while(t < len) {
+    const a = t;
+    const b = Math.min(t+dash, len);
+    ctx.moveTo(x1+ux*a, y1+uy*a);
+    ctx.lineTo(x1+ux*b, y1+uy*b);
+    t += dash + gap;
+  }
+  ctx.stroke();
+}
+
+function drawDidacticPlaceholderFront() {
+  const canvas = document.getElementById('cv-didactic-front');
+  if(!canvas) return;
+  const {ctx,W,H} = setupResponsiveCanvas(canvas, 520, 460);
+  ctx.fillStyle = '#fbf8f1';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#dcd4c7';
+  for(let i=0;i<9;i++){
+    const y = H*(0.18 + i*0.08);
+    const alpha = 0.18 + 0.60*Math.exp(-Math.pow(i-4,2)/7);
+    ctx.fillStyle = `rgba(42,95,139,${alpha})`;
+    ctx.fillRect(W*0.25, y, W*0.50, 9);
+  }
+  ctx.fillStyle = '#4a3f35';
+  ctx.font = '13px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('In attesa del primo calcolo ASM', W/2, H*0.52);
+  ctx.fillStyle = '#7a6f65';
+  ctx.font = '12px IBM Plex Sans, sans-serif';
+  ctx.fillText('il risultato frontale verrà calcolato dal modulo WebAssembly', W/2, H*0.57);
+}
+
+function drawDidacticTopDown() {
+  const canvas = document.getElementById('cv-topdown');
+  if(!canvas) return;
+  const {ctx,W,H} = setupResponsiveCanvas(canvas, 760, 460);
+
+  ctx.fillStyle = '#fbf8f1';
+  ctx.fillRect(0,0,W,H);
+
+  const nm = parseFloat(document.getElementById('lambda').value || 550);
+  const lambda = getParam('lambda');
+  const z = getParam('dist');
+  const L = getParam('grid-L');
+  const color = rgbArrayFromWavelength(nm);
+  const waveColor = `rgb(${color[0]},${color[1]},${color[2]})`;
+
+  if(currentGeo !== 'double_slit') {
+    ctx.fillStyle = '#4a3f35';
+    ctx.font = '15px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Vista top-down didattica disponibile per la doppia fenditura', W/2, H/2 - 10);
+    ctx.fillStyle = '#7a6f65';
+    ctx.font = '13px IBM Plex Sans, sans-serif';
+    ctx.fillText('passa alla modalità laboratorio per reticolo e ostacolo circolare', W/2, H/2 + 18);
+    return;
+  }
+
+  const a = getParam('slit-w');
+  const d = getParam('slit-d');
+  const a_um = a * 1e6;
+  const d_um = d * 1e6;
+  const z_mm = z * 1e3;
+
+  const xSource = 42;
+  const xBarrier = Math.max(130, W*0.23);
+  const xScreen = W - 82;
+  const mid = H/2;
+  const top = 42;
+  const bottom = H - 64;
+  const apertureSep = clamp(d_um * 0.55, 52, Math.min(230, H*0.46));
+  const slitGap = clamp(a_um * 0.24, 9, 46);
+  const y1 = mid - apertureSep/2;
+  const y2 = mid + apertureSep/2;
+  const waveSpacing = clamp(nm/550 * 34, 23, 48);
+
+  /* Piano d'onda incidente */
+  ctx.strokeStyle = 'rgba(42,95,139,0.20)';
+  ctx.lineWidth = 1;
+  for(let x=xSource; x<xBarrier-16; x+=waveSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, top+10);
+    ctx.lineTo(x, bottom-10);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = waveColor;
+  ctx.globalAlpha = 0.72;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(xBarrier-34, mid);
+  ctx.lineTo(xBarrier-8, mid);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#4a3f35';
+  ctx.font = '12px IBM Plex Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('onda piana incidente', xSource, top+2);
+
+  /* Barriera con due fenditure */
+  ctx.fillStyle = '#1a1410';
+  ctx.fillRect(xBarrier-4, top, 8, bottom-top);
+  ctx.fillStyle = '#fbf8f1';
+  ctx.fillRect(xBarrier-7, y1-slitGap/2, 14, slitGap);
+  ctx.fillRect(xBarrier-7, y2-slitGap/2, 14, slitGap);
+  ctx.strokeStyle = waveColor;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(xBarrier-7, y1-slitGap/2, 14, slitGap);
+  ctx.strokeRect(xBarrier-7, y2-slitGap/2, 14, slitGap);
+
+  /* Distanza d tra le fenditure */
+  ctx.strokeStyle = 'rgba(139,58,42,0.75)';
+  ctx.lineWidth = 1.4;
+  drawDashedLine(ctx, xBarrier+18, y1, xBarrier+18, y2, 4, 4);
+  ctx.fillStyle = '#8b3a2a';
+  ctx.font = '12px IBM Plex Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('d', xBarrier+24, mid+4);
+  ctx.fillText(`a=${a_um.toFixed(0)} µm`, xBarrier-54, y1-slitGap/2-8);
+
+  /* Onde secondarie */
+  ctx.strokeStyle = waveColor;
+  ctx.lineWidth = 1.15;
+  for(const ys of [y1,y2]) {
+    for(let r=waveSpacing*0.6; r<xScreen-xBarrier+60; r+=waveSpacing) {
+      ctx.globalAlpha = clamp(0.60 - r/(xScreen-xBarrier+180)*0.42, 0.12, 0.50);
+      ctx.beginPath();
+      ctx.arc(xBarrier, ys, r, -Math.PI/2.15, Math.PI/2.15);
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  /* Schermo e frange */
+  ctx.fillStyle = '#1a1410';
+  ctx.fillRect(xScreen, top, 5, bottom-top);
+  const screenBandX = xScreen + 12;
+  const screenBandW = 24;
+  const scaleY = (bottom-top) * 0.48 / (L/2);
+  const yPhysFromScreen = (ypx) => -(ypx-mid)/scaleY;
+  for(let y=top; y<bottom; y+=2) {
+    const yPhys = yPhysFromScreen(y);
+    const theta = Math.atan2(yPhys, z);
+    const sinT = Math.sin(theta);
+    const beta = Math.PI * a * sinT / lambda;
+    const alpha = Math.PI * d * sinT / lambda;
+    const sinc = Math.abs(beta) < 1e-8 ? 1 : Math.sin(beta)/beta;
+    let I = Math.cos(alpha) * Math.cos(alpha) * sinc * sinc;
+    I = clamp(I, 0, 1);
+    const opacity = 0.06 + 0.92*Math.pow(I, 0.55);
+    ctx.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},${opacity})`;
+    ctx.fillRect(screenBandX, y, screenBandW, 2);
+  }
+  ctx.strokeStyle = 'rgba(26,20,16,0.25)';
+  ctx.strokeRect(screenBandX, top, screenBandW, bottom-top);
+
+  /* Linee dei massimi principali */
+  const maxOrder = Math.min(6, Math.floor((L/2) * d / (lambda * z)) + 1);
+  ctx.font = '11px IBM Plex Mono, monospace';
+  for(let m=-maxOrder; m<=maxOrder; m++) {
+    const yPhys = m * lambda * z / d;
+    const ys = mid - yPhys * scaleY;
+    if(ys < top+14 || ys > bottom-14) continue;
+    ctx.strokeStyle = m === 0 ? 'rgba(139,58,42,0.72)' : 'rgba(42,95,139,0.40)';
+    ctx.lineWidth = m === 0 ? 1.5 : 1;
+    drawDashedLine(ctx, xBarrier, y1, xScreen, ys, m===0?7:5, m===0?5:6);
+    drawDashedLine(ctx, xBarrier, y2, xScreen, ys, m===0?7:5, m===0?5:6);
+    ctx.fillStyle = m === 0 ? '#8b3a2a' : '#2a5f8b';
+    ctx.textAlign = 'left';
+    ctx.fillText(`m=${m}`, screenBandX + screenBandW + 7, ys+4);
+  }
+
+  /* Misura z */
+  ctx.strokeStyle = 'rgba(26,20,16,0.45)';
+  ctx.lineWidth = 1;
+  drawDashedLine(ctx, xBarrier, bottom+20, xScreen, bottom+20, 6, 5);
+  ctx.fillStyle = '#4a3f35';
+  ctx.font = '12px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`z = ${z_mm.toFixed(1)} mm`, (xBarrier+xScreen)/2, bottom+38);
+  ctx.textAlign = 'left';
+  ctx.fillText(`λ = ${nm.toFixed(0)} nm`, xSource, bottom+38);
+  ctx.fillText(`d = ${d_um.toFixed(0)} µm`, xBarrier+34, bottom+38);
+
+  /* Nomi principali */
+  ctx.fillStyle = '#1a1410';
+  ctx.font = '12px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('barriera', xBarrier, top-14);
+  ctx.fillText('schermo', xScreen+20, top-14);
+  ctx.fillStyle = '#7a6f65';
+  ctx.font = '11px IBM Plex Sans, sans-serif';
+  ctx.fillText('schema non in scala: la separazione tra fenditure è ingrandita per chiarezza', W/2, H-14);
+}
+
+/* Aggiorna il pannello frontale didattico usando il risultato numerico */
+function renderDidacticFront(intensity, N) {
+  const canvas = document.getElementById('cv-didactic-front');
+  if(!canvas || !intensity) {
+    drawDidacticPlaceholderFront();
+    return;
+  }
+  renderToCanvas(canvas, intensity, N, CMAPS.viridis);
+}
+
+function switchDisplayMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const did = document.getElementById('didactic-area');
+  const lab = document.getElementById('lab-area');
+  if(did) did.hidden = mode !== 'didactic';
+  if(lab) lab.hidden = mode !== 'lab';
+  if(mode === 'didactic') {
+    drawDidacticTopDown();
+  }
+}
+
 /* ================================================================
  * WASM INTERFACE
  * ================================================================ */
@@ -845,6 +1211,9 @@ function initWasm() {
       document.getElementById('run-btn').disabled = false;
       document.getElementById('status').textContent = 'Modulo WASM pronto. Imposta i parametri e calcola.';
       updateBadges();
+      drawDidacticTopDown();
+      drawDidacticPlaceholderFront();
+      setTimeout(() => runSimulation(), 60);
     }).catch(e => {
       errDiv.style.display = 'block';
       errDiv.textContent = 'Errore init WASM: ' + e.message;
@@ -865,6 +1234,7 @@ function initWasm() {
  * ================================================================ */
 let currentGeo  = 'double_slit';
 let currentCmap = 'viridis';
+let currentMode = 'didactic';
 
 const sliders = {
   'slit-w':    { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
@@ -927,6 +1297,7 @@ function initSliders() {
       if(valEl) valEl.textContent = cfg.display(parseFloat(el.value));
       if(id==='lambda') updateLambdaDisplay();
       updateBadges();
+      if(currentMode === 'didactic') drawDidacticTopDown();
     });
     if(valEl) valEl.textContent = cfg.display(parseFloat(el.value));
   }
@@ -1030,6 +1401,10 @@ function runSimulation() {
         renderPhase(document.getElementById('cv-phase'), phaseData, N);
         drawColorbar(document.getElementById('cb-phase'), CMAPS.phase, true);
 
+        /* 5b. Modalità didattica: top-down geometrico + schermo frontale numerico */
+        drawDidacticTopDown();
+        renderDidacticFront(intensity, N);
+
         /* 6. Aggiorna label e info */
         document.getElementById('label-dist').textContent = `z = ${(z*1e3).toFixed(1)} mm`;
         const dt = (t1-t0).toFixed(0);
@@ -1058,7 +1433,12 @@ document.querySelectorAll('.geo-tab').forEach(btn => {
     currentGeo = btn.dataset.geo;
     document.getElementById('params-'+currentGeo).classList.add('active');
     updateBadges();
+    if(currentMode === 'didactic') drawDidacticTopDown();
   });
+});
+
+document.querySelectorAll('.mode-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchDisplayMode(btn.dataset.mode));
 });
 
 document.querySelectorAll('.view-tab').forEach(btn => {
@@ -1082,18 +1462,13 @@ document.addEventListener('keydown', e => {
 window.addEventListener('load', () => {
   initSliders();
   updateBadges();
+  switchDisplayMode('didactic');
+  drawDidacticTopDown();
+  drawDidacticPlaceholderFront();
   initWasm();
 });
 
-window.SIM_METADATA = {
-  "title": "Diffrazione 2D",
-  "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
-  "category": "Ottica",
-  "icon": "◌",
-  "order": 20,
-  "tags": ["diffrazione", "ottica ondulatoria", "spettro angolare", "Fresnel", "Fraunhofer", "doppia fenditura", "reticolo", "Poisson-Arago", "WebAssembly"],
-  "level": "intermedio"
-};
+
 </script>
 </body>
 </html>

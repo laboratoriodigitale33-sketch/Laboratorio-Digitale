@@ -853,6 +853,27 @@
       "isWip": true
     },
     {
+      "title": "Diffrazione 2D",
+      "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
+      "category": "WIP",
+      "icon": "◌",
+      "order": 20,
+      "tags": [
+        "diffrazione",
+        "ottica ondulatoria",
+        "spettro angolare",
+        "Fresnel",
+        "Fraunhofer",
+        "doppia fenditura",
+        "reticolo",
+        "Poisson-Arago",
+        "WebAssembly"
+      ],
+      "level": "intermedio",
+      "file": "WIP/diffrazione/diffrazione.html",
+      "isWip": true
+    },
+    {
       "title": "Moto Browniano",
       "description": "Visualizza il moto stocastico di una particella tracciante immersa in un solvente, con collisioni elastiche, traiettoria casuale, spostamento quadratico medio e collegamento alla diffusione di Einstein.",
       "category": "WIP",

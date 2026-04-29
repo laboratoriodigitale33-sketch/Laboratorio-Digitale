@@ -1,5 +1,22 @@
+ambiente Emscripten:
+cd \Users\rober\emsdk\upstream\emscripten
+emsdk_env.bat
+poi naviga fino alla directory:
+cd \Users\rober\OneDrive\Desktop\Simulazioni\...
+poi manda il comando i compilazione Emscritpen nel file comandi terminale
+
+
 SISTEMARE:
--sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico (forse fatto da codex)
+-sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico (forse fatto da codex), FARADAY sicuro manca
+diffrazione:
+	fare compilare da codex controllando che vada tutto bene
+-sistemi caotici(claude lab):
+	sistemare tutto
+Diagrammi Feymann(cluade web):
+	da sistemare tutto
+-missioni HOrizin(su chat gpt):
+	le orbite (soprattutto voyager) sono strane
+	inserire riferimenti tipo luna 
 -trasporto:
 	calcolo d dose sbaglaito
 	aggingere preset per emettitori alpha, beta+ e - e neutroni 
@@ -60,10 +77,10 @@ SISTEMARE:
 
 
 DA FARE:
+-conduzione ed induzione
 -meccanica lagrangina
 -meccanica statistica
 -altre meccaniche
--TOGLIERE SEZIONE TEORIA
 -Radiazione corpo nero (legge di Wien e legge di Stefan-Boltzmann)/bremsstrahlung/sincrotrone/ciclotrnone/altro con autoassorbimenti magari
 -Tipi di elettrizzazione
 -Traiettorie orbitali (effetto fionda e simili)

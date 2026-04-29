@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  "title": "Diffrazione 2D",
+  "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
+  "category": "Ottica",
+  "icon": "◌",
+  "order": 20,
+  "tags": ["diffrazione", "ottica ondulatoria", "spettro angolare", "Fresnel", "Fraunhofer", "doppia fenditura", "reticolo", "Poisson-Arago", "WebAssembly"],
+  "level": "intermedio"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffrazione 2D — Angular Spectrum Method</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false}
+        ]})"></script>
+
+<style>
+:root {
+  --cream:    #f5f0e8;
+  --ink:      #1a1410;
+  --ink-mid:  #4a3f35;
+  --ink-soft: #7a6f65;
+  --accent:   #8b3a2a;
+  --accent2:  #2a5f8b;
+  --border:   #d5cfc5;
+  --card-bg:  #faf7f2;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', sans-serif;
+  --serif:    'EB Garamond', Georgia, serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ---- Header ---- */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 24px 40px 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+}
+.site-header h1 {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.site-header .subtitle {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ---- Layout ---- */
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 73px);
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 24px 20px;
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--cream);
+  padding: 16px;
+}
+.card h3 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+/* Geometry tabs */
+.geo-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.geo-tab {
+  flex: 1;
+  padding: 7px 4px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+.geo-tab:hover { border-color: var(--ink-mid); color: var(--ink); }
+.geo-tab.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--cream);
+}
+
+/* Params */
+.param-group { display: none; }
+.param-group.active { display: block; }
+
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.param-row label {
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+  font-family: var(--sans);
+}
+.param-row .val {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-align: right;
+  min-width: 60px;
+}
+input[type=range] {
+  width: 100%;
+  accent-color: var(--accent);
+  margin-top: 2px;
+}
+
+/* Wavelength */
+.lambda-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+.lambda-swatch {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lambda-info { flex: 1; }
+.lambda-info .name {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.lambda-info .value {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+/* View mode */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+}
+.view-tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+.view-tab:hover { border-color: var(--ink-mid); color: var(--ink); }
+.view-tab.active {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: white;
+}
+
+/* Run button */
+.run-btn {
+  width: 100%;
+  padding: 11px;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.run-btn:hover { background: var(--accent); }
+.run-btn:disabled { background: var(--ink-soft); cursor: wait; }
+
+/* Status */
+.status {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  text-align: center;
+  min-height: 16px;
+}
+
+/* Theory card */
+.theory {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  color: var(--ink-mid);
+  line-height: 1.7;
+}
+.theory .math-block {
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+/* Fresnel number badge */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+}
+.badge-fresnel {
+  background: #e8f0e8;
+  color: #2a5a2a;
+  border: 1px solid #b0d0b0;
+}
+.badge-regime {
+  background: #f0e8e8;
+  color: #5a2a2a;
+  border: 1px solid #d0b0b0;
+}
+
+/* ---- Main panel ---- */
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.canvas-cell {
+  background: #0a0a0f;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.canvas-cell canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  display: block;
+}
+.canvas-label {
+  position: absolute;
+  top: 8px; left: 10px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  z-index: 2;
+  pointer-events: none;
+}
+.canvas-label span {
+  display: block;
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.3);
+  margin-top: 1px;
+}
+
+/* Colorbar */
+.colorbar-strip {
+  position: absolute;
+  right: 8px;
+  top: 30px;
+  bottom: 8px;
+  width: 12px;
+  border-radius: 2px;
+  z-index: 2;
+}
+.colorbar-ticks {
+  position: absolute;
+  right: 24px;
+  top: 30px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.colorbar-ticks span {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.4);
+  line-height: 1;
+}
+
+/* Bottom info bar */
+.info-bar {
+  height: 36px;
+  border-top: 1px solid var(--border);
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 24px;
+}
+.info-bar .info-item {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+}
+.info-bar .info-item strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Loading overlay */
+#loading-overlay {
+  position: fixed; inset: 0;
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  gap: 16px;
+}
+#loading-overlay h2 {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#wasm-error {
+  display: none;
+  max-width: 420px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <h2>Caricamento modulo WASM…</h2>
+  <div id="wasm-error"></div>
+</div>
+
+<header class="site-header">
+  <h1>Diffrazione 2D</h1>
+  <span class="subtitle">Angular Spectrum Method &nbsp;·&nbsp; C / WebAssembly</span>
+</header>
+
+<div class="layout">
+  <!-- ======= SIDEBAR ======= -->
+  <aside class="sidebar">
+
+    <!-- Geometria -->
+    <div class="card">
+      <h3>Geometria</h3>
+      <div class="geo-tabs">
+        <button class="geo-tab active" data-geo="double_slit">Doppia<br>fenditura</button>
+        <button class="geo-tab"        data-geo="grating">Reticolo</button>
+        <button class="geo-tab"        data-geo="obstacle">Ostacolo<br>circolare</button>
+      </div>
+
+      <!-- Doppia fenditura -->
+      <div class="param-group active" id="params-double_slit">
+        <div class="param-row">
+          <label>Larghezza fenditura $a$</label>
+          <span class="val" id="val-slit-w">40 µm</span>
+        </div>
+        <input type="range" id="slit-w" min="10" max="200" value="40" step="1">
+
+        <div class="param-row">
+          <label>Separazione $d$ (centro-centro)</label>
+          <span class="val" id="val-slit-d">120 µm</span>
+        </div>
+        <input type="range" id="slit-d" min="30" max="500" value="120" step="5">
+
+        <div class="param-row">
+          <label>Altezza fenditura $h$</label>
+          <span class="val" id="val-slit-h">∞</span>
+        </div>
+        <input type="range" id="slit-h" min="0" max="600" value="0" step="10">
+      </div>
+
+      <!-- Reticolo -->
+      <div class="param-group" id="params-grating">
+        <div class="param-row">
+          <label>Numero di fenditure $N$</label>
+          <span class="val" id="val-n-slits">8</span>
+        </div>
+        <input type="range" id="n-slits" min="2" max="30" value="8" step="1">
+
+        <div class="param-row">
+          <label>Larghezza fenditura $a$</label>
+          <span class="val" id="val-grating-w">25 µm</span>
+        </div>
+        <input type="range" id="grating-w" min="5" max="100" value="25" step="1">
+
+        <div class="param-row">
+          <label>Periodo reticolo $d$</label>
+          <span class="val" id="val-grating-d">80 µm</span>
+        </div>
+        <input type="range" id="grating-d" min="20" max="300" value="80" step="5">
+      </div>
+
+      <!-- Ostacolo -->
+      <div class="param-group" id="params-obstacle">
+        <div class="param-row">
+          <label>Raggio disco $R$</label>
+          <span class="val" id="val-obs-r">80 µm</span>
+        </div>
+        <input type="range" id="obs-r" min="20" max="350" value="80" step="5">
+        <p style="font-family:var(--serif);font-size:0.82rem;color:var(--ink-soft);margin-top:8px;line-height:1.5">
+          Diffrazione da disco opaco. Il punto brillante centrale (macchia di Poisson-Arago) è visibile in regime di Fresnel ($N_F \geq 1$).
+        </p>
+      </div>
+    </div>
+
+    <!-- Parametri fisici -->
+    <div class="card">
+      <h3>Parametri fisici</h3>
+
+      <div class="lambda-display">
+        <div class="lambda-swatch" id="lambda-swatch"></div>
+        <div class="lambda-info">
+          <div class="name">Lunghezza d'onda $\lambda$</div>
+          <div class="value" id="lambda-value">550 nm — verde</div>
+        </div>
+      </div>
+      <input type="range" id="lambda" min="380" max="750" value="550" step="5" style="width:100%;margin-bottom:14px">
+
+      <div class="param-row">
+        <label>Distanza di propagazione $z$</label>
+        <span class="val" id="val-dist">5 mm</span>
+      </div>
+      <input type="range" id="dist" min="0.5" max="50" value="5" step="0.5">
+
+      <div class="param-row" style="margin-top:10px">
+        <label>Dimensione griglia fisica $L$</label>
+        <span class="val" id="val-grid-L">2 mm</span>
+      </div>
+      <input type="range" id="grid-L" min="0.5" max="5" value="2" step="0.1">
+
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" id="regime-badges"></div>
+    </div>
+
+    <!-- Visualizzazione -->
+    <div class="card">
+      <h3>Visualizzazione</h3>
+      <div class="view-tabs">
+        <button class="view-tab active" data-cmap="viridis">Intensità</button>
+        <button class="view-tab"        data-cmap="phase">Fase</button>
+        <button class="view-tab"        data-cmap="amplitude">Ampiezza</button>
+      </div>
+      <p style="font-family:var(--mono);font-size:0.62rem;color:var(--ink-soft);margin-top:8px">
+        I quattro pannelli mostrano sempre: apertura sorgente, campo propagato, spettro angolare |FFT|, fase ∠U.
+      </p>
+    </div>
+
+    <!-- Esegui -->
+    <button class="run-btn" id="run-btn" disabled>Calcola propagazione</button>
+    <div class="status" id="status">In attesa del modulo WASM…</div>
+
+    <!-- Teoria -->
+    <div class="card">
+      <h3>Metodo fisico</h3>
+      <div class="theory">
+        <p>L'<strong>Angular Spectrum Method (ASM)</strong> decompone il campo $U(x,y,0)$ in onde piane tramite trasformata di Fourier 2D:</p>
+        <div class="math-block">$$A(f_x,f_y) = \mathcal{F}\{U(x,y,0)\}$$</div>
+        <p>La propagazione di ciascuna componente di frequenza spaziale a distanza $z$ avviene moltiplicando per la funzione di trasferimento:</p>
+        <div class="math-block">$$H(f_x,f_y,z) = e^{\,i\,k_z\, z}$$</div>
+        <p>dove $k_z = \sqrt{k^2 - k_x^2 - k_y^2}$ per le onde propaganti ($k_x^2+k_y^2 < k^2$), e il campo evanescente viene soppresso.</p>
+        <p>Il campo propagato è:</p>
+        <div class="math-block">$$U(x,y,z) = \mathcal{F}^{-1}\{A \cdot H\}$$</div>
+        <p>Questo metodo è <em>esatto</em> (nessuna approssimazione parassiale) e vale sia nel regime di Fresnel che di Fraunhofer, discriminati dal numero di Fresnel:</p>
+        <div class="math-block">$$N_F = \frac{a^2}{\lambda\, z}$$</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ======= MAIN PANEL ======= -->
+  <main class="main-panel">
+    <div class="canvas-area">
+
+      <!-- Apertura sorgente -->
+      <div class="canvas-cell">
+        <div class="canvas-label">Apertura / Maschera<span>piano z = 0, intensità</span></div>
+        <canvas id="cv-source"></canvas>
+        <canvas id="cb-source" class="colorbar-strip" width="12" height="200" style="position:absolute;right:8px;top:30px;bottom:8px;width:12px;height:auto;border-radius:2px"></canvas>
+      </div>
+
+      <!-- Campo propagato -->
+      <div class="canvas-cell">
+        <div class="canvas-label">Campo propagato $U(x,y,z)$<span id="label-dist">z = 5.0 mm</span></div>
+        <canvas id="cv-prop"></canvas>
+        <canvas id="cb-prop" class="colorbar-strip" width="12" height="200" style="position:absolute;right:8px;top:30px;bottom:8px;width:12px;height:auto;border-radius:2px"></canvas>
+      </div>
+
+      <!-- Spettro angolare -->
+      <div class="canvas-cell">
+        <div class="canvas-label">Spettro angolare $|A(f_x,f_y)|$<span>log-scale, dopo FFT2</span></div>
+        <canvas id="cv-spectrum"></canvas>
+      </div>
+
+      <!-- Fase -->
+      <div class="canvas-cell">
+        <div class="canvas-label">Fase $\angle\, U(x,y,z)$<span>colormap ciclica $[-\pi, \pi]$</span></div>
+        <canvas id="cv-phase"></canvas>
+        <canvas id="cb-phase" class="colorbar-strip" width="12" height="200" style="position:absolute;right:8px;top:30px;bottom:8px;width:12px;height:auto;border-radius:2px"></canvas>
+      </div>
+
+    </div>
+
+    <div class="info-bar">
+      <div class="info-item">Griglia: <strong>512 × 512</strong></div>
+      <div class="info-item" id="info-dx">Passo: <strong>—</strong></div>
+      <div class="info-item" id="info-nf">$N_F$: <strong>—</strong></div>
+      <div class="info-item" id="info-regime">Regime: <strong>—</strong></div>
+      <div class="info-item" id="info-time">Tempo: <strong>—</strong></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ================================================================
+ * COLORMAPS
+ * ================================================================ */
+const CMAPS = {
+  /* Viridis (intensità) */
+  viridis: (() => {
+    const pts = [
+      [68,1,84],[72,26,108],[62,57,130],[49,88,148],[38,116,152],
+      [31,141,150],[45,167,138],[94,196,105],[162,218,56],[253,231,37]
+    ];
+    return (t) => {
+      t = Math.max(0, Math.min(1, t));
+      const idx = t * (pts.length - 1);
+      const lo = Math.floor(idx), hi = Math.min(lo+1, pts.length-1);
+      const f = idx - lo;
+      return [
+        pts[lo][0]*(1-f)+pts[hi][0]*f,
+        pts[lo][1]*(1-f)+pts[hi][1]*f,
+        pts[lo][2]*(1-f)+pts[hi][2]*f
+      ];
+    };
+  })(),
+
+  /* HSV ciclico per la fase [-π, π] */
+  phase: (t) => {
+    /* t in [0,1] mappa [-π,+π]. Colormap ciclico: HSV con V=1, S=1 */
+    const h = t * 360;
+    const s = 0.85, v = 1.0;
+    const c = v*s, x = c*(1-Math.abs((h/60)%2-1)), m = v-c;
+    let r,g,b;
+    if(h<60){r=c;g=x;b=0;}else if(h<120){r=x;g=c;b=0;}
+    else if(h<180){r=0;g=c;b=x;}else if(h<240){r=0;g=x;b=c;}
+    else if(h<300){r=x;g=0;b=c;}else{r=c;g=0;b=x;}
+    return [(r+m)*255,(g+m)*255,(b+m)*255];
+  },
+
+  /* Inferno per ampiezza */
+  amplitude: (() => {
+    const pts = [
+      [0,0,4],[20,11,52],[58,9,99],[96,19,110],[133,33,107],
+      [169,46,94],[203,65,73],[230,93,46],[247,131,17],[252,191,73],[252,255,164]
+    ];
+    return (t) => {
+      t = Math.max(0, Math.min(1, t));
+      const idx = t * (pts.length - 1);
+      const lo = Math.floor(idx), hi = Math.min(lo+1, pts.length-1);
+      const f = idx - lo;
+      return [
+        pts[lo][0]*(1-f)+pts[hi][0]*f,
+        pts[lo][1]*(1-f)+pts[hi][1]*f,
+        pts[lo][2]*(1-f)+pts[hi][2]*f
+      ];
+    };
+  })()
+};
+
+/* ================================================================
+ * WAVELENGTH → RGB (CIE approximation)
+ * ================================================================ */
+function wavelengthToRGB(nm) {
+  let r=0,g=0,b=0;
+  if(nm>=380&&nm<440){r=(440-nm)/60;b=1;}
+  else if(nm<490){g=(nm-440)/50;b=1;}
+  else if(nm<510){g=1;b=(510-nm)/20;}
+  else if(nm<580){r=(nm-510)/70;g=1;}
+  else if(nm<645){r=1;g=(645-nm)/65;}
+  else if(nm<=750){r=1;}
+  let a=1;
+  if(nm<420)a=0.3+0.7*(nm-380)/40;
+  else if(nm>700)a=0.3+0.7*(750-nm)/50;
+  return `rgb(${Math.round(r*a*255)},${Math.round(g*a*255)},${Math.round(b*a*255)})`;
+}
+
+const LAMBDA_NAMES = {
+  380:'violetto',400:'violetto',420:'violetto',440:'viola',
+  460:'blu',480:'blu',500:'ciano',520:'verde',540:'verde',
+  560:'verde-giallo',580:'giallo',600:'arancione',620:'arancione',
+  640:'rosso',660:'rosso',700:'rosso',720:'rosso infrarosso',750:'IR'
+};
+function lambdaName(nm) {
+  const keys = Object.keys(LAMBDA_NAMES).map(Number).sort((a,b)=>a-b);
+  let best = keys[0];
+  for(const k of keys){ if(Math.abs(k-nm) <= Math.abs(best-nm)) best=k; }
+  return LAMBDA_NAMES[best];
+}
+
+/* ================================================================
+ * CANVAS RENDERING
+ * ================================================================ */
+function renderToCanvas(canvas, data, N, colorFn, logscale=false) {
+  canvas.width  = N;
+  canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(N, N);
+  const px  = img.data;
+
+  let maxV = 0;
+  for(let i=0;i<N*N;i++) if(data[i]>maxV) maxV=data[i];
+  if(maxV===0) maxV=1;
+
+  for(let i=0;i<N*N;i++){
+    let t = data[i]/maxV;
+    if(logscale && t>0) t = Math.log1p(t*9999)/Math.log1p(9999);
+    const [r,g,b] = colorFn(t);
+    px[i*4]   = r;
+    px[i*4+1] = g;
+    px[i*4+2] = b;
+    px[i*4+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/* Fase: map [-π,+π] -> [0,1] */
+function renderPhase(canvas, phaseData, N) {
+  canvas.width  = N;
+  canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(N, N);
+  const px  = img.data;
+  for(let i=0;i<N*N;i++){
+    const t = (phaseData[i] + Math.PI) / (2*Math.PI);
+    const [r,g,b] = CMAPS.phase(t);
+    px[i*4]=r; px[i*4+1]=g; px[i*4+2]=b; px[i*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+
+/* Colorbar */
+function drawColorbar(canvas, colorFn, isPhase=false) {
+  const W=12, H=canvas.parentElement.clientHeight - 38;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  for(let y=0;y<H;y++){
+    const t = isPhase ? (H-1-y)/(H-1) : (H-1-y)/(H-1);
+    const [r,g,b] = colorFn(t);
+    ctx.fillStyle=`rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    ctx.fillRect(0,y,W,1);
+  }
+}
+
+/* Spettro: prendo il campo sorgente, FFT, |log| */
+function computeAndRenderSpectrum(canvas, wasm, N, fieldRe, fieldIm) {
+  /* Calcola |A|² in log-scale per visualizzare lo spettro angolare */
+  /* Usiamo i dati già disponibili nel buffer g_out via get_field_re/im
+     ma dopo la propagazione. Invece costruiamo lo spettro dalla sorgente. */
+  /* Per ora usiamo un array JS semplice - lo spettro viene calcolato in JS
+     sulla maschera sorgente (è solo per visualizzazione, la fisica è nel C) */
+  const N2 = N*N;
+  const re = fieldRe;
+  const im = fieldIm;
+
+  /* DFT approssimata con downsampling - solo per display */
+  /* Usiamo FFT JS 2D semplice per lo spettro visivo */
+  /* Semplificazione: mostro |campo_sorgente|² in spazio di Fourier
+     usando una FFT JS 1D per riga+colonna (separabile) */
+
+  const specBuf = new Float32Array(N2);
+  /* Costruisci complesso da sorgente */
+  const src = [];
+  for(let i=0;i<N2;i++) src.push({r:re[i],i:im[i]});
+
+  /* FFT JS 1D Cooley-Tukey */
+  function fft1d_js(a, inv){
+    const n=a.length;
+    for(let i=1,j=0;i<n;i++){
+      let bit=n>>1;
+      for(;j&bit;bit>>=1)j^=bit;
+      j^=bit;
+      if(i<j){[a[i],a[j]]=[a[j],a[i]];}
+    }
+    for(let len=2;len<=n;len<<=1){
+      const ang=2*Math.PI/len*(inv?1:-1);
+      const wr=Math.cos(ang),wi=Math.sin(ang);
+      for(let i=0;i<n;i+=len){
+        let cr=1,ci=0;
+        for(let k=0;k<len/2;k++){
+          const u=a[i+k], v=a[i+k+len/2];
+          const tr=cr*v.r-ci*v.i, ti=cr*v.i+ci*v.r;
+          a[i+k]={r:u.r+tr,i:u.i+ti};
+          a[i+k+len/2]={r:u.r-tr,i:u.i-ti};
+          const nr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=nr;
+        }
+      }
+    }
+    if(inv){const s=1/n; for(let x of a){x.r*=s;x.i*=s;}}
+  }
+
+  /* FFT2D JS: righe poi colonne (su sottocampione se N>256 per velocità) */
+  const S = Math.min(N, 256);
+  const step = Math.floor(N/S);
+  const samp = [];
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++) samp.push({r:re[(r*step)*N+(c*step)],i:im[(r*step)*N+(c*step)]});
+
+  /* FFT2D separabile: righe poi colonne */
+  const tmp=[];
+  for(let r=0;r<S;r++){const row=samp.slice(r*S,(r+1)*S);fft1d_js(row,false);for(let c=0;c<S;c++)tmp[r*S+c]=row[c];}
+  const tmp2=[];
+  for(let c=0;c<S;c++){
+    const col=[];for(let r=0;r<S;r++)col.push(tmp[r*S+c]);
+    fft1d_js(col,false);
+    for(let r=0;r<S;r++)tmp2[r*S+c]=col[r];
+  }
+  /* fftshift + magnitudine */
+  let maxSpec=0;
+  const specS=new Float32Array(S*S);
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const sr=(r+S/2)%S, sc=(c+S/2)%S;
+    const v=tmp2[sr*S+sc];
+    const mag=Math.sqrt(v.r*v.r+v.i*v.i);
+    specS[r*S+c]=mag;
+    if(mag>maxSpec)maxSpec=mag;
+  }
+
+  /* Upsample a NxN per canvas */
+  canvas.width=N; canvas.height=N;
+  const ctx=canvas.getContext('2d');
+  const img=ctx.createImageData(N,N);
+  const px=img.data;
+  const log9999=Math.log1p(9999);
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const sr=Math.floor(r*S/N), sc=Math.floor(c*S/N);
+    let t=specS[sr*S+sc]/(maxSpec||1);
+    t=Math.log1p(t*9999)/log9999;
+    const [rr,gg,bb]=CMAPS.viridis(t);
+    const idx=(r*N+c)*4;
+    px[idx]=rr;px[idx+1]=gg;px[idx+2]=bb;px[idx+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+
+/* ================================================================
+ * WASM INTERFACE
+ * ================================================================ */
+let wasm = null;
+let wasmReady = false;
+
+function initWasm() {
+  const overlay = document.getElementById('loading-overlay');
+  const errDiv  = document.getElementById('wasm-error');
+  const script  = document.createElement('script');
+  script.src    = 'diffrazione.js';
+  script.onload = () => {
+    DiffractionModule({
+      locateFile: (path) => path.endsWith('.wasm') ? './diffrazione.wasm' : path
+    }).then(mod => {
+      wasm = mod;
+      wasmReady = true;
+      overlay.style.display = 'none';
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('status').textContent = 'Modulo WASM pronto. Imposta i parametri e calcola.';
+      updateBadges();
+    }).catch(e => {
+      errDiv.style.display = 'block';
+      errDiv.textContent = 'Errore init WASM: ' + e.message;
+    });
+  };
+  script.onerror = () => {
+    errDiv.style.display = 'block';
+    errDiv.innerHTML =
+      'File <code>diffrazione.js</code> non trovato.<br><br>' +
+      'Compila con Emscripten:<br><code>./compile.sh</code><br><br>' +
+      'Poi servi con:<br><code>python3 -m http.server 8080</code>';
+  };
+  document.body.appendChild(script);
+}
+
+/* ================================================================
+ * PARAMETRI E UI
+ * ================================================================ */
+let currentGeo  = 'double_slit';
+let currentCmap = 'viridis';
+
+const sliders = {
+  'slit-w':    { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
+  'slit-d':    { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
+  'slit-h':    { el: null, unit: 'µm', factor: 1e-6, display: v => v==0?'∞':`${v} µm` },
+  'n-slits':   { el: null, unit: '',   factor: 1,    display: v => `${v}` },
+  'grating-w': { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
+  'grating-d': { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
+  'obs-r':     { el: null, unit: 'µm', factor: 1e-6, display: v => `${v} µm` },
+  'lambda':    { el: null, unit: 'nm', factor: 1e-9, display: v => `${v} nm — ${lambdaName(v)}` },
+  'dist':      { el: null, unit: 'mm', factor: 1e-3, display: v => `${v} mm` },
+  'grid-L':    { el: null, unit: 'mm', factor: 1e-3, display: v => `${v} mm` },
+};
+
+function getParam(id) {
+  return parseFloat(document.getElementById(id).value) * (sliders[id]?.factor ?? 1);
+}
+
+function updateBadges() {
+  /* Calcola numero di Fresnel per la geometria corrente */
+  const lambda = getParam('lambda');
+  const z      = getParam('dist');
+  let a = 0;
+  if(currentGeo==='double_slit') a = getParam('slit-w');
+  else if(currentGeo==='grating') a = getParam('grating-w');
+  else if(currentGeo==='obstacle') a = getParam('obs-r');
+
+  const Nf = (a*a)/(lambda*z);
+  const dx = getParam('grid-L') / 512;
+
+  document.getElementById('info-dx').innerHTML  = `Passo: <strong>${(dx*1e6).toFixed(2)} µm</strong>`;
+  document.getElementById('info-nf').innerHTML  = `$N_F$: <strong>${Nf.toFixed(2)}</strong>`;
+
+  let regime;
+  if(Nf > 10)      regime = 'Fresnel (campo vicino)';
+  else if(Nf > 0.5) regime = 'Fresnel / transizione';
+  else             regime = 'Fraunhofer (campo lontano)';
+  document.getElementById('info-regime').innerHTML = `Regime: <strong>${regime}</strong>`;
+
+  const badges = document.getElementById('regime-badges');
+  badges.innerHTML = `
+    <span class="badge badge-fresnel">$N_F = ${Nf.toFixed(2)}$</span>
+    <span class="badge badge-regime">${regime}</span>
+  `;
+  /* Re-render KaTeX */
+  if(window.renderMathInElement) {
+    renderMathInElement(badges,{delimiters:[{left:'$',right:'$',display:false}]});
+    renderMathInElement(document.getElementById('info-nf'),{delimiters:[{left:'$',right:'$',display:false}]});
+  }
+}
+
+/* Inizializza slider */
+function initSliders() {
+  for(const [id, cfg] of Object.entries(sliders)){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    cfg.el = el;
+    const valEl = document.getElementById('val-'+id);
+    el.addEventListener('input', () => {
+      if(valEl) valEl.textContent = cfg.display(parseFloat(el.value));
+      if(id==='lambda') updateLambdaDisplay();
+      updateBadges();
+    });
+    if(valEl) valEl.textContent = cfg.display(parseFloat(el.value));
+  }
+  updateLambdaDisplay();
+}
+
+function updateLambdaDisplay() {
+  const nm = parseFloat(document.getElementById('lambda').value);
+  document.getElementById('lambda-swatch').style.background = wavelengthToRGB(nm);
+  document.getElementById('lambda-value').textContent = `${nm} nm — ${lambdaName(nm)}`;
+}
+
+/* ================================================================
+ * SIMULAZIONE PRINCIPALE
+ * ================================================================ */
+function runSimulation() {
+  if(!wasmReady) return;
+  const btn    = document.getElementById('run-btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Costruzione geometria…';
+
+  const lambda = getParam('lambda');
+  const z      = getParam('dist');
+  const L      = getParam('grid-L');
+  const N      = wasm._get_N();
+
+  const t0 = performance.now();
+
+  setTimeout(() => {
+    try {
+      /* 1. Costruisci maschera */
+      if(currentGeo === 'double_slit') {
+        const sw = getParam('slit-w');
+        const sd = getParam('slit-d');
+        const sh = parseFloat(document.getElementById('slit-h').value) === 0
+                   ? 0.0 : getParam('slit-h');
+        wasm._build_double_slit(lambda, sw, sd, sh, L);
+      } else if(currentGeo === 'grating') {
+        const ns = parseInt(document.getElementById('n-slits').value);
+        const gw = getParam('grating-w');
+        const gd = getParam('grating-d');
+        wasm._build_grating(lambda, ns, gw, gd, L);
+      } else if(currentGeo === 'obstacle') {
+        const rr = getParam('obs-r');
+        wasm._build_circular_obstacle(lambda, rr, L);
+      }
+
+      status.textContent = 'Propagazione ASM in corso…';
+
+      setTimeout(() => {
+        /* 2. Visualizza sorgente */
+        wasm._compute_source_observables();
+        const srcIntPtr = wasm._get_intensity();
+        const srcIntArr = new Float32Array(wasm.HEAPF32.buffer, srcIntPtr, N*N);
+        renderToCanvas(document.getElementById('cv-source'), srcIntArr, N, CMAPS.viridis);
+        drawColorbar(document.getElementById('cb-source'), CMAPS.viridis);
+
+        /* Preleva campo sorgente re/im per spettro */
+        const rePtr = wasm._get_field_re();
+        const imPtr = wasm._get_field_im();
+        const srcRe = new Float32Array(wasm.HEAPF32.buffer, rePtr, N*N);
+        const srcIm = new Float32Array(wasm.HEAPF32.buffer, imPtr, N*N);
+
+        /* Spettro angolare dalla sorgente */
+        computeAndRenderSpectrum(document.getElementById('cv-spectrum'), wasm, N, srcRe.slice(), srcIm.slice());
+
+        /* 3. Propaga */
+        wasm._propagate_asm(lambda, z, L);
+
+        const t1 = performance.now();
+
+        /* 4. Leggi risultati */
+        const intPtr  = wasm._get_intensity();
+        const phsPtr  = wasm._get_phase();
+        const ampPtr  = wasm._get_amplitude();
+
+        const intensity  = new Float32Array(wasm.HEAPF32.buffer, intPtr, N*N);
+        const phaseData  = new Float32Array(wasm.HEAPF32.buffer, phsPtr, N*N);
+        const amplitude  = new Float32Array(wasm.HEAPF32.buffer, ampPtr, N*N);
+
+        /* 5. Render pannelli */
+        let cmap;
+        if(currentCmap==='phase')     cmap = null; /* gestito separatamente */
+        else if(currentCmap==='amplitude') cmap = CMAPS.amplitude;
+        else cmap = CMAPS.viridis;
+
+        /* Campo propagato: intensità / ampiezza / fase secondo selezione */
+        if(currentCmap==='phase'){
+          renderPhase(document.getElementById('cv-prop'), phaseData, N);
+          drawColorbar(document.getElementById('cb-prop'), CMAPS.phase, true);
+        } else if(currentCmap==='amplitude'){
+          renderToCanvas(document.getElementById('cv-prop'), amplitude, N, CMAPS.amplitude);
+          drawColorbar(document.getElementById('cb-prop'), CMAPS.amplitude);
+        } else {
+          renderToCanvas(document.getElementById('cv-prop'), intensity, N, CMAPS.viridis);
+          drawColorbar(document.getElementById('cb-prop'), CMAPS.viridis);
+        }
+
+        /* Fase sempre nel quarto pannello */
+        renderPhase(document.getElementById('cv-phase'), phaseData, N);
+        drawColorbar(document.getElementById('cb-phase'), CMAPS.phase, true);
+
+        /* 6. Aggiorna label e info */
+        document.getElementById('label-dist').textContent = `z = ${(z*1e3).toFixed(1)} mm`;
+        const dt = (t1-t0).toFixed(0);
+        document.getElementById('info-time').innerHTML = `Tempo: <strong>${dt} ms</strong>`;
+
+        status.textContent = `Completato in ${dt} ms`;
+        btn.disabled = false;
+        updateBadges();
+
+      }, 10);
+    } catch(e) {
+      status.textContent = 'Errore: ' + e.message;
+      btn.disabled = false;
+    }
+  }, 10);
+}
+
+/* ================================================================
+ * EVENT LISTENERS
+ * ================================================================ */
+document.querySelectorAll('.geo-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.geo-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.param-group').forEach(g=>g.classList.remove('active'));
+    btn.classList.add('active');
+    currentGeo = btn.dataset.geo;
+    document.getElementById('params-'+currentGeo).classList.add('active');
+    updateBadges();
+  });
+});
+
+document.querySelectorAll('.view-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCmap = btn.dataset.cmap;
+  });
+});
+
+document.getElementById('run-btn').addEventListener('click', runSimulation);
+
+/* Shortcut: invio = calcola */
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter' && !document.getElementById('run-btn').disabled) runSimulation();
+});
+
+/* ================================================================
+ * BOOT
+ * ================================================================ */
+window.addEventListener('load', () => {
+  initSliders();
+  updateBadges();
+  initWasm();
+});
+
+window.SIM_METADATA = {
+  "title": "Diffrazione 2D",
+  "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
+  "category": "Ottica",
+  "icon": "◌",
+  "order": 20,
+  "tags": ["diffrazione", "ottica ondulatoria", "spettro angolare", "Fresnel", "Fraunhofer", "doppia fenditura", "reticolo", "Poisson-Arago", "WebAssembly"],
+  "level": "intermedio"
+};
+</script>
+</body>
+</html>

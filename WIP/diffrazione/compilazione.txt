@@ -1,0 +1,15 @@
+emcc diffrazione.c ^
+  -O3 ^
+  -std=c99 ^
+  -msimd128 ^
+  -s WASM=1 ^
+  -s MODULARIZE=1 ^
+  -s EXPORT_NAME="DiffractionModule" ^
+  -s EXPORTED_FUNCTIONS="[\"_build_double_slit\",\"_build_grating\",\"_build_circular_obstacle\",\"_propagate_asm\",\"_compute_source_observables\",\"_get_intensity\",\"_get_phase\",\"_get_amplitude\",\"_get_field_re\",\"_get_field_im\",\"_get_N\",\"_malloc\",\"_free\"]" ^
+  -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\",\"HEAPF32\",\"getValue\"]" ^
+  -s ALLOW_MEMORY_GROWTH=1 ^
+  -s INITIAL_MEMORY=67108864 ^
+  -s ENVIRONMENT="web" ^
+  -s NO_EXIT_RUNTIME=1 ^
+  -lm ^
+  -o diffrazione.js

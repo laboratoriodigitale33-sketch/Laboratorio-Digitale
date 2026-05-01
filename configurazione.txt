@@ -7,6 +7,8 @@ poi manda il comando i compilazione Emscritpen nel file comandi terminale
 
 
 SISTEMARE:
+diffrazione 2D:
+	non vengono delle frange ben definite
 -sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico (forse fatto da codex), FARADAY sicuro manca
 diffrazione:
 	fare compilare da codex controllando che vada tutto bene

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  "title": "Sistemi caotici",
+  "description": "Esplora sistemi dinamici non lineari come doppio pendolo, attrattore di Lorenz, attrattore di Rössler e mappa logistica, visualizzando sensibilità alle condizioni iniziali, attrattori strani, biforcazioni ed esponenti di Lyapunov.",
+  "category": "Meccanica",
+  "icon": "🌀",
+  "order": 90,
+  "tags": ["caos", "sistemi dinamici", "doppio pendolo", "attrattore di Lorenz", "attrattore di Rössler", "mappa logistica", "biforcazioni", "esponente di Lyapunov", "sensibilità alle condizioni iniziali"],
+  "level": "avanzato"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistemi Caotici — Simulazioni Interattive</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:      #f5f4f0;
+  --surf:    #ffffff;
+  --surf2:   #f0ede8;
+  --border:  #d8d4cc;
+  --text:    #1a1a1a;
+  --muted:   #7a7060;
+  --accent:  #8b5e2a;
+  --blue:    #2a5fa8;
+  --cvs-bg:  #fafaf8;
+  --cvs-grid:#dedad4;
+  --cvs-text:#8a8070;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;font-size:18px;line-height:1.8;min-height:100vh}
+
+.hero{text-align:center;padding:64px 24px 40px;border-bottom:1px solid var(--border);background:var(--surf)}
+.hero-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.hero h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:500;letter-spacing:-.01em;line-height:1.1;margin-bottom:16px}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero p{max-width:600px;margin:0 auto;color:var(--muted);font-size:1rem}
+
+.tab-nav{display:flex;border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;background:var(--surf)}
+.tab-nav::-webkit-scrollbar{display:none}
+.tab-btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:16px 28px;border:none;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.tab-panel{display:none;max-width:1100px;margin:0 auto;padding:48px 24px 80px}
+.tab-panel.active{display:block}
+
+.sec-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+h2{font-size:1.85rem;font-weight:500;margin-bottom:24px;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:500;color:var(--accent);margin:32px 0 10px}
+p{margin-bottom:1em}
+p:last-child{margin-bottom:0}
+
+.math-block{background:var(--surf2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:16px 20px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:.84rem;line-height:2;color:#3a3020;overflow-x:auto}
+.math-block .cm{color:var(--muted);font-style:italic}
+.infobox{background:rgba(42,95,168,.05);border:1px solid rgba(42,95,168,.2);border-radius:6px;padding:16px 20px;margin:20px 0;font-size:.92rem}
+.infobox strong{color:var(--blue)}
+
+table{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--surf);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:28px 0}
+thead tr{background:var(--surf2)}
+th{text-align:left;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:.78rem;letter-spacing:.1em;color:var(--accent);font-weight:500;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+
+.sim-wrap{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;margin-bottom:20px}
+@media(max-width:820px){.sim-wrap{grid-template-columns:1fr}}
+canvas{display:block;background:var(--cvs-bg);border:1px solid var(--border);border-radius:6px}
+.canvas-full{width:100%}
+
+.ctrl-panel{display:flex;flex-direction:column;gap:12px}
+.ctrl-box{background:var(--surf);border:1px solid var(--border);border-radius:6px;padding:14px}
+.ctrl-title{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-row label{font-size:.82rem;color:var(--muted);flex:1;white-space:nowrap}
+.ctrl-row .val{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);min-width:46px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100px;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;flex-shrink:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent);border-radius:50%}
+select{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:var(--surf);color:var(--accent);border:1px solid var(--border);padding:3px 6px;border-radius:3px;cursor:pointer}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+button{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;border:1px solid var(--border);background:var(--surf);color:var(--text);border-radius:4px;cursor:pointer;transition:all .15s}
+button:hover{background:var(--surf2);color:var(--accent);border-color:var(--accent)}
+button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.pri:hover{background:#7a5020}
+
+.stat-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px}
+.stat-item .sl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.stat-item .sv{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--accent)}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--muted)}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.graph-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:6px;text-align:center}
+
+hr.thin{border:none;border-top:1px solid var(--border);margin:36px 0}
+footer{text-align:center;padding:28px;font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border);background:var(--surf)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-label">Meccanica Classica · Sistemi Dinamici Non Lineari</div>
+  <h1>Sistemi Caotici<br><em>Determinismo e Imprevedibilità</em></h1>
+  <p>Quattro sistemi, due regimi — caos hamiltoniano e caos dissipativo. Stesse leggi deterministiche, geometrie completamente diverse.</p>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="pendolo">Doppio Pendolo</button>
+  <button class="tab-btn" data-tab="lorenz">Attrattore di Lorenz</button>
+  <button class="tab-btn" data-tab="rossler">Attrattore di Rössler</button>
+  <button class="tab-btn" data-tab="logistica">Mappa Logistica</button>
+  <button class="tab-btn" data-tab="confronto">Confronto Teorico</button>
+</nav>
+
+<!-- TAB 1 — DOPPIO PENDOLO -->
+<div class="tab-panel active" id="tab-pendolo">
+  <div class="sec-tag">Caos Hamiltoniano</div>
+  <h2>Il Doppio Pendolo</h2>
+  <p>Sistema meccanico conservativo con due gradi di libertà. A grandi angoli il sistema è non lineare e caotico. Quattro traiettorie partono con perturbazioni crescenti rispetto al pendolo di riferimento.</p>
+  <div class="sim-wrap">
+    <div>
+      <canvas id="cvs-p" class="canvas-full" style="aspect-ratio:1" width="600" height="600"></canvas>
+      <canvas id="cvs-pdiv" class="canvas-full" width="600" height="160" style="margin-top:12px"></canvas>
+      <div class="graph-label">Divergenza ‖Δr₂(t)‖ — scala logaritmica</div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#222"></div>Riferimento</div>
+        <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>+δ</div>
+        <div class="leg"><div class="leg-dot" style="background:#1a6faa"></div>+δ√10</div>
+        <div class="leg"><div class="leg-dot" style="background:#217a3c"></div>+10δ</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="sl">Tempo</div><div class="sv" id="p-t">0.00 s</div></div>
+        <div class="stat-item"><div class="sl">Div. max</div><div class="sv" id="p-div">0.000 m</div></div>
+        <div class="stat-item"><div class="sl">λ stimato</div><div class="sv" id="p-lyap">—</div></div>
+        <div class="stat-item"><div class="sl">Energia</div><div class="sv" id="p-en">— J</div></div>
+      </div>
+    </div>
+    <div class="ctrl-panel">
+      <div class="ctrl-box">
+        <div class="ctrl-title">Condizioni Iniziali</div>
+        <div class="ctrl-row"><label>θ₁</label><input type="range" id="p-sl-t1" min="10" max="170" value="120" step="1"><span class="val" id="p-vl-t1">120°</span></div>
+        <div class="ctrl-row"><label>θ₂</label><input type="range" id="p-sl-t2" min="10" max="170" value="120" step="1"><span class="val" id="p-vl-t2">120°</span></div>
+        <div class="ctrl-row"><label>Perturbazione δ</label><input type="range" id="p-sl-d" min="-4" max="-1" value="-2" step=".1"><span class="val" id="p-vl-d">10⁻²</span></div>
+      </div>
+      <div class="ctrl-box">
+        <div class="ctrl-title">Parametri Fisici</div>
+        <div class="ctrl-row"><label>L₁ (m)</label><input type="range" id="p-sl-l1" min=".3" max="1" value=".6" step=".05"><span class="val" id="p-vl-l1">0.60</span></div>
+        <div class="ctrl-row"><label>L₂ (m)</label><input type="range" id="p-sl-l2" min=".3" max="1" value=".6" step=".05"><span class="val" id="p-vl-l2">0.60</span></div>
+        <div class="ctrl-row"><label>m₁ (kg)</label><input type="range" id="p-sl-m1" min=".2" max="2" value="1" step=".1"><span class="val" id="p-vl-m1">1.0</span></div>
+        <div class="ctrl-row"><label>m₂ (kg)</label><input type="range" id="p-sl-m2" min=".2" max="2" value="1" step=".1"><span class="val" id="p-vl-m2">1.0</span></div>
+        <div class="ctrl-row"><label>g (m/s²)</label><input type="range" id="p-sl-g" min="1" max="20" value="9.81" step=".1"><span class="val" id="p-vl-g">9.81</span></div>
+      </div>
+      <div class="ctrl-box">
+        <div class="ctrl-title">Visualizzazione</div>
+        <div class="ctrl-row"><label>Traccia</label><input type="range" id="p-sl-tr" min="50" max="2000" value="600" step="50"><span class="val" id="p-vl-tr">600</span></div>
+        <div class="ctrl-row"><label>Velocità</label><input type="range" id="p-sl-sp" min=".25" max="4" value="1" step=".25"><span class="val" id="p-vl-sp">×1.00</span></div>
+        <div class="ctrl-row"><label>Struttura</label><input type="checkbox" id="p-cb-st" checked></div>
+        <div class="ctrl-row"><label>Tracce</label><input type="checkbox" id="p-cb-tr" checked></div>
+      </div>
+      <div class="btn-row">
+        <button class="pri" id="p-btn-ss">⏸ Pausa</button>
+        <button id="p-btn-r">↺ Reset</button>
+        <button id="p-btn-ct">✕ Tracce</button>
+      </div>
+    </div>
+  </div>
+  <hr class="thin">
+  <div class="sec-tag">Teoria</div>
+  <h3>Equazioni del moto</h3>
+  <p>Sistema a 2 gradi di libertà (θ₁, θ₂) dalla verticale discendente. Lagrangiana ℒ = T − V con:</p>
+  <div class="math-block">
+T = ½(m₁+m₂)L₁²ω₁² + ½m₂L₂²ω₂² + m₂L₁L₂ω₁ω₂cos(θ₁−θ₂)<br>
+V = −(m₁+m₂)gL₁cosθ₁ − m₂gL₂cosθ₂
+  </div>
+  <p>In forma matriciale M·θ̈ = f, con det M = m₂L₁²L₂²[m₁+m₂sin²(Δθ)] > 0:</p>
+  <div class="math-block">
+M = [(m₁+m₂)L₁²,   m₂L₁L₂cosΔθ]   f₁ = −m₂L₁L₂ω₂²sinΔθ − (m₁+m₂)gL₁sinθ₁<br>
+    [m₂L₁L₂cosΔθ,  m₂L₂²        ]   f₂ = +m₂L₁L₂ω₁²sinΔθ − m₂gL₂sinθ₂
+  </div>
+  <div class="infobox"><strong>Conservazione dell'energia:</strong> E = T + V è un invariante del moto. La deriva numerica con RK4 (h = 4 ms) è tipicamente &lt; 0.1% su 30 s.</div>
+</div>
+
+<!-- TAB 2 — LORENZ -->
+<div class="tab-panel" id="tab-lorenz">
+  <div class="sec-tag">Caos Dissipativo</div>
+  <h2>L'Attrattore di Lorenz</h2>
+  <p>Derivato nel 1963 da Edward Lorenz come modello semplificato della convezione atmosferica. Le traiettorie convergono su una struttura frattale con D_H ≈ 2.06 e vi rimangono confinate pur non ripetendosi mai.</p>
+  <div class="sim-wrap">
+    <div>
+      <canvas id="cvs-l" class="canvas-full" style="aspect-ratio:1" width="600" height="600"></canvas>
+      <canvas id="cvs-ldiv" class="canvas-full" width="600" height="160" style="margin-top:12px"></canvas>
+      <div class="graph-label">Distanza ‖Δr(t)‖ — scala logaritmica</div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#222"></div>Riferimento</div>
+        <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>+δ su x</div>
+        <div class="leg"><div class="leg-dot" style="background:#1a6faa"></div>+δ su y</div>
+        <div class="leg"><div class="leg-dot" style="background:#217a3c"></div>+δ su z</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="sl">Tempo</div><div class="sv" id="l-t">0.00</div></div>
+        <div class="stat-item"><div class="sl">Div. max</div><div class="sv" id="l-div">0.000</div></div>
+        <div class="stat-item"><div class="sl">λ stimato</div><div class="sv" id="l-lyap">—</div></div>
+        <div class="stat-item"><div class="sl">Proiezione</div><div class="sv" id="l-proj">XZ</div></div>
+      </div>
+    </div>
+    <div class="ctrl-panel">
+      <div class="ctrl-box">
+        <div class="ctrl-title">Parametri</div>
+        <div class="ctrl-row"><label>σ</label><input type="range" id="l-sl-s" min="1" max="20" value="10" step=".5"><span class="val" id="l-vl-s">10.0</span></div>
+        <div class="ctrl-row"><label>ρ</label><input type="range" id="l-sl-r" min="1" max="60" value="28" step=".5"><span class="val" id="l-vl-r">28.0</span></div>
+        <div class="ctrl-row"><label>β</label><input type="range" id="l-sl-b" min=".5" max="5" value="2.667" step=".1"><span class="val" id="l-vl-b">2.67</span></div>
+        <div class="ctrl-row"><label>Perturbazione δ</label><input type="range" id="l-sl-d" min="-5" max="-1" value="-3" step=".1"><span class="val" id="l-vl-d">10⁻³</span></div>
+      </div>
+      <div class="ctrl-box">
+        <div class="ctrl-title">Condiz. Iniziali</div>
+        <div class="ctrl-row"><label>x₀</label><input type="range" id="l-sl-x0" min="-20" max="20" value="1" step=".5"><span class="val" id="l-vl-x0">1.0</span></div>
+        <div class="ctrl-row"><label>y₀</label><input type="range" id="l-sl-y0" min="-20" max="20" value="1" step=".5"><span class="val" id="l-vl-y0">1.0</span></div>
+        <div class="ctrl-row"><label>z₀</label><input type="range" id="l-sl-z0" min="0" max="50" value="1" step=".5"><span class="val" id="l-vl-z0">1.0</span></div>
+      </div>
+      <div class="ctrl-box">
+        <div class="ctrl-title">Visualizzazione</div>
+        <div class="ctrl-row"><label>Proiezione</label><select id="l-proj-sel"><option value="xz">X–Z</option><option value="xy">X–Y</option><option value="yz">Y–Z</option></select></div>
+        <div class="ctrl-row"><label>Traccia</label><input type="range" id="l-sl-tr" min="100" max="5000" value="2000" step="100"><span class="val" id="l-vl-tr">2000</span></div>
+        <div class="ctrl-row"><label>Velocità</label><input type="range" id="l-sl-sp" min=".25" max="8" value="2" step=".25"><span class="val" id="l-vl-sp">×2.00</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="pri" id="l-btn-ss">⏸ Pausa</button>
+        <button id="l-btn-r">↺ Reset</button>
+        <button id="l-btn-ct">✕ Tracce</button>
+      </div>
+    </div>
+  </div>
+  <hr class="thin">
+  <div class="sec-tag">Teoria</div>
+  <h3>Il sistema di Lorenz</h3>
+  <div class="math-block">
+ẋ = σ(y − x)          <span class="cm">/* σ: numero di Prandtl */</span><br>
+ẏ = x(ρ − z) − y      <span class="cm">/* ρ: numero di Rayleigh ridotto */</span><br>
+ż = xy − βz           <span class="cm">/* β = 8/3 nell'originale */</span>
+  </div>
+  <h3>Dissipazione e attrattore strano</h3>
+  <p>∇·F = −(σ+1+β) = −13.67 &lt; 0: il volume nello spazio delle fasi si contrae esponenzialmente. Le traiettorie convergono sull'attrattore frattale (D_H ≈ 2.06) con λ₁ ≈ 0.9 s⁻¹. I tre punti fissi C₀=(0,0,0) e C±=(±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1) sono tutti instabili per σ=10, ρ=28, β=8/3.</p>
+  <div class="infobox"><strong>Effetto farfalla:</strong> Lorenz scoprì il caos nel 1961 re-eseguendo una simulazione con valore arrotondato (0.506 invece di 0.506127). Dopo pochi minuti simulati la traiettoria era completamente divergente dall'originale.</div>
+</div>
+
+<!-- TAB 3 — RÖSSLER -->
+<div class="tab-panel" id="tab-rossler">
+  <div class="sec-tag">Caos Dissipativo</div>
+  <h2>L'Attrattore di Rössler</h2>
+  <p>Proposto da Otto Rössler nel 1976, è il più semplice attrattore strano tridimensionale. Un solo termine non lineare produce il meccanismo stretch-and-fold. Ideale per osservare la cascata di biforcazioni al variare di c.</p>
+  <div class="sim-wrap">
+    <div>
+      <canvas id="cvs-r" class="canvas-full" style="aspect-ratio:1" width="600" height="600"></canvas>
+      <canvas id="cvs-rdiv" class="canvas-full" width="600" height="160" style="margin-top:12px"></canvas>
+      <div class="graph-label">Distanza ‖Δr(t)‖ — scala logaritmica</div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#222"></div>Riferimento</div>
+        <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>+δ</div>
+        <div class="leg"><div class="leg-dot" style="background:#1a6faa"></div>+2δ</div>
+        <div class="leg"><div class="leg-dot" style="background:#217a3c"></div>+5δ</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="sl">Tempo</div><div class="sv" id="r-t">0.00</div></div>
+        <div class="stat-item"><div class="sl">Div. max</div><div class="sv" id="r-div">0.000</div></div>
+        <div class="stat-item"><div class="sl">λ stimato</div><div class="sv" id="r-lyap">—</div></div>
+        <div class="stat-item"><div class="sl">Cicli</div><div class="sv" id="r-cycles">0</div></div>
+      </div>
+    </div>
+    <div class="ctrl-panel">
+      <div class="ctrl-box">
+        <div class="ctrl-title">Parametri</div>
+        <div class="ctrl-row"><label>a</label><input type="range" id="r-sl-a" min=".05" max=".3" value=".2" step=".005"><span class="val" id="r-vl-a">0.200</span></div>
+        <div class="ctrl-row"><label>b</label><input type="range" id="r-sl-b" min=".1" max="1" value=".2" step=".01"><span class="val" id="r-vl-b">0.200</span></div>
+        <div class="ctrl-row"><label>c</label><input type="range" id="r-sl-c" min="2" max="12" value="5.7" step=".1"><span class="val" id="r-vl-c">5.70</span></div>
+        <div class="ctrl-row"><label>Perturbazione δ</label><input type="range" id="r-sl-d" min="-5" max="-1" value="-3" step=".1"><span class="val" id="r-vl-d">10⁻³</span></div>
+      </div>
+      <div class="ctrl-box">
+        <div class="ctrl-title">Visualizzazione</div>
+        <div class="ctrl-row"><label>Proiezione</label><select id="r-proj-sel"><option value="xy">X–Y</option><option value="xz">X–Z</option><option value="yz">Y–Z</option></select></div>
+        <div class="ctrl-row"><label>Traccia</label><input type="range" id="r-sl-tr" min="100" max="5000" value="3000" step="100"><span class="val" id="r-vl-tr">3000</span></div>
+        <div class="ctrl-row"><label>Velocità</label><input type="range" id="r-sl-sp" min=".25" max="8" value="3" step=".25"><span class="val" id="r-vl-sp">×3.00</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="pri" id="r-btn-ss">⏸ Pausa</button>
+        <button id="r-btn-r">↺ Reset</button>
+        <button id="r-btn-ct">✕ Tracce</button>
+      </div>
+    </div>
+  </div>
+  <hr class="thin">
+  <div class="sec-tag">Teoria</div>
+  <h3>Il sistema di Rössler</h3>
+  <div class="math-block">
+ẋ = −y − z<br>
+ẏ = x + ay<br>
+ż = b + z(x − c)    <span class="cm">/* unico termine non lineare */</span><br><br>
+Cascata di Feigenbaum (a=b=0.2):<br>
+c ≈ 2.0 → p.1 &nbsp; c ≈ 3.5 → p.2 &nbsp; c ≈ 4.2 → p.4 &nbsp; c ≈ 5.7 → caos
+  </div>
+  <div class="infobox"><strong>Costante di Feigenbaum:</strong> δ_F = lim (rₙ−rₙ₋₁)/(rₙ₊₁−rₙ) = 4.6692... — universale per tutte le mappe unimodali con massimo quadratico.</div>
+</div>
+
+<!-- TAB 4 — MAPPA LOGISTICA -->
+<div class="tab-panel" id="tab-logistica">
+  <div class="sec-tag">Caos Discreto</div>
+  <h2>La Mappa Logistica</h2>
+  <p>xₙ₊₁ = r·xₙ·(1−xₙ). L'esempio più semplice di sistema caotico: una mappa iterata in una dimensione. Clicca sul diagramma per selezionare r.</p>
+  <div style="max-width:760px">
+    <canvas id="cvs-bif" class="canvas-full" width="760" height="420" style="margin-bottom:12px;cursor:crosshair"></canvas>
+    <div class="graph-label">Diagramma di biforcazione — r ∈ [2.5, 4.0] vs x* (attrattori)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px">
+      <div>
+        <canvas id="cvs-log-orbit" class="canvas-full" width="400" height="280"></canvas>
+        <div class="graph-label">Orbita temporale xₙ vs n</div>
+      </div>
+      <div>
+        <canvas id="cvs-log-cobweb" class="canvas-full" width="400" height="280"></canvas>
+        <div class="graph-label">Diagramma cobweb xₙ vs f(xₙ)</div>
+      </div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+      <div class="ctrl-row" style="margin:0;flex:1;min-width:220px"><label style="font-size:.85rem;color:var(--muted)">Parametro r</label><input type="range" id="log-sl-r" min="2.5" max="4" value="3.7" step=".001" style="width:160px"><span class="val" id="log-vl-r" style="min-width:70px">r = 3.700</span></div>
+      <div class="ctrl-row" style="margin:0;flex:1;min-width:200px"><label style="font-size:.85rem;color:var(--muted)">x₀</label><input type="range" id="log-sl-x0" min=".01" max=".99" value=".5" step=".01"><span class="val" id="log-vl-x0">0.50</span></div>
+      <div class="ctrl-row" style="margin:0"><label style="font-size:.85rem;color:var(--muted)">Iterazioni</label><input type="range" id="log-sl-n" min="50" max="500" value="150" step="10"><span class="val" id="log-vl-n">150</span></div>
+    </div>
+    <div class="stat-row" style="margin-top:14px">
+      <div class="stat-item"><div class="sl">r</div><div class="sv" id="log-r-val">3.700</div></div>
+      <div class="stat-item"><div class="sl">Regime</div><div class="sv" id="log-regime">—</div></div>
+      <div class="stat-item"><div class="sl">Periodo</div><div class="sv" id="log-period">—</div></div>
+    </div>
+  </div>
+  <hr class="thin">
+  <div class="sec-tag">Teoria</div>
+  <h3>La mappa logistica</h3>
+  <div class="math-block">
+xₙ₊₁ = r · xₙ · (1 − xₙ),  r ∈ [0,4], xₙ ∈ [0,1]<br><br>
+r ≤ 1        → estinzione         r_∞ ≈ 3.5699 → inizio caos<br>
+1 &lt; r ≤ 3   → punto fisso       r = 4         → caos pieno<br>
+δ_F = 4.6692...  (costante di Feigenbaum, universale)
+  </div>
+  <div class="infobox"><strong>Teorema di Šarkovskij:</strong> l'esistenza di un'orbita di periodo 3 implica orbite di tutti i periodi. La finestra di periodo 3 (r ≈ 3.83) è dunque seguita necessariamente dal caos.</div>
+</div>
+
+<!-- TAB 5 — CONFRONTO -->
+<div class="tab-panel" id="tab-confronto">
+  <div class="sec-tag">Sintesi</div>
+  <h2>Caos Hamiltoniano vs Caos Dissipativo</h2>
+  <table>
+    <thead><tr><th>Proprietà</th><th>Doppio Pendolo</th><th>Lorenz</th><th>Rössler</th><th>Mappa Log.</th></tr></thead>
+    <tbody>
+      <tr><td>Tipo</td><td>Hamiltoniano</td><td>Dissipativo</td><td>Dissipativo</td><td>Discreto</td></tr>
+      <tr><td>Conserva energia?</td><td>✓ E = const</td><td>✗ dissipa</td><td>✗ dissipa</td><td>n/a</td></tr>
+      <tr><td>Volume fase</td><td>conservato (Liouville)</td><td>contr. −13.67</td><td>contr. −(a+1)</td><td>—</td></tr>
+      <tr><td>Attrattore strano?</td><td>✗</td><td>✓ D_H ≈ 2.06</td><td>✓ D_H ≈ 2.01</td><td>✓ Cantor ≈ 0.54</td></tr>
+      <tr><td>λ₁ tipico</td><td>1–7 s⁻¹</td><td>≈ 0.9 s⁻¹</td><td>≈ 0.07 s⁻¹</td><td>ln2 (r=4)</td></tr>
+      <tr><td>Spettro Lyapunov</td><td>{λ, 0, 0, −λ}</td><td>{+, 0, −}</td><td>{+, 0, −}</td><td>{λ₁}</td></tr>
+      <tr><td>Meccanismo</td><td>Horseshoe / KAM</td><td>Sella di sella</td><td>Stretch-and-fold</td><td>Raddoppio periodo</td></tr>
+    </tbody>
+  </table>
+  <h3>Perché il doppio pendolo non ha attrattore</h3>
+  <p>Il teorema di Liouville garantisce la conservazione del volume nello spazio delle fasi hamiltoniano. Non può esistere una struttura attrattrice di dimensione inferiore: le traiettorie si distribuiscono sulla superficie di energia costante senza convergere verso nulla.</p>
+  <h3>Lo zero nello spettro di Lyapunov</h3>
+  <p>Nei sistemi continui (flussi) la direzione tangente all'orbita ha sempre λ = 0: perturbazioni nella direzione del flusso non crescono né decrescono. Lo spettro del sistema di Lorenz è quindi {+, 0, −} e quello del doppio pendolo (4D) contiene due zeri.</p>
+  <h3>Caos e termodinamica</h3>
+  <p>Il caos hamiltoniano è il meccanismo microscopico che giustifica l'ipotesi ergodica di Boltzmann. Il caos dissipativo mostra come sistemi aperti lontano dall'equilibrio organizzino strutture stabili — ponte verso le strutture dissipative di Prigogine (Nobel 1977).</p>
+  <div class="infobox"><strong>Universalità:</strong> la costante δ_F = 4.6692... è stata misurata sperimentalmente in circuiti elettronici (Linsay, 1981) e instabilità idrodinamiche (Libchaber, Nobel 1996). È una delle poche previsioni quantitative universali del caos.</div>
+</div>
+
+<footer>Integrazione RK4 · h = 4 ms · Warmup sincrono 3000–5000 passi per gli attrattori · JavaScript client-side puro</footer>
+
+<script>
+'use strict';
+const DT=0.004;
+const COLS=['#222222','#c0392b','#1a6faa','#217a3c'];
+const CBG='#fafaf8', CGRID='#dedad4', CTXT='#8a8070';
+
+function rk4(s,f,h){
+  const k1=f(s),k2=f(s.map((v,i)=>v+h/2*k1[i])),k3=f(s.map((v,i)=>v+h/2*k2[i])),k4=f(s.map((v,i)=>v+h*k3[i]));
+  return s.map((v,i)=>v+h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+function linReg(pts){
+  if(pts.length<8)return null;
+  let sx=0,sy=0,sxx=0,sxy=0,n=pts.length;
+  pts.forEach(([x,y])=>{sx+=x;sy+=y;sxx+=x*x;sxy+=x*y});
+  return(n*sxy-sx*sy)/(n*sxx-sx*sx);
+}
+function drawFasceTrail(ctx,trails,toCfn){
+  for(let i=0;i<4;i++){
+    const tr=trails[i];if(tr.length<2)continue;
+    ctx.strokeStyle=COLS[i];ctx.lineWidth=i===0?1.5:1;
+    const nF=4,aMax=i===0?.75:.45;
+    for(let f=0;f<nF;f++){
+      const s0=Math.floor(f/nF*tr.length),s1=Math.floor((f+1)/nF*tr.length);
+      if(s1<=s0+1)continue;
+      ctx.globalAlpha=((f+1)/nF)*aMax;
+      ctx.beginPath();
+      const[cx0,cy0]=toCfn(tr[s0]);ctx.moveTo(cx0,cy0);
+      for(let j=s0+1;j<s1;j++){const[cx,cy]=toCfn(tr[j]);ctx.lineTo(cx,cy);}
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  }
+}
+function drawDivGraph(ctxd,W,H,divData,simT){
+  ctxd.fillStyle=CBG;ctxd.fillRect(0,0,W,H);
+  if(divData.length<2)return;
+  const pad={l:40,r:10,t:10,b:22},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const allD=divData.flatMap(p=>[p.d1,p.d2,p.d3]).filter(v=>v>1e-9);
+  if(!allD.length)return;
+  const logMin=Math.log10(Math.min(...allD)),logMax=Math.log10(Math.max(...allD))+.3;
+  const t0=divData[0].t;
+  const tx=t=>pad.l+(t-t0)/(simT-t0||1)*pw;
+  const ty=d=>{if(d<=0)return pad.t+ph;const lv=Math.log10(d);return pad.t+ph-(lv-logMin)/(logMax-logMin||1)*ph};
+  ctxd.strokeStyle=CGRID;ctxd.lineWidth=1;
+  for(let d=Math.ceil(logMin);d<=Math.floor(logMax);d++){
+    const yy=ty(Math.pow(10,d));
+    ctxd.beginPath();ctxd.moveTo(pad.l,yy);ctxd.lineTo(W-pad.r,yy);ctxd.stroke();
+    ctxd.fillStyle=CTXT;ctxd.font='9px JetBrains Mono,monospace';
+    ctxd.fillText('10^'+d,2,yy+3);
+  }
+  [['d1',COLS[1]],['d2',COLS[2]],['d3',COLS[3]]].forEach(([k,col])=>{
+    ctxd.strokeStyle=col;ctxd.lineWidth=1.5;ctxd.globalAlpha=.85;
+    ctxd.beginPath();let st=false;
+    divData.forEach(p=>{if(p[k]<=0)return;const x=tx(p.t),y=ty(p[k]);st?ctxd.lineTo(x,y):(ctxd.moveTo(x,y),st=true);});
+    ctxd.stroke();ctxd.globalAlpha=1;
+  });
+}
+
+/* TAB SWITCHING */
+const tabListeners={};
+function onTabChange(id,fn){tabListeners[id]=fn;}
+let activeTab='pendolo';
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab=btn.dataset.tab;
+    document.getElementById('tab-'+activeTab).classList.add('active');
+    if(tabListeners[activeTab])requestAnimationFrame(()=>tabListeners[activeTab]());
+  });
+});
+
+/* ═══════════════════ PENDOLO DOPPIO ═══════════════════ */
+(function(){
+  let g=9.81,L1=.6,L2=.6,m1=1,m2=1;
+  let th1_0=120*Math.PI/180,th2_0=120*Math.PI/180,delta=1e-2;
+  let trailLen=600,speed=1,showSt=true,showTr=true,running=true;
+  let states=[],trails=[],divData=[],simT=0;
+
+  function init(){
+    const ds=[0,delta,delta*Math.sqrt(10),delta*10];
+    states=ds.map(d=>[th1_0+d,0,th2_0,0]);
+    trails=Array.from({length:4},()=>[]);
+    divData=[];simT=0;
+  }
+
+  function derivP(s){
+    // M·[θ̈1;θ̈2]=f, angoli dalla verticale discendente
+    // V = -(m1+m2)*g*L1*cosθ1 - m2*g*L2*cosθ2
+    const[t1,w1,t2,w2]=s,dth=t1-t2;
+    const cd=Math.cos(dth),sd=Math.sin(dth);
+    const A=(m1+m2)*L1*L1,B=m2*L1*L2*cd,C=m2*L2*L2;
+    const f1=-m2*L1*L2*w2*w2*sd-(m1+m2)*g*L1*Math.sin(t1);
+    const f2= m2*L1*L2*w1*w1*sd-m2*g*L2*Math.sin(t2);
+    const det=A*C-B*B;
+    return[w1,(C*f1-B*f2)/det,w2,(A*f2-B*f1)/det];
+  }
+
+  function energy(s){
+    const[t1,w1,t2,w2]=s;
+    const vx1=L1*w1*Math.cos(t1),vy1=L1*w1*Math.sin(t1);
+    const vx2=vx1+L2*w2*Math.cos(t2),vy2=vy1+L2*w2*Math.sin(t2);
+    return .5*m1*(vx1*vx1+vy1*vy1)+.5*m2*(vx2*vx2+vy2*vy2)
+           -((m1+m2)*g*L1*Math.cos(t1)+m2*g*L2*Math.cos(t2));
+  }
+
+  function pos1(s){return[L1*Math.sin(s[0]),-L1*Math.cos(s[0])]}
+  function pos2(s){const[x1,y1]=pos1(s);return[x1+L2*Math.sin(s[2]),y1-L2*Math.cos(s[2])]}
+
+  const cvs=document.getElementById('cvs-p'),ctx=cvs.getContext('2d');
+  const cvsd=document.getElementById('cvs-pdiv'),ctxd=cvsd.getContext('2d');
+
+  function resize(){
+    const sz=Math.round(cvs.clientWidth||cvs.getBoundingClientRect().width||(cvs.parentElement?cvs.parentElement.clientWidth:0)||600);
+    const gw=Math.round(cvsd.clientWidth||cvsd.getBoundingClientRect().width||(cvsd.parentElement?cvsd.parentElement.clientWidth:0)||600);
+    cvs.width=Math.max(1,sz);cvs.height=Math.max(1,sz);cvsd.width=Math.max(1,gw);cvsd.height=160;
+  }
+
+  function toC(p){
+    // p=[wx,wy] in coord fisiche (y↑); canvas ha y↓ → inverti wy
+    const sc=cvs.width/((L1+L2)*2.8);
+    return[cvs.width/2+p[0]*sc, cvs.height*0.38-p[1]*sc];
+  }
+
+  function drawScene(){
+    const W=cvs.width,H=cvs.height;
+    ctx.fillStyle=CBG;ctx.fillRect(0,0,W,H);
+    const[px,py]=toC([0,0]);
+    ctx.strokeStyle=CGRID;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px-12,py);ctx.lineTo(px+12,py);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px,py-12);ctx.lineTo(px,py+12);ctx.stroke();
+    if(showTr)drawFasceTrail(ctx,trails,p=>toC(p));
+    if(showSt){
+      for(let i=3;i>=0;i--){
+        const s=states[i],col=COLS[i];
+        const[x0,y0]=toC([0,0]),[x1,y1]=toC(pos1(s)),[x2,y2]=toC(pos2(s));
+        ctx.globalAlpha=i===0?1:.75;
+        ctx.strokeStyle=col;ctx.lineWidth=i===0?2:1.5;
+        ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        ctx.fillStyle=col;
+        [[x0,y0,5],[x1,y1,5],[x2,y2,4]].forEach(([x,y,r])=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();});
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+
+  function stepN(n){
+    for(let k=0;k<n;k++){
+      states=states.map(s=>rk4(s,derivP,DT));simT+=DT;
+      for(let i=0;i<4;i++){const p=pos2(states[i]);trails[i].push(p);if(trails[i].length>trailLen)trails[i].shift();}
+      if(Math.round(simT/DT)%5===0){
+        const p0=pos2(states[0]);
+        const d=i=>{const pi=pos2(states[i]);return Math.hypot(pi[0]-p0[0],pi[1]-p0[1])};
+        divData.push({t:simT,d1:d(1),d2:d(2),d3:d(3)});
+        if(divData.length>2000)divData.splice(0,divData.length-2000);
+      }
+    }
+  }
+
+  function estLyap(){
+    if(divData.length<30)return null;
+    const pts=divData.filter(p=>p.d1>1e-6&&p.d1<(L1+L2)*.5).slice(0,150).map(p=>[p.t,Math.log(p.d1)]);
+    return linReg(pts);
+  }
+
+  function loop(){
+    if(activeTab==='pendolo'){
+      if(running)stepN(Math.round(4*speed));
+      drawScene();
+      drawDivGraph(ctxd,cvsd.width,160,divData,simT);
+      document.getElementById('p-t').textContent=simT.toFixed(2)+' s';
+      const p0=pos2(states[0]);
+      const dmax=Math.max(...[1,2,3].map(i=>{const p=pos2(states[i]);return Math.hypot(p[0]-p0[0],p[1]-p0[1])}));
+      document.getElementById('p-div').textContent=dmax.toFixed(4)+' m';
+      const lam=estLyap();
+      document.getElementById('p-lyap').textContent=lam!==null?lam.toFixed(3)+' s⁻¹':'—';
+      document.getElementById('p-en').textContent=energy(states[0]).toFixed(4)+' J';
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function sl(id,vid,fn,fmt){
+    const el=document.getElementById(id),vl=document.getElementById(vid);
+    el.addEventListener('input',()=>{const v=parseFloat(el.value);vl.textContent=fmt(v);fn(v);});
+    vl.textContent=fmt(parseFloat(el.value));
+  }
+  sl('p-sl-t1','p-vl-t1',v=>{th1_0=v*Math.PI/180;init();},v=>v+'°');
+  sl('p-sl-t2','p-vl-t2',v=>{th2_0=v*Math.PI/180;init();},v=>v+'°');
+  sl('p-sl-d','p-vl-d',v=>{delta=Math.pow(10,v);init();},v=>'10^'+v.toFixed(1));
+  sl('p-sl-l1','p-vl-l1',v=>{L1=v;init();},v=>v.toFixed(2));
+  sl('p-sl-l2','p-vl-l2',v=>{L2=v;init();},v=>v.toFixed(2));
+  sl('p-sl-m1','p-vl-m1',v=>{m1=v;init();},v=>v.toFixed(1));
+  sl('p-sl-m2','p-vl-m2',v=>{m2=v;init();},v=>v.toFixed(1));
+  sl('p-sl-g','p-vl-g',v=>{g=v;init();},v=>v.toFixed(2));
+  sl('p-sl-tr','p-vl-tr',v=>{trailLen=v;},v=>v);
+  sl('p-sl-sp','p-vl-sp',v=>{speed=v;},v=>'×'+v.toFixed(2));
+  document.getElementById('p-cb-st').addEventListener('change',e=>showSt=e.target.checked);
+  document.getElementById('p-cb-tr').addEventListener('change',e=>showTr=e.target.checked);
+  document.getElementById('p-btn-ss').addEventListener('click',()=>{running=!running;document.getElementById('p-btn-ss').textContent=running?'⏸ Pausa':'▶ Avvia';});
+  document.getElementById('p-btn-r').addEventListener('click',init);
+  document.getElementById('p-btn-ct').addEventListener('click',()=>{trails=Array.from({length:4},()=>[]);divData=[];});
+  window.addEventListener('resize',resize);
+  resize();init();loop();
+})();
+
+/* ═══════════════════ LORENZ ═══════════════════ */
+(function(){
+  let sigma=10,rho=28,beta=8/3,x0=1,y0=1,z0=1,delta=1e-3,trailLen=2000,speed=2,running=true,proj='xz';
+  let states=[],trails=[],divData=[],simT=0;
+  const BOUNDS={xz:{xmin:-25,xmax:25,ymin:0,ymax:50},xy:{xmin:-25,xmax:25,ymin:-35,ymax:35},yz:{xmin:-35,xmax:35,ymin:0,ymax:50}};
+  function derivL(s){const[x,y,z]=s;return[sigma*(y-x),x*(rho-z)-y,x*y-beta*z];}
+  function getProj(s){const[x,y,z]=s;return proj==='xz'?[x,z]:proj==='xy'?[x,y]:[y,z];}
+  function init(){
+    const d=delta;
+    states=[[x0,y0,z0],[x0+d,y0,z0],[x0,y0+d,z0],[x0,y0,z0+d]];
+    trails=Array.from({length:4},()=>[]);divData=[];simT=0;
+    // warmup sincrono 3000 passi → attrattore già formato all'apertura del tab
+    for(let k=0;k<3000;k++){
+      states=states.map(s=>rk4(s,derivL,DT));simT+=DT;
+      for(let i=0;i<4;i++){const p=getProj(states[i]);trails[i].push(p);if(trails[i].length>trailLen)trails[i].shift();}
+    }
+  }
+  const cvs=document.getElementById('cvs-l'),ctx=cvs.getContext('2d');
+  const cvsd=document.getElementById('cvs-ldiv'),ctxd=cvsd.getContext('2d');
+  function resize(){
+    const sz=Math.round(cvs.clientWidth||cvs.getBoundingClientRect().width||(cvs.parentElement?cvs.parentElement.clientWidth:0)||600);
+    const gw=Math.round(cvsd.clientWidth||cvsd.getBoundingClientRect().width||(cvsd.parentElement?cvsd.parentElement.clientWidth:0)||600);
+    cvs.width=Math.max(1,sz);cvs.height=Math.max(1,sz);cvsd.width=Math.max(1,gw);cvsd.height=160;
+  }
+  function toC(p){const b=BOUNDS[proj],W=cvs.width,H=cvs.height,pad=32;return[pad+(p[0]-b.xmin)/(b.xmax-b.xmin)*(W-2*pad),H-pad-(p[1]-b.ymin)/(b.ymax-b.ymin)*(H-2*pad)];}
+  function drawScene(){
+    ctx.fillStyle=CBG;ctx.fillRect(0,0,cvs.width,cvs.height);
+    drawFasceTrail(ctx,trails,p=>toC(p));
+    for(let i=3;i>=0;i--){const[cx,cy]=toC(getProj(states[i]));ctx.fillStyle=COLS[i];ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(cx,cy,i===0?4:3,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  function stepN(n){
+    for(let k=0;k<n;k++){
+      states=states.map(s=>rk4(s,derivL,DT));simT+=DT;
+      for(let i=0;i<4;i++){const p=getProj(states[i]);trails[i].push(p);if(trails[i].length>trailLen)trails[i].shift();}
+      if(Math.round(simT/DT)%5===0){
+        const s0=states[0];const d=i=>Math.hypot(states[i][0]-s0[0],states[i][1]-s0[1],states[i][2]-s0[2]);
+        divData.push({t:simT,d1:d(1),d2:d(2),d3:d(3)});if(divData.length>2000)divData.splice(0,divData.length-2000);
+      }
+    }
+  }
+  function estLyap(){if(divData.length<30)return null;const pts=divData.filter(p=>p.d1>1e-6&&p.d1<30).slice(0,200).map(p=>[p.t,Math.log(p.d1)]);return linReg(pts);}
+  function loop(){
+    if(activeTab==='lorenz'){
+      if(running)stepN(Math.round(4*speed));
+      drawScene();drawDivGraph(ctxd,cvsd.width,160,divData,simT);
+      document.getElementById('l-t').textContent=simT.toFixed(2);
+      const s0=states[0];const dmax=Math.max(...[1,2,3].map(i=>Math.hypot(states[i][0]-s0[0],states[i][1]-s0[1],states[i][2]-s0[2])));
+      document.getElementById('l-div').textContent=dmax.toFixed(4);
+      const lam=estLyap();document.getElementById('l-lyap').textContent=lam!==null?lam.toFixed(3)+' s⁻¹':'—';
+      document.getElementById('l-proj').textContent=proj.toUpperCase();
+    }
+    requestAnimationFrame(loop);
+  }
+  function sl(id,vid,fn,fmt){const el=document.getElementById(id),vl=document.getElementById(vid);el.addEventListener('input',()=>{const v=parseFloat(el.value);vl.textContent=fmt(v);fn(v);});vl.textContent=fmt(parseFloat(el.value));}
+  sl('l-sl-s','l-vl-s',v=>{sigma=v;init();},v=>v.toFixed(1));sl('l-sl-r','l-vl-r',v=>{rho=v;init();},v=>v.toFixed(1));sl('l-sl-b','l-vl-b',v=>{beta=v;init();},v=>v.toFixed(2));sl('l-sl-d','l-vl-d',v=>{delta=Math.pow(10,v);init();},v=>'10^'+v.toFixed(1));sl('l-sl-x0','l-vl-x0',v=>{x0=v;init();},v=>v.toFixed(1));sl('l-sl-y0','l-vl-y0',v=>{y0=v;init();},v=>v.toFixed(1));sl('l-sl-z0','l-vl-z0',v=>{z0=v;init();},v=>v.toFixed(1));sl('l-sl-tr','l-vl-tr',v=>{trailLen=v;},v=>v);sl('l-sl-sp','l-vl-sp',v=>{speed=v;},v=>'×'+v.toFixed(2));
+  document.getElementById('l-proj-sel').addEventListener('change',e=>{proj=e.target.value;trails=Array.from({length:4},()=>[]);});
+  document.getElementById('l-btn-ss').addEventListener('click',()=>{running=!running;document.getElementById('l-btn-ss').textContent=running?'⏸ Pausa':'▶ Avvia';});
+  document.getElementById('l-btn-r').addEventListener('click',init);
+  document.getElementById('l-btn-ct').addEventListener('click',()=>{trails=Array.from({length:4},()=>[]);divData=[];});
+  onTabChange('lorenz',()=>{resize();drawScene();drawDivGraph(ctxd,cvsd.width,160,divData,simT);});
+  window.addEventListener('resize',()=>{if(activeTab==='lorenz')resize();});resize();init();loop();
+})();
+
+/* ═══════════════════ RÖSSLER ═══════════════════ */
+(function(){
+  let a=.2,b=.2,c=5.7,delta=1e-3,trailLen=3000,speed=3,running=true,proj='xy';
+  let states=[],trails=[],divData=[],simT=0,cycles=0;
+  const BOUNDS={xy:{xmin:-14,xmax:14,ymin:-14,ymax:14},xz:{xmin:-14,xmax:14,ymin:-1,ymax:25},yz:{xmin:-14,xmax:14,ymin:-1,ymax:25}};
+  function derivR(s){const[x,y,z]=s;return[-y-z,x+a*y,b+z*(x-c)];}
+  function getProj(s){const[x,y,z]=s;return proj==='xy'?[x,y]:proj==='xz'?[x,z]:[y,z];}
+  function init(){
+    const d=delta;
+    states=[[1,0,0],[1+d,0,0],[1+2*d,0,0],[1+5*d,0,0]];
+    trails=Array.from({length:4},()=>[]);divData=[];simT=0;cycles=0;
+    // warmup sincrono 5000 passi (~20 s simulati, periodo Rössler ≈ 6 s)
+    for(let k=0;k<5000;k++){
+      const py=states[0][1];states=states.map(s=>rk4(s,derivR,DT));simT+=DT;
+      if(py<0&&states[0][1]>=0&&states[0][0]>0)cycles++;
+      for(let i=0;i<4;i++){const p=getProj(states[i]);trails[i].push(p);if(trails[i].length>trailLen)trails[i].shift();}
+    }
+  }
+  const cvs=document.getElementById('cvs-r'),ctx=cvs.getContext('2d');
+  const cvsd=document.getElementById('cvs-rdiv'),ctxd=cvsd.getContext('2d');
+  function resize(){
+    const sz=Math.round(cvs.clientWidth||cvs.getBoundingClientRect().width||(cvs.parentElement?cvs.parentElement.clientWidth:0)||600);
+    const gw=Math.round(cvsd.clientWidth||cvsd.getBoundingClientRect().width||(cvsd.parentElement?cvsd.parentElement.clientWidth:0)||600);
+    cvs.width=Math.max(1,sz);cvs.height=Math.max(1,sz);cvsd.width=Math.max(1,gw);cvsd.height=160;
+  }
+  function toC(p){const b=BOUNDS[proj],W=cvs.width,H=cvs.height,pad=28;return[pad+(p[0]-b.xmin)/(b.xmax-b.xmin)*(W-2*pad),H-pad-(p[1]-b.ymin)/(b.ymax-b.ymin)*(H-2*pad)];}
+  function drawScene(){
+    ctx.fillStyle=CBG;ctx.fillRect(0,0,cvs.width,cvs.height);
+    drawFasceTrail(ctx,trails,p=>toC(p));
+    for(let i=3;i>=0;i--){const[cx,cy]=toC(getProj(states[i]));ctx.fillStyle=COLS[i];ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(cx,cy,i===0?4:3,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  function stepN(n){
+    for(let k=0;k<n;k++){
+      const py=states[0][1];states=states.map(s=>rk4(s,derivR,DT));simT+=DT;
+      if(py<0&&states[0][1]>=0&&states[0][0]>0)cycles++;
+      for(let i=0;i<4;i++){const p=getProj(states[i]);trails[i].push(p);if(trails[i].length>trailLen)trails[i].shift();}
+      if(Math.round(simT/DT)%5===0){
+        const s0=states[0];const d=i=>Math.hypot(states[i][0]-s0[0],states[i][1]-s0[1],states[i][2]-s0[2]);
+        divData.push({t:simT,d1:d(1),d2:d(2),d3:d(3)});if(divData.length>2000)divData.splice(0,divData.length-2000);
+      }
+    }
+  }
+  function estLyap(){if(divData.length<30)return null;const pts=divData.filter(p=>p.d1>1e-6&&p.d1<20).slice(0,200).map(p=>[p.t,Math.log(p.d1)]);return linReg(pts);}
+  function loop(){
+    if(activeTab==='rossler'){
+      if(running)stepN(Math.round(4*speed));
+      drawScene();drawDivGraph(ctxd,cvsd.width,160,divData,simT);
+      document.getElementById('r-t').textContent=simT.toFixed(2);
+      const s0=states[0];const dmax=Math.max(...[1,2,3].map(i=>Math.hypot(states[i][0]-s0[0],states[i][1]-s0[1],states[i][2]-s0[2])));
+      document.getElementById('r-div').textContent=dmax.toFixed(4);
+      const lam=estLyap();document.getElementById('r-lyap').textContent=lam!==null?lam.toFixed(3)+' s⁻¹':'—';
+      document.getElementById('r-cycles').textContent=cycles;
+    }
+    requestAnimationFrame(loop);
+  }
+  function sl(id,vid,fn,fmt){const el=document.getElementById(id),vl=document.getElementById(vid);el.addEventListener('input',()=>{const v=parseFloat(el.value);vl.textContent=fmt(v);fn(v);});vl.textContent=fmt(parseFloat(el.value));}
+  sl('r-sl-a','r-vl-a',v=>{a=v;init();},v=>v.toFixed(3));sl('r-sl-b','r-vl-b',v=>{b=v;init();},v=>v.toFixed(3));sl('r-sl-c','r-vl-c',v=>{c=v;init();},v=>v.toFixed(2));sl('r-sl-d','r-vl-d',v=>{delta=Math.pow(10,v);init();},v=>'10^'+v.toFixed(1));sl('r-sl-tr','r-vl-tr',v=>{trailLen=v;},v=>v);sl('r-sl-sp','r-vl-sp',v=>{speed=v;},v=>'×'+v.toFixed(2));
+  document.getElementById('r-proj-sel').addEventListener('change',e=>{proj=e.target.value;trails=Array.from({length:4},()=>[]);});
+  document.getElementById('r-btn-ss').addEventListener('click',()=>{running=!running;document.getElementById('r-btn-ss').textContent=running?'⏸ Pausa':'▶ Avvia';});
+  document.getElementById('r-btn-r').addEventListener('click',init);
+  document.getElementById('r-btn-ct').addEventListener('click',()=>{trails=Array.from({length:4},()=>[]);divData=[];});
+  onTabChange('rossler',()=>{resize();drawScene();drawDivGraph(ctxd,cvsd.width,160,divData,simT);});
+  window.addEventListener('resize',()=>{if(activeTab==='rossler')resize();});resize();init();loop();
+})();
+
+/* ═══════════════════ MAPPA LOGISTICA ═══════════════════ */
+(function(){
+  const cvsBif=document.getElementById('cvs-bif'),ctxBif=cvsBif.getContext('2d');
+  const cvsOrb=document.getElementById('cvs-log-orbit'),ctxOrb=cvsOrb.getContext('2d');
+  const cvsCob=document.getElementById('cvs-log-cobweb'),ctxCob=cvsCob.getContext('2d');
+  let rVal=3.7,x0=.5,nIter=150,bifData=null;
+
+  function computeBif(){
+    const W=cvsBif.clientWidth||760;cvsBif.width=W;cvsBif.height=420;
+    const rMin=2.5,rMax=4.0,steps=Math.min(W*2,1400),warmup=300,keep=200;
+    bifData=[];
+    for(let ri=0;ri<steps;ri++){
+      const r=rMin+(rMax-rMin)*ri/steps;let x=.5;
+      for(let i=0;i<warmup;i++)x=r*x*(1-x);
+      const pts=[];for(let i=0;i<keep;i++){x=r*x*(1-x);pts.push(x);}
+      bifData.push({r,pts});
+    }
+    drawBif();
+  }
+
+  function drawBif(){
+    if(!bifData)return;
+    const W=cvsBif.width,H=cvsBif.height,rMin=2.5,rMax=4.0;
+    const pad={l:36,r:12,t:14,b:30},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+    ctxBif.fillStyle=CBG;ctxBif.fillRect(0,0,W,H);
+    ctxBif.strokeStyle=CGRID;ctxBif.lineWidth=1;
+    [0,.25,.5,.75,1].forEach(yv=>{
+      const yy=pad.t+ph*(1-yv);ctxBif.beginPath();ctxBif.moveTo(pad.l,yy);ctxBif.lineTo(W-pad.r,yy);ctxBif.stroke();
+      ctxBif.fillStyle=CTXT;ctxBif.font='9px JetBrains Mono,monospace';ctxBif.fillText(yv.toFixed(2),2,yy+3);
+    });
+    [2.5,3.0,3.5,4.0].forEach(rv=>{
+      const xx=pad.l+(rv-rMin)/(rMax-rMin)*pw;ctxBif.beginPath();ctxBif.moveTo(xx,pad.t);ctxBif.lineTo(xx,pad.t+ph);ctxBif.stroke();
+      ctxBif.fillStyle=CTXT;ctxBif.font='9px JetBrains Mono,monospace';ctxBif.fillText(rv.toFixed(1),xx-8,pad.t+ph+16);
+    });
+    ctxBif.fillStyle=COLS[0];
+    bifData.forEach(({r,pts})=>{const px=pad.l+(r-rMin)/(rMax-rMin)*pw;pts.forEach(x=>ctxBif.fillRect(px,pad.t+ph*(1-x),1,1));});
+    const cx=pad.l+(rVal-rMin)/(rMax-rMin)*pw;
+    ctxBif.strokeStyle=COLS[1];ctxBif.lineWidth=1.5;ctxBif.setLineDash([4,3]);
+    ctxBif.beginPath();ctxBif.moveTo(cx,pad.t);ctxBif.lineTo(cx,pad.t+ph);ctxBif.stroke();ctxBif.setLineDash([]);
+    ctxBif.fillStyle=CTXT;ctxBif.font='10px JetBrains Mono,monospace';ctxBif.fillText('x*',4,pad.t+10);ctxBif.fillText('r',W-pad.r-6,pad.t+ph+16);
+  }
+
+  function classifyRegime(r){
+    let x=.5;for(let i=0;i<500;i++)x=r*x*(1-x);
+    const pts=[];for(let i=0;i<256;i++){x=r*x*(1-x);pts.push(+x.toFixed(8));}
+    const uniq=new Set(pts.map(v=>v.toFixed(5)));
+    if(r<=1)return{label:'Estinzione',period:'—'};
+    if(r<=3)return{label:'Punto fisso',period:'1'};
+    for(const p of[2,4,8,16])if(uniq.size<=p)return{label:'Periodico',period:String(p)};
+    return{label:'Caotico',period:'∞'};
+  }
+
+  function drawOrbit(){
+    const W=cvsOrb.clientWidth||400,H=280;cvsOrb.width=W;cvsOrb.height=H;
+    ctxOrb.fillStyle=CBG;ctxOrb.fillRect(0,0,W,H);
+    const pad={l:10,r:10,t:10,b:10},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+    let x=x0;const xs=[x];for(let i=0;i<nIter+50;i++){x=rVal*x*(1-x);xs.push(x);}
+    const skip=50;
+    ctxOrb.strokeStyle=CGRID;ctxOrb.lineWidth=1;
+    [0,.5,1].forEach(yv=>{const yy=pad.t+ph*(1-yv);ctxOrb.beginPath();ctxOrb.moveTo(pad.l,yy);ctxOrb.lineTo(W-pad.r,yy);ctxOrb.stroke();});
+    ctxOrb.strokeStyle=COLS[0];ctxOrb.lineWidth=1.5;ctxOrb.beginPath();
+    xs.slice(skip).forEach((v,i)=>{const px=pad.l+i/(xs.length-skip-1)*pw,py=pad.t+ph*(1-v);i===0?ctxOrb.moveTo(px,py):ctxOrb.lineTo(px,py);});
+    ctxOrb.stroke();
+    ctxOrb.fillStyle=COLS[1];
+    xs.slice(skip).forEach((v,i)=>{const px=pad.l+i/(xs.length-skip-1)*pw,py=pad.t+ph*(1-v);ctxOrb.beginPath();ctxOrb.arc(px,py,2,0,Math.PI*2);ctxOrb.fill();});
+  }
+
+  function drawCobweb(){
+    const W=cvsCob.clientWidth||400,H=280;cvsCob.width=W;cvsCob.height=H;
+    ctxCob.fillStyle=CBG;ctxCob.fillRect(0,0,W,H);
+    const pad=20,pw=W-2*pad,ph=H-2*pad;
+    ctxCob.strokeStyle=COLS[2];ctxCob.lineWidth=2;ctxCob.beginPath();
+    for(let i=0;i<=200;i++){const xv=i/200,yv=rVal*xv*(1-xv);const cx=pad+xv*pw,cy=H-pad-yv*ph;i===0?ctxCob.moveTo(cx,cy):ctxCob.lineTo(cx,cy);}
+    ctxCob.stroke();
+    ctxCob.strokeStyle=CGRID;ctxCob.lineWidth=1.5;ctxCob.beginPath();ctxCob.moveTo(pad,H-pad);ctxCob.lineTo(W-pad,pad);ctxCob.stroke();
+    ctxCob.strokeStyle=COLS[1];ctxCob.lineWidth=1;ctxCob.globalAlpha=.8;
+    let x=x0;ctxCob.beginPath();ctxCob.moveTo(pad+x*pw,H-pad-x*ph);
+    for(let i=0;i<nIter+30;i++){const nx=rVal*x*(1-x);ctxCob.lineTo(pad+x*pw,H-pad-nx*ph);ctxCob.lineTo(pad+nx*pw,H-pad-nx*ph);x=nx;}
+    ctxCob.stroke();ctxCob.globalAlpha=1;
+  }
+
+  function updateAll(){
+    drawBif();drawOrbit();drawCobweb();
+    document.getElementById('log-r-val').textContent=rVal.toFixed(4);
+    const reg=classifyRegime(rVal);
+    document.getElementById('log-regime').textContent=reg.label;
+    document.getElementById('log-period').textContent=reg.period;
+  }
+
+  function sl(id,vid,fn,fmt){const el=document.getElementById(id),vl=document.getElementById(vid);el.addEventListener('input',()=>{const v=parseFloat(el.value);vl.textContent=fmt(v);fn(v);updateAll();});vl.textContent=fmt(parseFloat(el.value));}
+  sl('log-sl-r','log-vl-r',v=>{rVal=v;},v=>'r = '+v.toFixed(3));
+  sl('log-sl-x0','log-vl-x0',v=>{x0=v;},v=>v.toFixed(2));
+  sl('log-sl-n','log-vl-n',v=>{nIter=v;},v=>v);
+
+  cvsBif.addEventListener('click',e=>{
+    const rect=cvsBif.getBoundingClientRect(),rMin=2.5,rMax=4.0,pl=36,pr=12;
+    const pw=cvsBif.width-pl-pr,newR=rMin+(e.clientX-rect.left-pl)/pw*(rMax-rMin);
+    if(newR>=rMin&&newR<=rMax){rVal=newR;document.getElementById('log-sl-r').value=rVal;document.getElementById('log-vl-r').textContent='r = '+rVal.toFixed(3);updateAll();}
+  });
+
+  window.addEventListener('resize',()=>{if(activeTab==='logistica'){computeBif();drawOrbit();drawCobweb();}});
+
+  let bifReady=false;
+  onTabChange('logistica',()=>{if(!bifReady){bifReady=true;computeBif();updateAll();}});
+})();
+</script>
+</body>
+</html>

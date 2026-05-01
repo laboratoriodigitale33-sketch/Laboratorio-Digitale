@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spettri a Righe di Emissione e Assorbimento</title>
+<script>
+window.SIM_METADATA = {
+  "title": "Spettri a Righe di Emissione e Assorbimento",
+  "description": "Simulazione didattica degli spettri a righe con transizioni atomiche, emissione, assorbimento, redshift, velocità radiale, allargamento Doppler, risoluzione strumentale e diagnostica spettroscopica.",
+  "category": "Astrofisica",
+  "icon": "🌈",
+  "order": 21,
+  "tags": [
+    "astrofisica",
+    "spettroscopia",
+    "righe di emissione",
+    "righe di assorbimento",
+    "transizioni atomiche",
+    "redshift",
+    "Doppler",
+    "idrogeno",
+    "elio",
+    "ossigeno ionizzato",
+    "ferro K alpha"
+  ],
+  "level": "intermedio-avanzato"
+};
+</script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left:'$$',right:'$$',display:true},
+    {left:'$',right:'$',display:false}
+  ]})"></script>
+<style>
+:root{
+  --cream:#f5f0e8;
+  --cream-dark:#ede6d4;
+  --ink:#1a1610;
+  --ink-light:#3d3428;
+  --ink-faint:#6b5e4e;
+  --accent:#8b3a1a;
+  --accent-warm:#c4622d;
+  --accent-violet:#7153a8;
+  --line-blue:#6cb6d8;
+  --line-red:#d46f56;
+  --line-gold:#d7a94c;
+  --border:#d4c9b0;
+  --border-light:#e8dfc8;
+  --panel:#fffaf0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:16px;
+  line-height:1.7;
+  overflow-x:hidden;
+}
+header{
+  background:var(--ink);
+  color:var(--cream);
+  padding:3.3rem 4rem 3rem;
+  position:relative;
+  overflow:hidden;
+}
+header::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 18% 30%,rgba(196,98,45,0.16),transparent 25%),
+    repeating-linear-gradient(90deg,transparent,transparent 58px,rgba(255,255,255,0.018) 58px,rgba(255,255,255,0.018) 59px);
+  pointer-events:none;
+}
+.header-inner{max-width:1120px;margin:0 auto;position:relative}
+.header-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--accent-warm);
+  margin-bottom:1rem;
+}
+h1{
+  font-family:'EB Garamond',serif;
+  font-size:clamp(2.2rem,4vw,3.6rem);
+  font-weight:500;
+  line-height:1.1;
+  margin-bottom:1rem;
+}
+h1 em{font-style:italic;color:#c4a882}
+.header-sub{
+  max-width:720px;
+  color:#a09080;
+  font-weight:300;
+  font-size:.96rem;
+}
+.main-wrap{max-width:1120px;margin:0 auto;padding:3rem 4rem}
+.section-heading{
+  font-family:'EB Garamond',serif;
+  font-size:1.55rem;
+  font-weight:500;
+  display:flex;
+  align-items:baseline;
+  gap:1rem;
+  margin-bottom:.35rem;
+}
+.section-heading::after{content:'';height:1px;background:var(--border);flex:1}
+.section-sub{
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  color:var(--ink-faint);
+  font-size:1rem;
+  margin-bottom:1.7rem;
+}
+.sim-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 330px;
+  gap:1.2rem;
+  align-items:start;
+  margin-bottom:3.5rem;
+}
+.graph-container{
+  background:#0f0d0a;
+  border:1px solid #2a2218;
+  border-radius:6px;
+  padding:1.4rem 1.4rem 1rem;
+  min-width:0;
+}
+.graph-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.graph-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.64rem;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:#73624e;
+}
+.mode-pills{
+  display:flex;
+  border:1px solid #2a2218;
+  border-radius:3px;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.mode-pills button{
+  background:transparent;
+  border:0;
+  color:#776653;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.6rem;
+  letter-spacing:.08em;
+  padding:.35rem .6rem;
+  cursor:pointer;
+}
+.mode-pills button.active{background:var(--accent);color:var(--cream)}
+#spectrum-canvas{
+  display:block;
+  width:100%;
+  height:450px;
+  cursor:crosshair;
+}
+.cursor-info{
+  min-height:1.8rem;
+  margin-top:.55rem;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;
+  color:#6b5a47;
+}
+.cursor-info .val{color:var(--accent-warm)}
+.band-row{
+  display:flex;
+  margin-top:.5rem;
+  border-radius:3px;
+  overflow:hidden;
+}
+.band-row span{
+  flex:1;
+  text-align:center;
+  padding:.22rem 0;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.52rem;
+  color:rgba(255,255,255,.55);
+  text-transform:uppercase;
+}
+.controls{
+  background:var(--cream-dark);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:1rem;
+  position:sticky;
+  top:1rem;
+}
+.control-group{
+  border-bottom:1px solid var(--border);
+  padding-bottom:.9rem;
+  margin-bottom:.9rem;
+}
+.control-group:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.control-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.65rem;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--accent);
+  margin-bottom:.65rem;
+}
+select{
+  width:100%;
+  background:#fff9ef;
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:.45rem .5rem;
+  font-family:'IBM Plex Sans',sans-serif;
+  color:var(--ink);
+  outline:none;
+}
+.check-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.35rem .6rem;
+}
+.check-row{
+  display:flex;
+  gap:.4rem;
+  align-items:center;
+  font-size:.76rem;
+  color:var(--ink-light);
+  cursor:pointer;
+  user-select:none;
+}
+.check-row input{accent-color:var(--accent-warm)}
+.param-row{margin-bottom:.75rem}
+.param-row:last-child{margin-bottom:0}
+.param-label{
+  display:flex;
+  justify-content:space-between;
+  gap:.75rem;
+  align-items:baseline;
+  margin-bottom:.2rem;
+}
+.param-name{
+  font-size:.76rem;
+  font-weight:500;
+  color:var(--ink-light);
+}
+.param-value{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;
+  color:var(--accent);
+  text-align:right;
+  white-space:nowrap;
+}
+input[type=range]{
+  -webkit-appearance:none;
+  width:100%;
+  height:3px;
+  border-radius:2px;
+  background:var(--border);
+  outline:none;
+  cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:var(--accent-warm);
+  border:2px solid var(--cream);
+  box-shadow:0 0 0 1px var(--accent-warm);
+}
+.note-box{
+  background:#fff9ef;
+  border:1px solid var(--border-light);
+  border-radius:5px;
+  padding:.8rem;
+  color:var(--ink-light);
+  font-size:.78rem;
+  line-height:1.55;
+}
+.legend-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.4rem;
+  margin-top:.65rem;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:.28rem;
+  padding:.18rem .45rem;
+  border:1px solid var(--border);
+  border-radius:99px;
+  background:#fff9ef;
+  font-size:.68rem;
+  font-family:'IBM Plex Mono',monospace;
+  color:var(--ink-faint);
+}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.intro-block{
+  display:grid;
+  grid-template-columns:1fr 360px;
+  gap:2.5rem;
+  padding:2.8rem 0;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  margin-bottom:3rem;
+}
+.intro-block p,.theory-text p{
+  color:var(--ink-light);
+  font-size:.93rem;
+  margin-bottom:.95rem;
+  line-height:1.82;
+}
+.formula-card{
+  background:var(--ink);
+  color:var(--cream);
+  border-radius:5px;
+  padding:1.3rem;
+  align-self:start;
+}
+.formula-title{
+  font-family:'IBM Plex Mono',monospace;
+  color:var(--accent-warm);
+  font-size:.62rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  margin-bottom:1rem;
+}
+.formula-row{
+  color:#d7c7ab;
+  font-size:.84rem;
+  padding:.72rem 0;
+  border-bottom:1px solid #2a2218;
+}
+.formula-row:last-child{border-bottom:0}
+.theory-section{
+  padding-top:1rem;
+}
+.theory-heading{
+  font-family:'EB Garamond',serif;
+  font-size:2rem;
+  font-weight:500;
+  margin-bottom:.15rem;
+}
+.theory-heading-sub{
+  font-family:'EB Garamond',serif;
+  color:var(--ink-faint);
+  font-style:italic;
+  margin-bottom:2.4rem;
+}
+.theory-block{
+  display:grid;
+  grid-template-columns:1fr 330px;
+  gap:2.5rem;
+  align-items:start;
+  border-bottom:1px solid var(--border);
+  padding-bottom:2.5rem;
+  margin-bottom:2.8rem;
+}
+.theory-block:last-child{border-bottom:0}
+.theory-block-title{
+  font-family:'EB Garamond',serif;
+  font-size:1.32rem;
+  font-weight:500;
+  margin-bottom:.9rem;
+}
+.aside{
+  background:var(--ink);
+  color:var(--cream);
+  border-radius:5px;
+  padding:1.25rem;
+}
+.aside .aside-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.6rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--accent-warm);
+  margin-bottom:.9rem;
+}
+.aside p{
+  color:#a8977f;
+  font-size:.76rem;
+  line-height:1.65;
+  margin-top:.8rem;
+}
+.line-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:1rem;
+  font-size:.78rem;
+}
+.line-table th,.line-table td{
+  border-bottom:1px solid var(--border);
+  padding:.45rem .3rem;
+  text-align:left;
+}
+.line-table th{
+  font-family:'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:.62rem;
+  color:var(--accent);
+}
+footer{
+  background:var(--ink);
+  color:#5a4a3a;
+  padding:2rem 4rem;
+  display:flex;
+  justify-content:space-between;
+  gap:1rem;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.65rem;
+  letter-spacing:.08em;
+  margin-top:3rem;
+}
+@media(max-width:980px){
+  .main-wrap{padding:2rem 1.5rem}
+  header{padding:2.5rem 1.5rem}
+  .sim-layout,.intro-block,.theory-block{grid-template-columns:1fr}
+  .controls{position:static}
+  footer{padding:1.5rem;flex-direction:column}
+}
+@media(max-width:620px){
+  .graph-top{align-items:flex-start;flex-direction:column}
+  #spectrum-canvas{height:390px}
+  .check-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="header-label">Astrofisica · Spettroscopia</div>
+    <h1>Spettri a <em>Righe</em><br>di Emissione e Assorbimento</h1>
+    <p class="header-sub">
+      Una simulazione didattica per collegare righe spettrali, elementi chimici, stato fisico del gas,
+      spostamento Doppler, redshift, allargamento delle righe e risoluzione strumentale.
+    </p>
+  </div>
+</header>
+
+<div class="main-wrap">
+  <section class="sim-section">
+    <h2 class="section-heading">Simulatore interattivo</h2>
+    <p class="section-sub">Seleziona specie atomiche e condizioni fisiche. Il grafico mostra lo spettro osservato in lunghezza d'onda.</p>
+
+    <div class="sim-layout">
+      <div class="graph-container">
+        <div class="graph-top">
+          <span class="graph-title">Intensità relativa · righe osservate</span>
+          <div class="mode-pills">
+            <button id="btn-optical" class="active" onclick="setWindow('optical')">UV–VIS–NIR</button>
+            <button id="btn-visible" onclick="setWindow('visible')">VISIBILE</button>
+            <button id="btn-xray" onclick="setWindow('xray')">X-RAY</button>
+          </div>
+        </div>
+        <canvas id="spectrum-canvas"></canvas>
+        <div class="cursor-info" id="cursor-info">Muovi il cursore sul grafico per leggere $\lambda$, specie e transizione più vicina.</div>
+        <div class="band-row">
+          <span style="background:#38306b">UV</span>
+          <span style="background:#423b9a">Violetto</span>
+          <span style="background:#2b5798">Blu</span>
+          <span style="background:#327658">Verde</span>
+          <span style="background:#a08a36">Giallo</span>
+          <span style="background:#9a5634">Rosso</span>
+          <span style="background:#5a342b">IR</span>
+        </div>
+      </div>
+
+      <aside class="controls">
+        <div class="control-group">
+          <div class="control-title">Preset fisico</div>
+          <select id="preset" onchange="applyPreset(this.value)">
+            <option value="hii">Regione H II — righe nebulari</option>
+            <option value="stellarAbs">Stella + atmosfera — assorbimento</option>
+            <option value="planetary">Nebulosa planetaria — [O III] forte</option>
+            <option value="agn">AGN — righe larghe e strette</option>
+            <option value="xray">Gas caldo / accrescimento — righe X</option>
+            <option value="custom" selected>Personalizzato</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <div class="control-title">Modalità</div>
+          <select id="mode" onchange="markCustom(); updatePlot()">
+            <option value="emission">Emissione</option>
+            <option value="absorption">Assorbimento su continuo</option>
+            <option value="both">Emissione + assorbimento</option>
+          </select>
+          <div class="legend-chips">
+            <span class="chip"><span class="dot" style="background:var(--line-red)"></span>Emissione</span>
+            <span class="chip"><span class="dot" style="background:var(--line-blue)"></span>Assorbimento</span>
+            <span class="chip"><span class="dot" style="background:var(--line-gold)"></span>Riga più vicina</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-title">Specie</div>
+          <div class="check-grid" id="species-box"></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-title">Gas e continuo</div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Temperatura gas $T$</span><span class="param-value" id="val-logT">10<sup>4.0</sup> K</span></div>
+            <input type="range" id="logT" min="3.5" max="8.5" step="0.05" value="4.0" oninput="syncVal('logT','10<sup>'+Number(this.value).toFixed(1)+'</sup> K'); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Densità $n_e$</span><span class="param-value" id="val-logN">10<sup>2.0</sup> cm⁻³</span></div>
+            <input type="range" id="logN" min="0" max="8" step="0.05" value="2" oninput="syncVal('logN','10<sup>'+Number(this.value).toFixed(1)+'</sup> cm⁻³'); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Continuo</span><span class="param-value" id="val-cont">0.00</span></div>
+            <input type="range" id="cont" min="0" max="1" step="0.01" value="0" oninput="syncVal('cont',Number(this.value).toFixed(2)); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Temperatura continuo</span><span class="param-value" id="val-contT">8000 K</span></div>
+            <input type="range" id="contT" min="3000" max="30000" step="100" value="8000" oninput="syncVal('contT',Math.round(this.value)+' K'); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Abbondanza / intensità</span><span class="param-value" id="val-amp">1.00</span></div>
+            <input type="range" id="amp" min="0.1" max="4" step="0.01" value="1" oninput="syncVal('amp',Number(this.value).toFixed(2)); markCustom(); updatePlot()">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-title">Cinematica e strumento</div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Velocità radiale $v_r$</span><span class="param-value" id="val-vr">0 km/s</span></div>
+            <input type="range" id="vr" min="-1500" max="1500" step="5" value="0" oninput="syncVal('vr',Math.round(this.value)+' km/s'); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Redshift cosmologico $z$</span><span class="param-value" id="val-z">0.000</span></div>
+            <input type="range" id="z" min="0" max="1.5" step="0.001" value="0" oninput="syncVal('z',Number(this.value).toFixed(3)); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Dispersione $\sigma_v$</span><span class="param-value" id="val-sigmaV">370 km/s</span></div>
+            <input type="range" id="sigmaV" min="2" max="5000" step="2" value="370" oninput="syncVal('sigmaV',Math.round(this.value)+' km/s'); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Risoluzione $R$</span><span class="param-value" id="val-R">3000</span></div>
+            <input type="range" id="R" min="100" max="30000" step="100" value="3000" oninput="syncVal('R',Math.round(this.value)); markCustom(); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label"><span class="param-name">Rumore osservativo</span><span class="param-value" id="val-noise">0.010</span></div>
+            <input type="range" id="noise" min="0" max="0.15" step="0.005" value="0.01" oninput="syncVal('noise',Number(this.value).toFixed(3)); markCustom(); updatePlot()">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="check-row"><input type="checkbox" id="labels" checked onchange="markCustom(); updatePlot()"> Mostra etichette righe</label>
+          <label class="check-row"><input type="checkbox" id="restLines" checked onchange="markCustom(); updatePlot()"> Mostra posizione a riposo</label>
+        </div>
+
+        <div class="note-box" id="diagnostic-box">
+          Le righe strette indicano gas cinematicamente freddo o alta risoluzione strumentale. Aumentando $\sigma_v$ o diminuendo $R$, le righe si allargano e possono fondersi.
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="intro-block">
+    <div>
+      <p>
+        Le righe spettrali sono firme discrete prodotte da transizioni atomiche, ioniche o molecolari.
+        A differenza dei processi continui, una riga possiede una lunghezza d'onda propria
+        $\lambda_0$ associata alla differenza energetica tra due livelli:
+        $$\Delta E = h\nu = \frac{hc}{\lambda_0}.$$
+      </p>
+      <p>
+        Uno spettro a righe permette di stimare composizione chimica, temperatura, densità,
+        campo di velocità e redshift della sorgente. Per questo motivo la spettroscopia è uno
+        degli strumenti diagnostici centrali in astrofisica osservativa.
+      </p>
+      <p>
+        Questa simulazione non usa un database atomico completo: usa un insieme ridotto di righe
+        diagnostiche molto comuni, con intensità parametrizzate in modo fisicamente plausibile.
+        L'obiettivo è mostrare i meccanismi interpretativi, non sostituire un codice di plasma.
+      </p>
+    </div>
+    <aside class="formula-card">
+      <div class="formula-title">Relazioni base</div>
+      <div class="formula-row">Energia della transizione:<br> $E_2-E_1=h\nu=hc/\lambda$</div>
+      <div class="formula-row">Redshift osservato:<br> $\lambda_{\rm obs}=\lambda_0(1+z)$</div>
+      <div class="formula-row">Doppler non relativistico:<br> $\Delta\lambda/\lambda_0\simeq v_r/c$</div>
+      <div class="formula-row">Risoluzione spettrale:<br> $R=\lambda/\Delta\lambda$</div>
+    </aside>
+  </section>
+
+  <section class="theory-section">
+    <h2 class="theory-heading">Fondamenti teorici</h2>
+    <p class="theory-heading-sub">Emissione, assorbimento, allargamento e diagnostica delle righe spettrali.</p>
+
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">1. Transizioni discrete e righe spettrali</h3>
+        <p>
+          Un atomo o uno ione possiede livelli energetici discreti. Se un elettrone passa da un
+          livello superiore $E_2$ a un livello inferiore $E_1$, viene emesso un fotone di energia
+          $\Delta E=E_2-E_1$. Poiché $E=h\nu$, la frequenza emessa è fissata dalla struttura
+          quantistica della specie. Questo rende le righe spettrali un indicatore diretto della
+          composizione del gas.
+        </p>
+        <p>
+          L'assorbimento è il processo inverso: un fotone del continuo viene rimosso se la sua
+          energia coincide con una transizione permessa. Per questo le atmosfere stellari mostrano
+          spesso righe scure sovrapposte a un continuo termico.
+        </p>
+      </div>
+      <aside class="aside">
+        <div class="aside-title">Esempio</div>
+        <div>H$\alpha$: $656.28\,{\rm nm}$<br>H$\beta$: $486.13\,{\rm nm}$<br>[O III]: $500.7\,{\rm nm}$</div>
+        <p>Le righe proibite, indicate tra parentesi quadre, sono importanti nei plasmi astrofisici rarefatti.</p>
+      </aside>
+    </div>
+
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">2. Emissione contro assorbimento</h3>
+        <p>
+          Una riga appare in emissione quando un gas eccitato produce fotoni sopra il livello del
+          continuo locale. Una riga appare in assorbimento quando un gas più freddo o meno emissivo
+          si trova davanti a una sorgente continua e rimuove selettivamente fotoni a certe lunghezze
+          d'onda.
+        </p>
+        <p>
+          In molte sorgenti reali i due effetti coesistono: un nucleo galattico attivo, per esempio,
+          può mostrare un continuo non termico, righe larghe prodotte vicino al buco nero e righe
+          strette prodotte da gas più esteso.
+        </p>
+      </div>
+      <aside class="aside">
+        <div class="aside-title">Interpretazione</div>
+        <div>Emissione: $I_\lambda > I_{\lambda,{\rm cont}}$<br>Assorbimento: $I_\lambda < I_{\lambda,{\rm cont}}$</div>
+        <p>Nel simulatore la modalità “both” sovrappone righe emissive e assorbimenti deboli sul continuo.</p>
+      </aside>
+    </div>
+
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">3. Allargamento Doppler e risoluzione</h3>
+        <p>
+          Se il gas possiede una distribuzione di velocità lungo la linea di vista, ogni porzione
+          del gas emette o assorbe a una lunghezza d'onda leggermente diversa. La riga osservata
+          diventa quindi larga. Nel limite non relativistico:
+          $$\frac{\sigma_\lambda}{\lambda_0}\simeq\frac{\sigma_v}{c},$$
+          dove $\sigma_\lambda$ è la dispersione della riga in lunghezza d'onda e $\sigma_v$ è la
+          dispersione di velocità.
+        </p>
+        <p>
+          Anche lo strumento allarga le righe. La risoluzione spettrale è $R=\lambda/\Delta\lambda$:
+          valori grandi di $R$ separano righe vicine, mentre valori piccoli le fondono in una sola
+          struttura apparentemente larga.
+        </p>
+      </div>
+      <aside class="aside">
+        <div class="aside-title">Nel grafico</div>
+        <div>$\sigma_{\lambda,{\rm tot}}^2=\sigma_{\lambda,{\rm Doppler}}^2+\sigma_{\lambda,{\rm inst}}^2$</div>
+        <p>Questo è un modello gaussiano semplificato, utile per visualizzare il concetto.</p>
+      </aside>
+    </div>
+
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">4. Righe diagnostiche incluse</h3>
+        <p>
+          Il set di righe scelto copre esempi classici: serie di Balmer dell'idrogeno, righe
+          dell'elio, doppietti proibiti di ossigeno, azoto e zolfo, assorbimenti stellari come
+          Na I D e Ca II H/K, e righe X come Fe K$\alpha$.
+        </p>
+        <table class="line-table">
+          <thead><tr><th>Specie</th><th>Righe</th><th>Uso didattico</th></tr></thead>
+          <tbody>
+            <tr><td>H I</td><td>Ly$\alpha$, H$\alpha$, H$\beta$</td><td>gas ionizzato, stelle, redshift</td></tr>
+            <tr><td>[O III]</td><td>495.9, 500.7 nm</td><td>nebulose, AGN, ionizzazione</td></tr>
+            <tr><td>[N II], [S II]</td><td>654.8, 658.3, 671.6, 673.1 nm</td><td>diagnostica di densità e ionizzazione</td></tr>
+            <tr><td>Na I, Ca II</td><td>D, H/K</td><td>assorbimento stellare/interstellare</td></tr>
+            <tr><td>Fe K$\alpha$</td><td>0.194 nm</td><td>gas X, dischi di accrescimento</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="aside">
+        <div class="aside-title">Nota fisica</div>
+        <p>
+          Le intensità relative reali richiedono modelli atomici dettagliati, coefficienti di collisione,
+          ricombinazione, fotoionizzazione e trasferimento radiativo. Qui si usano pesi qualitativi
+          controllati da temperatura e densità.
+        </p>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>Spettri a righe — Simulazione didattica</span>
+  <span>Astrofisica · Spettroscopia</span>
+</footer>
+
+<script>
+"use strict";
+
+const c_kms = 299792.458;
+let spectralWindow = "optical";
+let mouseLambda = null;
+
+const WINDOWS = {
+  optical: { lo: 90, hi: 1000, label: "UV–VIS–NIR", yMax: 1.65 },
+  visible: { lo: 380, hi: 750, label: "Visibile", yMax: 1.65 },
+  xray: { lo: 0.08, hi: 2.2, label: "Raggi X", yMax: 1.65 }
+};
+
+const SPECIES = [
+  { id:"HI", label:"H I" },
+  { id:"HeI", label:"He I" },
+  { id:"HeII", label:"He II" },
+  { id:"OIII", label:"[O III]" },
+  { id:"NII", label:"[N II]" },
+  { id:"SII", label:"[S II]" },
+  { id:"NaI", label:"Na I" },
+  { id:"CaII", label:"Ca II" },
+  { id:"Fe", label:"Fe X" }
+];
+
+const LINES = [
+  { species:"HI", name:"Lyα", lambda:121.567, rel:1.8, logT:4.25, sigT:0.45, kind:"em", color:"#9b7cff" },
+  { species:"HI", name:"Hγ", lambda:434.047, rel:0.45, logT:4.05, sigT:0.50, kind:"both", color:"#6fa8ff" },
+  { species:"HI", name:"Hβ", lambda:486.133, rel:0.75, logT:4.05, sigT:0.50, kind:"both", color:"#7ed0ff" },
+  { species:"HI", name:"Hα", lambda:656.281, rel:1.55, logT:4.05, sigT:0.50, kind:"both", color:"#ff6f58" },
+
+  { species:"HeI", name:"He I 447.1", lambda:447.148, rel:0.34, logT:4.25, sigT:0.45, kind:"both", color:"#7ab4ff" },
+  { species:"HeI", name:"He I 587.6", lambda:587.562, rel:0.46, logT:4.25, sigT:0.45, kind:"em", color:"#ffd56a" },
+  { species:"HeII", name:"He II 468.6", lambda:468.571, rel:0.62, logT:4.8, sigT:0.45, kind:"em", color:"#78d3ff" },
+
+  { species:"OIII", name:"[O III] 495.9", lambda:495.891, rel:0.95, logT:4.35, sigT:0.38, kind:"em", ncrit:7e5, color:"#79ffe3" },
+  { species:"OIII", name:"[O III] 500.7", lambda:500.684, rel:2.85, logT:4.35, sigT:0.38, kind:"em", ncrit:7e5, color:"#76ffd9" },
+  { species:"OIII", name:"[O III] 436.3", lambda:436.321, rel:0.26, logT:4.55, sigT:0.35, kind:"em", ncrit:2e7, color:"#83a9ff" },
+
+  { species:"NII", name:"[N II] 654.8", lambda:654.805, rel:0.55, logT:4.2, sigT:0.38, kind:"em", ncrit:8e4, color:"#ff7d62" },
+  { species:"NII", name:"[N II] 658.3", lambda:658.345, rel:1.55, logT:4.2, sigT:0.38, kind:"em", ncrit:8e4, color:"#ff785a" },
+
+  { species:"SII", name:"[S II] 671.6", lambda:671.644, rel:0.62, logT:4.1, sigT:0.42, kind:"em", ncrit:1.5e3, color:"#ff8e65" },
+  { species:"SII", name:"[S II] 673.1", lambda:673.082, rel:0.52, logT:4.1, sigT:0.42, kind:"em", ncrit:3.9e3, color:"#ff9669" },
+
+  { species:"NaI", name:"Na I D2", lambda:588.995, rel:0.65, logT:3.75, sigT:0.42, kind:"abs", color:"#ffd76b" },
+  { species:"NaI", name:"Na I D1", lambda:589.592, rel:0.45, logT:3.75, sigT:0.42, kind:"abs", color:"#ffdb75" },
+
+  { species:"CaII", name:"Ca II K", lambda:393.366, rel:0.88, logT:3.85, sigT:0.45, kind:"abs", color:"#858dff" },
+  { species:"CaII", name:"Ca II H", lambda:396.847, rel:0.72, logT:3.85, sigT:0.45, kind:"abs", color:"#8d96ff" },
+  { species:"CaII", name:"Ca II triplet", lambda:854.209, rel:0.40, logT:3.8, sigT:0.55, kind:"abs", color:"#b44b38" },
+
+  { species:"Fe", name:"Fe XVII", lambda:1.502, rel:0.85, logT:6.7, sigT:0.45, kind:"em", color:"#66e0ff" },
+  { species:"Fe", name:"Fe Kα", lambda:0.194, rel:1.55, logT:7.6, sigT:0.55, kind:"em", color:"#ff4f7e" },
+  { species:"Fe", name:"Fe XXV", lambda:0.185, rel:1.10, logT:7.8, sigT:0.45, kind:"em", color:"#ff6390" }
+];
+
+const PRESETS = {
+  hii: {
+    mode:"emission", species:["HI","OIII","NII","SII","HeI"], logT:4.0, logN:2.0, cont:0.22, contT:9000, amp:1.2, vr:0, z:0, sigmaV:25, R:3000, noise:0, window:"visible"
+  },
+  stellarAbs: {
+    mode:"absorption", species:["HI","NaI","CaII","HeI"], logT:3.9, logN:6.0, cont:0.85, contT:7500, amp:1.0, vr:0, z:0, sigmaV:18, R:9000, noise:0.015, window:"visible"
+  },
+  planetary: {
+    mode:"emission", species:["HI","OIII","NII","HeII"], logT:4.25, logN:3.0, cont:0.12, contT:15000, amp:1.4, vr:25, z:0, sigmaV:35, R:5000, noise:0, window:"visible"
+  },
+  agn: {
+    mode:"both", species:["HI","OIII","NII","SII","HeII"], logT:4.45, logN:4.0, cont:0.55, contT:18000, amp:1.25, vr:180, z:0.15, sigmaV:1200, R:2500, noise:0.01, window:"optical"
+  },
+  xray: {
+    mode:"emission", species:["Fe"], logT:7.4, logN:2.0, cont:0.40, contT:25000, amp:1.6, vr:0, z:0.02, sigmaV:900, R:2500, noise:0.01, window:"xray"
+  }
+};
+
+const canvas = document.getElementById("spectrum-canvas");
+const ctx = canvas.getContext("2d");
+
+function setupSpecies() {
+  const box = document.getElementById("species-box");
+  box.innerHTML = "";
+  SPECIES.forEach(s => {
+    const label = document.createElement("label");
+    label.className = "check-row";
+    label.innerHTML = `<input type="checkbox" id="sp-${s.id}" onchange="markCustom(); updatePlot()"> ${s.label}`;
+    box.appendChild(label);
+  });
+}
+
+function syncVal(id, html) {
+  document.getElementById("val-" + id).innerHTML = html;
+}
+
+function getParams() {
+  const selected = new Set(SPECIES.filter(s => document.getElementById("sp-"+s.id).checked).map(s => s.id));
+  return {
+    mode: document.getElementById("mode").value,
+    selected,
+    logT: +document.getElementById("logT").value,
+    ne: Math.pow(10, +document.getElementById("logN").value),
+    cont: +document.getElementById("cont").value,
+    contT: +document.getElementById("contT").value,
+    amp: +document.getElementById("amp").value,
+    vr: +document.getElementById("vr").value,
+    z: +document.getElementById("z").value,
+    sigmaV: +document.getElementById("sigmaV").value,
+    R: +document.getElementById("R").value,
+    noise: +document.getElementById("noise").value,
+    labels: document.getElementById("labels").checked,
+    restLines: document.getElementById("restLines").checked
+  };
+}
+
+function markCustom() {
+  const p = document.getElementById("preset");
+  if (p.value !== "custom") p.value = "custom";
+}
+
+function setWindow(w) {
+  spectralWindow = w;
+  ["optical","visible","xray"].forEach(k => document.getElementById("btn-"+k).classList.toggle("active", k === w));
+  const preset = document.getElementById("preset");
+  if (preset.value !== "custom") preset.value = "custom";
+  updatePlot();
+}
+
+function applyPreset(name) {
+  if (name === "custom") return;
+  const p = PRESETS[name];
+  document.getElementById("mode").value = p.mode;
+  SPECIES.forEach(s => document.getElementById("sp-"+s.id).checked = p.species.includes(s.id));
+  document.getElementById("logT").value = p.logT;
+  document.getElementById("logN").value = p.logN;
+  document.getElementById("cont").value = p.cont;
+  document.getElementById("contT").value = p.contT;
+  document.getElementById("amp").value = p.amp;
+  document.getElementById("vr").value = p.vr;
+  document.getElementById("z").value = p.z;
+  document.getElementById("sigmaV").value = p.sigmaV;
+  document.getElementById("R").value = p.R;
+  document.getElementById("noise").value = p.noise;
+  spectralWindow = p.window;
+  ["optical","visible","xray"].forEach(k => document.getElementById("btn-"+k).classList.toggle("active", k === spectralWindow));
+  refreshLabels();
+  updatePlot();
+}
+
+function refreshLabels() {
+  syncVal("logT", "10<sup>"+Number(document.getElementById("logT").value).toFixed(1)+"</sup> K");
+  syncVal("logN", "10<sup>"+Number(document.getElementById("logN").value).toFixed(1)+"</sup> cm⁻³");
+  syncVal("cont", Number(document.getElementById("cont").value).toFixed(2));
+  syncVal("contT", Math.round(document.getElementById("contT").value)+" K");
+  syncVal("amp", Number(document.getElementById("amp").value).toFixed(2));
+  syncVal("vr", Math.round(document.getElementById("vr").value)+" km/s");
+  syncVal("z", Number(document.getElementById("z").value).toFixed(3));
+  syncVal("sigmaV", Math.round(document.getElementById("sigmaV").value)+" km/s");
+  syncVal("R", Math.round(document.getElementById("R").value));
+  syncVal("noise", Number(document.getElementById("noise").value).toFixed(3));
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  updatePlot();
+}
+
+function continuum(lambda, P, win) {
+  if (P.cont <= 0) return 0;
+  if (win === "xray") {
+    const x = lambda / 0.6;
+    return P.cont * (0.35 + 0.65 * Math.pow(Math.max(x, 0.08), -0.75)) * Math.exp(-lambda/4);
+  }
+  const T = P.contT;
+  const nm = lambda;
+  const x = 1.4388e7 / (nm * T);
+  let b = 0;
+  if (x < 700) b = 1 / (Math.pow(nm,5) * (Math.exp(x)-1));
+  const refNm = 550;
+  const xr = 1.4388e7 / (refNm*T);
+  const br = 1 / (Math.pow(refNm,5) * (Math.exp(xr)-1));
+  const norm = br > 0 ? b / br : 0;
+  return P.cont * Math.max(0, Math.min(2.5, norm));
+}
+
+function tempWeight(line, logT) {
+  return Math.exp(-0.5 * Math.pow((logT-line.logT)/line.sigT, 2));
+}
+
+function densityWeight(line, ne) {
+  if (!line.ncrit) return 1;
+  return 1 / (1 + ne / line.ncrit);
+}
+
+function lineObservedLambda(line, P) {
+  const doppler = 1 + P.vr / c_kms;
+  return line.lambda * (1 + P.z) * doppler;
+}
+
+function lineSigmaLambda(lambdaObs, P) {
+  const sigmaD = lambdaObs * Math.max(P.sigmaV, 0.1) / c_kms;
+  const sigmaInst = (lambdaObs / Math.max(P.R, 1)) / 2.355;
+  const sigmaMin = Math.max(lambdaObs * 2e-5, 0.0005);
+  return Math.sqrt(sigmaD*sigmaD + sigmaInst*sigmaInst + sigmaMin*sigmaMin);
+}
+
+function gaussian(x, mu, sigma) {
+  const u = (x-mu)/sigma;
+  return Math.exp(-0.5*u*u);
+}
+
+function isLineInMode(line, mode) {
+  if (mode === "emission") return line.kind === "em" || line.kind === "both";
+  if (mode === "absorption") return line.kind === "abs" || line.kind === "both";
+  return true;
+}
+
+function deterministicNoise(i) {
+  const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1;
+}
+
+function computeSpectrum(P) {
+  const win = WINDOWS[spectralWindow];
+  const N = 1800;
+  const xs = [];
+  const y = [];
+  const cont = [];
+  const emission = [];
+  const absorption = [];
+
+  for (let i=0;i<N;i++) {
+    const t = i/(N-1);
+    const lam = win.lo + (win.hi-win.lo)*t;
+    xs.push(lam);
+    const c0 = continuum(lam, P, spectralWindow);
+    cont.push(c0);
+    y.push(c0);
+    emission.push(0);
+    absorption.push(0);
+  }
+
+  const activeLines = LINES.filter(l => P.selected.has(l.species) && isLineInMode(l, P.mode));
+  activeLines.forEach(line => {
+    const mu = lineObservedLambda(line, P);
+    if (mu < win.lo - 0.1*(win.hi-win.lo) || mu > win.hi + 0.1*(win.hi-win.lo)) return;
+    const sigma = lineSigmaLambda(mu, P);
+    const tw = tempWeight(line, P.logT);
+    const dw = densityWeight(line, P.ne);
+    const strength = P.amp * line.rel * tw * dw;
+
+    for (let i=0;i<N;i++) {
+      const g = gaussian(xs[i], mu, sigma);
+      if (P.mode === "emission" || (P.mode === "both" && (line.kind === "em" || line.kind === "both"))) {
+        const add = strength * g;
+        y[i] += add;
+        emission[i] += add;
+      }
+      if (P.mode === "absorption" || (P.mode === "both" && (line.kind === "abs" || line.kind === "both"))) {
+        const depth = Math.min(0.92, 0.18 + 0.16 * strength);
+        const sub = depth * (cont[i] + 0.12) * g;
+        y[i] -= sub;
+        absorption[i] += sub;
+      }
+    }
+  });
+
+  for (let i=0;i<N;i++) {
+    if (P.noise > 0) y[i] += P.noise * deterministicNoise(i);
+    y[i] = Math.max(0, y[i]);
+  }
+
+  const maxY = Math.max(1, ...y) * 1.08;
+  return { xs, y, cont, emission, absorption, lines: activeLines, maxY };
+}
+
+function updatePlot() {
+  const P = getParams();
+  const spec = computeSpectrum(P);
+  draw(spec, P);
+  updateDiagnostic(P, spec);
+}
+
+function draw(spec, P) {
+  const W = canvas.getBoundingClientRect().width;
+  const H = canvas.getBoundingClientRect().height;
+  ctx.clearRect(0,0,W,H);
+
+  const ml = 64, mr = 22, mt = 18, mb = 48;
+  const pw = W - ml - mr;
+  const ph = H - mt - mb;
+  const win = WINDOWS[spectralWindow];
+
+  function xPx(lam) { return ml + (lam-win.lo)/(win.hi-win.lo)*pw; }
+  function yPx(v) {
+    const ymax = Math.max(WINDOWS[spectralWindow].yMax, spec.maxY);
+    return mt + ph - Math.max(0, Math.min(ymax, v))/ymax*ph;
+  }
+
+  ctx.fillStyle = "#0f0d0a";
+  ctx.fillRect(0,0,W,H);
+
+  if (spectralWindow !== "xray") {
+    const bands = [
+      {lo:90,hi:380,c:"rgba(80,70,180,0.13)"},
+      {lo:380,hi:450,c:"rgba(80,80,210,0.16)"},
+      {lo:450,hi:495,c:"rgba(60,130,220,0.14)"},
+      {lo:495,hi:570,c:"rgba(80,170,110,0.13)"},
+      {lo:570,hi:590,c:"rgba(220,190,60,0.14)"},
+      {lo:590,hi:620,c:"rgba(220,135,50,0.13)"},
+      {lo:620,hi:750,c:"rgba(210,70,50,0.14)"},
+      {lo:750,hi:1000,c:"rgba(130,55,40,0.12)"}
+    ];
+    bands.forEach(b => {
+      const x1 = Math.max(ml,xPx(b.lo)), x2 = Math.min(ml+pw,xPx(b.hi));
+      if (x2>x1) { ctx.fillStyle=b.c; ctx.fillRect(x1,mt,x2-x1,ph); }
+    });
+  } else {
+    ctx.fillStyle = "rgba(70,170,210,0.10)";
+    ctx.fillRect(ml,mt,pw,ph);
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.055)";
+  ctx.lineWidth = 1;
+  const step = spectralWindow === "xray" ? 0.2 : (spectralWindow === "visible" ? 50 : 100);
+  const first = Math.ceil(win.lo/step)*step;
+  for (let x=first; x<=win.hi; x+=step) {
+    const xp=xPx(x);
+    ctx.beginPath(); ctx.moveTo(xp,mt); ctx.lineTo(xp,mt+ph); ctx.stroke();
+  }
+  for (let j=0;j<=5;j++) {
+    const y=mt+ph*j/5;
+    ctx.beginPath(); ctx.moveTo(ml,y); ctx.lineTo(ml+pw,y); ctx.stroke();
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(ml,mt); ctx.lineTo(ml,mt+ph); ctx.lineTo(ml+pw,mt+ph); ctx.stroke();
+
+  function strokeArray(arr, color, lw, dash=[]) {
+    ctx.save();
+    ctx.strokeStyle=color;
+    ctx.lineWidth=lw;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    for (let i=0;i<spec.xs.length;i++) {
+      const x=xPx(spec.xs[i]), y=yPx(arr[i]);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  strokeArray(spec.cont, "rgba(255,255,255,0.35)", 1.4, [5,4]);
+  strokeArray(spec.y, "#f4e5c0", 2.1);
+
+  const visibleLines = spec.lines.map(l => ({...l, obs: lineObservedLambda(l,P), sigma: lineSigmaLambda(lineObservedLambda(l,P),P)}))
+    .filter(l => l.obs >= win.lo && l.obs <= win.hi);
+
+  if (P.restLines) {
+    visibleLines.forEach(l => {
+      if (l.lambda < win.lo || l.lambda > win.hi) return;
+      const x = xPx(l.lambda);
+      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      ctx.setLineDash([3,4]);
+      ctx.beginPath(); ctx.moveTo(x,mt); ctx.lineTo(x,mt+ph); ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  }
+
+  // Prepara le etichette su corsie verticali: righe molto vicine non si sovrappongono.
+  const labelLanes = [];
+  const labelledLines = visibleLines
+    .map(l => ({ ...l, xLabel: xPx(l.obs) }))
+    .sort((a,b) => a.xLabel - b.xLabel)
+    .map(l => {
+      let lane = 0;
+      while (labelLanes[lane] !== undefined && Math.abs(l.xLabel - labelLanes[lane]) < 28) lane++;
+      labelLanes[lane] = l.xLabel;
+      return { ...l, labelLane: lane % 5 };
+    });
+
+  labelledLines.forEach(l => {
+    const x = l.xLabel;
+    const emissive = (P.mode === "emission") || (P.mode === "both" && (l.kind === "em" || l.kind === "both"));
+    const absorp = (P.mode === "absorption") || (P.mode === "both" && (l.kind === "abs" || l.kind === "both"));
+    ctx.strokeStyle = emissive && !absorp ? "rgba(212,111,86,0.55)" : absorp && !emissive ? "rgba(108,182,216,0.55)" : "rgba(215,169,76,0.55)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x,mt); ctx.lineTo(x,mt+ph); ctx.stroke();
+
+    if (P.labels) {
+      const laneY = mt + 14 + l.labelLane * 54;
+      ctx.save();
+      ctx.translate(x + 5, laneY);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillStyle = l.color || "#ddd";
+      ctx.font = "10px IBM Plex Mono, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(l.name, 0, 0);
+      ctx.restore();
+    }
+  });
+
+  ctx.fillStyle = "rgba(255,255,255,0.56)";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (let x=first; x<=win.hi; x+=step) {
+    const xp=xPx(x);
+    const lab = spectralWindow === "xray" ? x.toFixed(1) : String(Math.round(x));
+    ctx.fillText(lab, xp, mt+ph+10);
+  }
+  ctx.fillText("λ osservata [nm]", ml+pw/2, H-17);
+
+  ctx.save();
+  ctx.translate(18, mt+ph/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText("intensità relativa", 0, 0);
+  ctx.restore();
+
+  if (mouseLambda !== null && mouseLambda >= win.lo && mouseLambda <= win.hi) {
+    const x = xPx(mouseLambda);
+    ctx.strokeStyle = "rgba(255,255,255,0.32)";
+    ctx.beginPath(); ctx.moveTo(x,mt); ctx.lineTo(x,mt+ph); ctx.stroke();
+  }
+}
+
+function updateDiagnostic(P, spec) {
+  const box = document.getElementById("diagnostic-box");
+  const active = spec.lines.map(l => ({...l, obs: lineObservedLambda(l,P)}))
+    .filter(l => l.obs >= WINDOWS[spectralWindow].lo && l.obs <= WINDOWS[spectralWindow].hi);
+
+  let strongest = null, best = -1;
+  active.forEach(l => {
+    const s = l.rel * tempWeight(l,P.logT) * densityWeight(l,P.ne);
+    if (s > best) { best = s; strongest = l; }
+  });
+
+  const parts = [];
+  if (strongest) parts.push(`Riga dominante prevista: <strong>${strongest.name}</strong> a λ<sub>oss</sub> ≈ ${strongest.obs.toFixed(spectralWindow==="xray"?3:1)} nm.`);
+  if (P.z > 0.02) parts.push(`Il redshift z=${P.z.toFixed(3)} sposta tutte le righe verso lunghezze d'onda maggiori.`);
+  if (Math.abs(P.vr) > 100) parts.push(`La velocità radiale produce uno spostamento Doppler aggiuntivo: ${P.vr>0?"recessione":"avvicinamento"}.`);
+  if (P.sigmaV > 600) parts.push(`La dispersione di velocità è alta: le righe diventano larghe, tipico di gas turbolento o regioni vicine a masse compatte.`);
+  if (P.R < 1000) parts.push(`La risoluzione strumentale è bassa: righe vicine possono fondersi.`);
+  if (!parts.length) parts.push("Le righe strette indicano gas cinematicamente freddo o alta risoluzione strumentale. Aumentando σᵥ o diminuendo R, le righe si allargano e possono fondersi.");
+  box.innerHTML = parts.join(" ");
+}
+
+canvas.addEventListener("mousemove", ev => {
+  const rect = canvas.getBoundingClientRect();
+  const win = WINDOWS[spectralWindow];
+  const ml = 64, mr = 22;
+  const pw = rect.width - ml - mr;
+  const x = ev.clientX - rect.left;
+  mouseLambda = win.lo + (x - ml)/pw*(win.hi-win.lo);
+
+  const P = getParams();
+  const active = LINES.filter(l => P.selected.has(l.species)).map(l => ({...l, obs: lineObservedLambda(l,P)}));
+  let closest = null, dist = Infinity;
+  active.forEach(l => {
+    const d = Math.abs(l.obs - mouseLambda);
+    if (d < dist) { dist=d; closest=l; }
+  });
+  const unitVal = spectralWindow === "xray" ? mouseLambda.toFixed(3) : mouseLambda.toFixed(1);
+  const closeTxt = closest && dist < (win.hi-win.lo)*0.025
+    ? ` · più vicina: <span class="val">${closest.name}</span>, λ₀=${closest.lambda.toFixed(spectralWindow==="xray"?3:1)} nm, λₒₛₛ=${closest.obs.toFixed(spectralWindow==="xray"?3:1)} nm`
+    : "";
+  document.getElementById("cursor-info").innerHTML = `λ = <span class="val">${unitVal} nm</span>${closeTxt}`;
+  updatePlot();
+});
+
+canvas.addEventListener("mouseleave", () => {
+  mouseLambda = null;
+  document.getElementById("cursor-info").innerHTML = "Muovi il cursore sul grafico per leggere λ, specie e transizione più vicina.";
+  updatePlot();
+});
+
+window.addEventListener("resize", resizeCanvas);
+
+setupSpecies();
+applyPreset("hii");
+// Avvio in modalità personalizzata: niente continuo, righe più larghe e rumore osservativo leggero.
+document.getElementById("preset").value = "custom";
+document.getElementById("cont").value = 0;
+document.getElementById("sigmaV").value = 370;
+document.getElementById("noise").value = 0.01;
+refreshLabels();
+resizeCanvas();
+</script>
+</body>
+</html>

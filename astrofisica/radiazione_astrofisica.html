@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meccanismi di Radiazione Astrofisica</title>
+<script>
+window.SIM_METADATA = {
+  "title": "Meccanismi di Radiazione Astrofisica",
+  "description": "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica, con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
+  "category": "Astrofisica",
+  "icon": "🌌",
+  "order": 20,
+  "tags": [
+    "astrofisica",
+    "radiazione",
+    "spettro",
+    "corpo nero",
+    "bremsstrahlung",
+    "sincrotrone",
+    "Compton inverso",
+    "SED",
+    "alte energie",
+    "emissione continua"
+  ],
+  "level": "avanzato"
+};
+</script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left:'$$',right:'$$',display:true},
+    {left:'$',right:'$',display:false}
+  ]})"></script>
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-dark: #ede6d4;
+    --ink: #1a1610;
+    --ink-light: #3d3428;
+    --ink-faint: #6b5e4e;
+    --accent: #8b3a1a;
+    --accent-warm: #c4622d;
+    --accent-gold: #b8922a;
+    --border: #d4c9b0;
+    --border-light: #e8dfc8;
+
+    /* spettro bande colori */
+    --radio: #1a3a6b;
+    --microwave: #2d6b4a;
+    --infrared: #8b4a1a;
+    --optical: #6b2d8b;
+    --uv: #2d2d8b;
+    --xray: #1a6b6b;
+    --gamma: #6b1a1a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 3.5rem 4rem 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 60px,
+      rgba(255,255,255,0.015) 60px,
+      rgba(255,255,255,0.015) 61px
+    );
+    pointer-events: none;
+  }
+
+  .header-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+
+  .header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+    margin-bottom: 1rem;
+  }
+
+  header h1 {
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    font-weight: 500;
+    line-height: 1.15;
+    color: var(--cream);
+    margin-bottom: 1rem;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: #c4a882;
+  }
+
+  .header-sub {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: #a09080;
+    max-width: 600px;
+  }
+
+  /* ── SPECTRUM BAR ── */
+  .spectrum-bar-wrapper {
+    background: var(--ink);
+    padding: 0 4rem 2rem;
+    border-bottom: 1px solid #2a2218;
+  }
+
+  .spectrum-bar-inner { max-width: 1100px; margin: 0 auto; }
+
+  .spectrum-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right,
+      #e63946 0%,       /* radio */
+      #f4a261 10%,      /* microonde */
+      #e9c46a 20%,      /* infrarosso lontano */
+      #f1faee 28%,      /* infrarosso vicino */
+      #a8dadc 35%,      /* rosso */
+      #457b9d 40%,      /* verde */
+      #1d3557 45%,      /* blu */
+      #6a0572 50%,      /* UV vicino */
+      #3a0ca3 55%,      /* UV lontano / EUV */
+      #4cc9f0 65%,      /* X molli */
+      #f72585 80%,      /* X duri */
+      #7209b7 100%      /* gamma */
+    );
+    margin-bottom: 0.4rem;
+    opacity: 0.7;
+  }
+
+  .spectrum-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    color: #605040;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 4rem;
+  }
+
+  /* ── INTRO ── */
+  .intro-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .intro-text p {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink-light);
+    margin-bottom: 1rem;
+    line-height: 1.75;
+  }
+
+  .intro-text p:last-child { margin-bottom: 0; }
+
+  .intro-formula {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 4px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 0.88rem;
+  }
+
+  .intro-formula .formula-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #2a2218;
+  }
+  .intro-formula .formula-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .formula-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+  }
+
+  .formula-eq {
+    font-size: 0.9rem;
+    color: #e0d4c0;
+  }
+
+  /* ── SIMULATORE ── */
+  .sim-section {
+    margin-bottom: 4rem;
+  }
+
+  .section-heading {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-sub {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    margin-bottom: 2rem;
+    font-style: italic;
+    font-family: 'EB Garamond', serif;
+  }
+
+  /* ── GRAPH AREA ── */
+  .graph-container {
+    background: #0f0d0a;
+    border: 1px solid #2a2218;
+    border-radius: 6px;
+    padding: 2rem 2rem 1.5rem;
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .graph-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  .graph-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #5a4a3a;
+  }
+
+  .axis-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #2a2218;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .axis-toggle button {
+    background: transparent;
+    border: none;
+    color: #5a4a3a;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .axis-toggle button.active {
+    background: var(--accent);
+    color: var(--cream);
+  }
+
+  #sed-canvas {
+    width: 100%;
+    height: 420px;
+    display: block;
+    cursor: crosshair;
+  }
+
+  /* ── BAND LEGEND ── */
+  .band-legend {
+    display: flex;
+    gap: 0;
+    margin-top: 0.6rem;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .band-item {
+    flex: 1;
+    padding: 0.25rem 0;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.52rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ── CONTROLS GRID ── */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+  }
+
+  .mechanism-card {
+    background: var(--cream-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .mechanism-card.active {
+    border-color: var(--accent-warm);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .mechanism-card.active .card-header {
+    border-bottom-color: var(--border);
+  }
+
+  .card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .card-name {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .card-shortdesc {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: #c4b89a;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .toggle-switch input:checked + .toggle-track {
+    background: var(--accent-warm);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch input:checked ~ .toggle-thumb {
+    transform: translateX(16px);
+  }
+
+  .card-body {
+    padding: 0 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+
+  .mechanism-card.active .card-body {
+    padding: 1rem 1rem;
+    max-height: 400px;
+  }
+
+  /* ── SLIDER ── */
+  .param-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .param-row:last-child { margin-bottom: 0; }
+
+  .param-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .param-name {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    font-weight: 500;
+  }
+
+  .param-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 500;
+    min-width: 70px;
+    text-align: right;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-warm);
+    border: 2px solid var(--cream);
+    box-shadow: 0 0 0 1px var(--accent-warm);
+    transition: transform 0.1s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    user-select: none;
+  }
+
+  .checkbox-row input[type="checkbox"] {
+    accent-color: var(--accent-warm);
+    width: 13px;
+    height: 13px;
+  }
+
+  /* ── CURSOR INFO ── */
+  .cursor-info {
+    display: flex;
+    gap: 2rem;
+    padding: 0.6rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: #5a4a3a;
+    min-height: 1.8rem;
+  }
+
+  .cursor-info span { color: var(--ink-faint); }
+  .cursor-info .val { color: var(--accent-warm); }
+
+  /* ── TEORIA ── */
+  .theory-section {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 2px solid var(--ink);
+  }
+
+  .theory-heading {
+    font-family: 'EB Garamond', serif;
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.2rem;
+  }
+
+  .theory-heading-sub {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--ink-faint);
+    margin-bottom: 3rem;
+  }
+
+  .theory-block {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 3rem;
+    margin-bottom: 3.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+
+  .theory-block:last-child { border-bottom: none; }
+
+  .theory-block-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .theory-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .theory-text p {
+    font-size: 0.92rem;
+    color: var(--ink-light);
+    line-height: 1.8;
+    margin-bottom: 0.9rem;
+  }
+
+  .theory-text p:last-child { margin-bottom: 0; }
+
+  .theory-aside {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 4px;
+    padding: 1.5rem;
+  }
+
+  .aside-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+    margin-bottom: 1rem;
+  }
+
+  .aside-formula {
+    font-size: 0.85rem;
+    line-height: 2;
+    color: #d4c4a8;
+  }
+
+  .aside-note {
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #2a2218;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.75rem;
+    color: #7a6a58;
+    line-height: 1.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: #5a4a3a;
+    padding: 2rem 4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4rem;
+  }
+
+  /* ── RESPONSIVO ── */
+  @media (max-width: 860px) {
+    .main-wrap { padding: 2rem 1.5rem; }
+    header { padding: 2.5rem 1.5rem; }
+    .spectrum-bar-wrapper { padding: 0 1.5rem 1.5rem; }
+    .intro-block { grid-template-columns: 1fr; }
+    .controls-grid { grid-template-columns: 1fr; }
+    .theory-block { grid-template-columns: 1fr; }
+    footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; }
+  }
+
+  /* ── KATEX OVERRIDE ── */
+  .katex { font-size: 0.92em; }
+  .aside-formula .katex { font-size: 0.88em; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header>
+  <div class="header-inner">
+    <div class="header-label">Astrofisica delle Alte Energie · Processi Radiativi</div>
+    <h1>Meccanismi di <em>Radiazione</em><br>in Astrofisica</h1>
+    <p class="header-sub">
+      Una visualizzazione interattiva degli spettri di emissione — dal radio ai raggi gamma —
+      per Bremsstrahlung, Sincrotrone, Compton Inverso e Corpo Nero.
+    </p>
+  </div>
+</header>
+
+<div class="spectrum-bar-wrapper">
+  <div class="spectrum-bar-inner">
+    <div class="spectrum-bar"></div>
+    <div class="spectrum-labels">
+      <span>Radio</span>
+      <span>Microonde</span>
+      <span>Infrarosso</span>
+      <span>Ottico</span>
+      <span>UV</span>
+      <span>Raggi X</span>
+      <span>Gamma</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<div class="main-wrap">
+
+  <!-- INTRO -->
+  <div class="intro-block">
+    <div class="intro-text">
+      <p>
+        Ogni sorgente astrofisica emette radiazione attraverso uno o più meccanismi fisici distinti.
+        La <em>distribuzione spettrale di energia</em> (SED, Spectral Energy Distribution) — ovvero
+        come il flusso si distribuisce in frequenza — è la firma che permette di diagnosticare
+        la natura della sorgente, le condizioni fisiche del plasma e i processi di accelerazione
+        in atto.
+      </p>
+      <p>
+        In questo simulatore puoi attivare e sovrapporre i quattro principali meccanismi di emissione
+        continua, modificarne i parametri fisici in tempo reale e osservare come si costruisce
+        la SED complessiva. L'asse orizzontale copre circa 18 ordini di grandezza in frequenza,
+        dall'emissione radio ai fotoni gamma ad altissima energia.
+      </p>
+      <p>
+        La visualizzazione in $\nu F_\nu$ (asse y) pesa equamente il contributo energetico
+        di ogni decade di frequenza, rendendo immediatamente visibile dove si concentra
+        la potenza irradiata.
+      </p>
+    </div>
+    <div class="intro-formula">
+      <div class="formula-row">
+        <span class="formula-label">Corpo Nero</span>
+        <span class="formula-eq">$B_\nu \propto \dfrac{\nu^3}{e^{h\nu/kT}-1}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Bremsstrahlung</span>
+        <span class="formula-eq">$j_\nu \propto n_e^2\, T^{-1/2}\, e^{-h\nu/kT}\, \bar{g}_{ff}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Sincrotrone</span>
+        <span class="formula-eq">$P(\nu) \propto B^{(p+1)/2}\, \nu^{-(p-1)/2}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Compton Inverso</span>
+        <span class="formula-eq">$\nu_{out} \approx \gamma^2 \nu_{in},\quad y = \dfrac{4kT}{m_e c^2}\tau$</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATORE -->
+  <div class="sim-section">
+    <h2 class="section-heading">Simulatore Interattivo</h2>
+    <p class="section-sub">Attiva i meccanismi, modifica i parametri e osserva la SED in tempo reale. Muovi il cursore sul grafico per leggere frequenza ed energia.</p>
+
+    <!-- GRAPH -->
+    <div class="graph-container">
+      <div class="graph-top-bar">
+        <span class="graph-title">Distribuzione Spettrale di Energia · SED</span>
+        <div class="axis-toggle">
+          <button class="active" id="btn-nuFnu" onclick="setAxisMode('nuFnu')">ν F<sub>ν</sub></button>
+          <button id="btn-Fnu" onclick="setAxisMode('Fnu')">F<sub>ν</sub></button>
+        </div>
+      </div>
+      <canvas id="sed-canvas"></canvas>
+      <div class="cursor-info" id="cursor-info">
+        <span>Posiziona il cursore sul grafico per leggere i valori</span>
+      </div>
+      <div class="band-legend" id="band-legend"></div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls-grid">
+
+      <!-- CORPO NERO -->
+      <div class="mechanism-card active" id="card-bb">
+        <div class="card-header" onclick="toggleCard('bb')">
+          <div class="card-header-left">
+            <div class="color-dot" style="background:#f4c87a"></div>
+            <div>
+              <div class="card-name">Corpo Nero</div>
+              <div class="card-shortdesc">emissione termica · Planck</div>
+            </div>
+          </div>
+          <label class="toggle-switch" onclick="event.stopPropagation()">
+            <input type="checkbox" id="tog-bb" checked onchange="updatePlot()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="card-body">
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Temperatura $T$</span>
+              <span class="param-value" id="val-bb-T">10 000 K</span>
+            </div>
+            <input type="range" id="sl-bb-T" min="2" max="8" step="0.01" value="4"
+              oninput="updateVal('bb-T', Math.pow(10,+this.value).toFixed(0)+' K'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Ampiezza (log)</span>
+              <span class="param-value" id="val-bb-A">0.0</span>
+            </div>
+            <input type="range" id="sl-bb-A" min="-3" max="3" step="0.05" value="0"
+              oninput="updateVal('bb-A', (+this.value).toFixed(1)); updatePlot()">
+          </div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="chk-bb-rj" onchange="updatePlot()">
+            Mostra limite Rayleigh–Jeans e Wien
+          </label>
+        </div>
+      </div>
+
+      <!-- BREMSSTRAHLUNG -->
+      <div class="mechanism-card" id="card-ff">
+        <div class="card-header" onclick="toggleCard('ff')">
+          <div class="card-header-left">
+            <div class="color-dot" style="background:#7ecfcf"></div>
+            <div>
+              <div class="card-name">Bremsstrahlung</div>
+              <div class="card-shortdesc">free-free · plasma termico</div>
+            </div>
+          </div>
+          <label class="toggle-switch" onclick="event.stopPropagation()">
+            <input type="checkbox" id="tog-ff" onchange="updatePlot()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="card-body">
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Temperatura $T$</span>
+              <span class="param-value" id="val-ff-T">10<sup>7</sup> K</span>
+            </div>
+            <input type="range" id="sl-ff-T" min="5" max="10" step="0.02" value="7"
+              oninput="updateVal('ff-T', '10<sup>'+Math.round(+this.value)+'</sup> K'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Ampiezza (log)</span>
+              <span class="param-value" id="val-ff-A">0.0</span>
+            </div>
+            <input type="range" id="sl-ff-A" min="-3" max="3" step="0.05" value="0"
+              oninput="updateVal('ff-A', (+this.value).toFixed(1)); updatePlot()">
+          </div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="chk-ff-abs" onchange="updatePlot()">
+            Self-absorption (free-free absorption)
+          </label>
+        </div>
+      </div>
+
+      <!-- SINCROTRONE -->
+      <div class="mechanism-card" id="card-sy">
+        <div class="card-header" onclick="toggleCard('sy')">
+          <div class="card-header-left">
+            <div class="color-dot" style="background:#d4886a"></div>
+            <div>
+              <div class="card-name">Sincrotrone</div>
+              <div class="card-shortdesc">elettroni relativistici · campo B</div>
+            </div>
+          </div>
+          <label class="toggle-switch" onclick="event.stopPropagation()">
+            <input type="checkbox" id="tog-sy" onchange="updatePlot()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="card-body">
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Campo magnetico $B$ (μG)</span>
+              <span class="param-value" id="val-sy-B">10 μG</span>
+            </div>
+            <input type="range" id="sl-sy-B" min="0" max="3" step="0.02" value="1"
+              oninput="updateVal('sy-B', Math.pow(10,+this.value).toFixed(1)+' μG'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Indice spettrale $p$</span>
+              <span class="param-value" id="val-sy-p">2.5</span>
+            </div>
+            <input type="range" id="sl-sy-p" min="1.5" max="4" step="0.05" value="2.5"
+              oninput="updateVal('sy-p', (+this.value).toFixed(2)); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">$\gamma_{max}$ (log)</span>
+              <span class="param-value" id="val-sy-gmax">10<sup>5</sup></span>
+            </div>
+            <input type="range" id="sl-sy-gmax" min="3" max="8" step="0.05" value="5"
+              oninput="updateVal('sy-gmax', '10<sup>'+this.value+'</sup>'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Ampiezza (log)</span>
+              <span class="param-value" id="val-sy-A">0.0</span>
+            </div>
+            <input type="range" id="sl-sy-A" min="-3" max="3" step="0.05" value="0"
+              oninput="updateVal('sy-A', (+this.value).toFixed(1)); updatePlot()">
+          </div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="chk-sy-ssa" onchange="updatePlot()">
+            Self-absorption sincrotronico (SSA)
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="chk-sy-cool" onchange="updatePlot()">
+            Cooling break ($\Delta\alpha = 0.5$)
+          </label>
+        </div>
+      </div>
+
+      <!-- COMPTON INVERSO -->
+      <div class="mechanism-card" id="card-ic">
+        <div class="card-header" onclick="toggleCard('ic')">
+          <div class="card-header-left">
+            <div class="color-dot" style="background:#b07dcf"></div>
+            <div>
+              <div class="card-name">Compton Inverso</div>
+              <div class="card-shortdesc">IC · fotoni upscattered</div>
+            </div>
+          </div>
+          <label class="toggle-switch" onclick="event.stopPropagation()">
+            <input type="checkbox" id="tog-ic" onchange="updatePlot()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="card-body">
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Temperatura elettroni $T_e$ (log K)</span>
+              <span class="param-value" id="val-ic-T">10<sup>9</sup> K</span>
+            </div>
+            <input type="range" id="sl-ic-T" min="7" max="12" step="0.05" value="9"
+              oninput="updateVal('ic-T', '10<sup>'+Math.round(+this.value)+'</sup> K'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Profondità ottica $\tau$</span>
+              <span class="param-value" id="val-ic-tau">0.5</span>
+            </div>
+            <input type="range" id="sl-ic-tau" min="0.01" max="3" step="0.01" value="0.5"
+              oninput="updateVal('ic-tau', (+this.value).toFixed(2)); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Frequenza seme $\nu_0$ (log Hz)</span>
+              <span class="param-value" id="val-ic-nu0">10<sup>12</sup> Hz</span>
+            </div>
+            <input type="range" id="sl-ic-nu0" min="8" max="15" step="0.1" value="12"
+              oninput="updateVal('ic-nu0', '10<sup>'+this.value+'</sup> Hz'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Ampiezza (log)</span>
+              <span class="param-value" id="val-ic-A">0.0</span>
+            </div>
+            <input type="range" id="sl-ic-A" min="-3" max="3" step="0.05" value="0"
+              oninput="updateVal('ic-A', (+this.value).toFixed(1)); updatePlot()">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /controls-grid -->
+  </div><!-- /sim-section -->
+
+  <!-- ═══════════════════════════ TEORIA ═══════════════════════════ -->
+  <div class="theory-section">
+    <h2 class="theory-heading">Fondamenti Teorici</h2>
+    <p class="theory-heading-sub">Una trattazione essenziale dei quattro meccanismi di emissione rappresentati</p>
+
+    <!-- CORPO NERO -->
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">
+          <span class="theory-dot" style="background:#f4c87a"></span>
+          Radiazione di Corpo Nero
+        </h3>
+        <p>
+          Un corpo nero è un oggetto ideale che assorbe tutta la radiazione incidente e ne emette
+          in funzione esclusivamente della sua temperatura. Lo spettro di emissione è descritto
+          dalla <em>legge di Planck</em>, che fornisce la luminosità spettrale per unità di
+          angolo solido e di area:
+          $$B_\nu(T) = \frac{2h\nu^3}{c^2}\frac{1}{e^{h\nu/kT}-1}$$
+          dove $h$ è la costante di Planck, $k$ la costante di Boltzmann, $c$ la velocità della
+          luce e $T$ la temperatura assoluta. Il fattore $h\nu/kT$ governa il comportamento ai due
+          estremi: per $h\nu \ll kT$ si recupera il <em>limite di Rayleigh–Jeans</em>
+          $B_\nu \propto \nu^2 T$, valido nel radio per sorgenti calde; per $h\nu \gg kT$
+          si ha il <em>limite di Wien</em> $B_\nu \propto \nu^3 e^{-h\nu/kT}$,
+          ovvero un taglio esponenziale alle alte frequenze.
+        </p>
+        <p>
+          Il picco dello spettro obbedisce alla <em>legge di Wien dello spostamento</em>:
+          $\nu_{max} = 5.88 \times 10^{10}\, T$ Hz, con $T$ in Kelvin. Una stella di tipo solare
+          ($T \sim 5800$ K) emette prevalentemente nel visibile; una stella di tipo O
+          ($T \sim 40\,000$ K) nel UV lontano; la radiazione cosmica di fondo (CMB, Cosmic
+          Microwave Background) corrisponde a un corpo nero a $T = 2.725$ K, con picco a
+          circa 160 GHz.
+        </p>
+        <p>
+          In astrofisica il corpo nero è l'approssimazione standard per le atmosfere stellari,
+          i dischi di accrescimento (in determinate condizioni), i pianeti e qualsiasi sorgente
+          che sia localmente in equilibrio termodinamico. Lo spettro integrato sull'intera
+          frequenza soddisfa la <em>legge di Stefan–Boltzmann</em>: $L = 4\pi R^2 \sigma T^4$.
+        </p>
+      </div>
+      <div class="theory-aside">
+        <div class="aside-title">Relazioni chiave</div>
+        <div class="aside-formula">
+          $B_\nu = \dfrac{2h\nu^3}{c^2}\dfrac{1}{e^{h\nu/kT}-1}$
+          <br><br>
+          $\nu_{max} T = 5.88\times10^{10}\ \text{Hz·K}$
+          <br><br>
+          $L = 4\pi R^2 \sigma T^4$
+          <br><br>
+          Rayleigh–Jeans: $B_\nu \propto \nu^2 T$
+          <br>
+          Wien: $B_\nu \propto \nu^3 e^{-h\nu/kT}$
+        </div>
+        <div class="aside-note">
+          Il CMB a $T=2.725$ K è il corpo nero più preciso mai misurato in natura,
+          con deviazioni dalla legge di Planck inferiori a $10^{-4}$.
+        </div>
+      </div>
+    </div>
+
+    <!-- BREMSSTRAHLUNG -->
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">
+          <span class="theory-dot" style="background:#7ecfcf"></span>
+          Bremsstrahlung (Free-Free)
+        </h3>
+        <p>
+          La bremsstrahlung (dal tedesco <em>Bremsung</em> = frenamento, <em>Strahlung</em> =
+          radiazione) è prodotta dalla decelerazione coulombiana di un elettrone nel campo
+          elettrico di uno ione. In un plasma termico totalmente ionizzato, con distribuzione
+          maxwelliana delle velocità, l'emissività spettrale per unità di volume è:
+          $$j_\nu^{ff} = 6.8\times10^{-38}\, Z^2\, n_e\, n_i\, T^{-1/2}\,
+          e^{-h\nu/kT}\, \bar{g}_{ff}(\nu, T) \quad [\text{erg s}^{-1}\text{cm}^{-3}\text{Hz}^{-1}]$$
+          Il fattore di Gaunt $\bar{g}_{ff}$ è una correzione quantistica al limite classico,
+          tipicamente compresa tra 1 e 10 nella regione radio-X. La caratteristica più importante
+          dello spettro è la sua forma quasi piatta a bassa frequenza ($j_\nu \propto \nu^0$
+          nel limite radio) seguita da un taglio esponenziale a $h\nu \sim kT$.
+        </p>
+        <p>
+          Il <em>self-absorption free-free</em>, ovvero l'autoassorbimento del plasma,
+          diventa importante a basse frequenze quando il plasma è otticamente spesso.
+          Il coefficiente di assorbimento è $\kappa_\nu^{ff} \propto n_e^2 T^{-3/2} \nu^{-2}$:
+          la dipendenza $\nu^{-2}$ fa sì che a frequenze sufficientemente basse il plasma
+          sia sempre otticamente spesso. In quel regime lo spettro emergente non è più
+          la vera emissività ma il profilo di corpo nero (Rayleigh–Jeans a bassa frequenza),
+          con $I_\nu \propto \nu^2 T$, perché il plasma termalizza i fotoni.
+          La frequenza di transizione $\nu_{abs}$ separa il regime otticamente sottile
+          (spettro piatto) da quello spesso (spettro $\propto \nu^2$).
+        </p>
+        <p>
+          La bremsstrahlung è il meccanismo dominante nei gas caldi coronali e nelle regioni
+          HII (Hydrogen II). Nelle ammassi di galassie (ICM, IntraCluster Medium) a
+          $T \sim 10^7$–$10^8$ K è la principale sorgente di emissione in raggi X,
+          ed è usata per misurare direttamente la massa del gas caldo tramite la
+          <em>misura di emissione</em> $EM = \int n_e n_i\, dV$.
+        </p>
+      </div>
+      <div class="theory-aside">
+        <div class="aside-title">Relazioni chiave</div>
+        <div class="aside-formula">
+          $j_\nu \propto n_e^2 T^{-1/2} e^{-h\nu/kT}$
+          <br><br>
+          $\kappa_\nu \propto n_e^2 T^{-3/2} \nu^{-2}$
+          <br><br>
+          $\nu_{abs}$: spessore ottico $\tau_{ff}=1$
+          <br><br>
+          Sottile: $I_\nu \propto \nu^0$ (piatto)
+          <br>
+          Spesso: $I_\nu \propto \nu^2$ (R–J)
+        </div>
+        <div class="aside-note">
+          Negli ammassi di galassie la luminosità X da bremsstrahlung può superare
+          $10^{45}$ erg/s, pari alla luminosità di un'intera galassia ottica.
+        </div>
+      </div>
+    </div>
+
+    <!-- SINCROTRONE -->
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">
+          <span class="theory-dot" style="background:#d4886a"></span>
+          Radiazione di Sincrotrone
+        </h3>
+        <p>
+          Un elettrone relativistico con fattore di Lorentz $\gamma \gg 1$ che si muove
+          in un campo magnetico $\vec{B}$ irraggia per effetto della forza di Lorentz.
+          A differenza del ciclotrone non relativistico (emissione alla sola frequenza di
+          ciclotrone $\nu_c = eB/2\pi m_e c$), l'emissione sincrotronica è distribuita
+          su uno spettro largo, centrato sulla <em>frequenza critica</em>:
+          $$\nu_{crit} = \frac{3}{2}\frac{eB}{2\pi m_e c}\gamma^2\sin\alpha
+          \approx 4.2\,\text{MHz}\left(\frac{B}{1\,\mu\text{G}}\right)\gamma^2$$
+          dove $\alpha$ è l'angolo di lancio tra la velocità e il campo. Il fattore $\gamma^2$
+          è la chiave: elettroni con $\gamma \sim 10^4$–$10^5$ e campi $B \sim 1$–$100$ μG
+          emettono nel radio, nell'ottico e persino nell'X.
+        </p>
+        <p>
+          In quasi tutte le sorgenti astrofisiche gli elettroni relativistici hanno una
+          distribuzione a legge di potenza $N(\gamma) \propto \gamma^{-p}$, tipicamente
+          con $p \approx 2$–$3$. Lo spettro sincrotronico risultante è anch'esso una
+          legge di potenza: $F_\nu \propto \nu^{-\alpha}$ con $\alpha = (p-1)/2$.
+          Sopra la frequenza di cooling break $\nu_{break}$ gli elettroni hanno perso
+          energia per radiazione sincrotronica, e l'indice spettrale aumenta di 0.5:
+          $\alpha \to \alpha + 0.5$. Questo <em>spectral break</em> è una delle firme
+          più usate per datare la popolazione di elettroni.
+        </p>
+        <p>
+          A basse frequenze il <em>self-absorption sincrotronico</em> (SSA,
+          Synchrotron Self-Absorption) modifica lo spettro: il plasma di elettroni
+          relativistici diventa otticamente spesso alla propria emissione, e lo spettro
+          in ingresso segue $F_\nu \propto \nu^{5/2}$ invece della legge di potenza piatta.
+          La frequenza di turnover del SSA dipende fortemente da $B$ e dalla densità
+          di elettroni, ed è usata per stimare entrambi nei sorgenti compatte come i
+          nuclei galattici attivi (AGN, Active Galactic Nuclei) e le supernove giovani.
+        </p>
+      </div>
+      <div class="theory-aside">
+        <div class="aside-title">Relazioni chiave</div>
+        <div class="aside-formula">
+          $\nu_c \approx 4.2\text{ MHz}\cdot\gamma^2 B_{\mu G}$
+          <br><br>
+          $N(\gamma)\propto \gamma^{-p}$
+          <br>
+          $\Rightarrow F_\nu \propto \nu^{-(p-1)/2}$
+          <br><br>
+          SSA: $F_\nu \propto \nu^{5/2}$
+          <br>
+          Cooling: $\Delta\alpha = +0.5$
+          <br><br>
+          $P_{sync}\propto \gamma^2 B^2$
+        </div>
+        <div class="aside-note">
+          I lobi radio delle radiogalassie (es. Cygnus A) sono tra le sorgenti
+          sincrotroniche più luminose note, con flussi di potenza fino a
+          $10^{45}$ erg/s a frequenze GHz.
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPTON INVERSO -->
+    <div class="theory-block">
+      <div class="theory-text">
+        <h3 class="theory-block-title">
+          <span class="theory-dot" style="background:#b07dcf"></span>
+          Compton Inverso
+        </h3>
+        <p>
+          Nell'effetto Compton ordinario un fotone cede energia a un elettrone.
+          Nell'effetto Compton inverso (IC, Inverse Compton) avviene il contrario:
+          un elettrone relativistico o caldo cede energia a un fotone a bassa energia,
+          portandolo a frequenze molto più alte. Nel limite Thomson ($h\nu \gamma \ll m_e c^2$)
+          la frequenza del fotone upscattered è:
+          $$\nu_{out} \approx \frac{4}{3}\gamma^2 \nu_{in}$$
+          per elettroni relativistici, oppure $\nu_{out} \approx (1 + 4kT_e/m_e c^2)\nu_{in}$
+          per lo scattering su un plasma termico caldo (Comptonizzazione termica).
+          Il guadagno di energia è dunque enorme: fotoni radio (GHz) scatterati su elettroni
+          con $\gamma \sim 10^4$ emergono nell'X.
+        </p>
+        <p>
+          Il parametro che governa l'efficienza della Comptonizzazione termica è il
+          <em>parametro di Comptonizzazione</em>:
+          $$y = \frac{4kT_e}{m_e c^2}\max(\tau, \tau^2)$$
+          dove $\tau = n_e \sigma_T \ell$ è la profondità ottica Thomson del plasma.
+          Per $y \ll 1$ lo scattering è trascurabile; per $y \gg 1$ i fotoni vengono
+          ripetutamente scatterati e lo spettro converge verso una forma a legge di potenza
+          $F_\nu \propto \nu^{-\alpha}$ con $\alpha = -3/2 + \sqrt{9/4 + 4/y}$.
+          Ogni ordine di scattering produce un "echo" ad energia $\gamma^2$ volte quella
+          del fotone seme.
+        </p>
+        <p>
+          Il Compton Inverso è fondamentale per comprendere i nuclei galattici attivi (AGN),
+          le binarie X, e la CMB. Negli AGN i fotoni di disco (UV/ottico) vengono
+          Comptonizzati dalla corona di elettroni caldi ($kT_e \sim 100$ keV) producendo
+          la <em>powerlaw</em> in raggi X osservata. Nel CMB l'effetto Sunyaev–Zel'dovich
+          è il Compton inverso dei fotoni cosmici sugli elettroni caldi degli ammassi di
+          galassie, e produce una caratteristica distorsione spettrale osservabile a
+          millimetri.
+        </p>
+      </div>
+      <div class="theory-aside">
+        <div class="aside-title">Relazioni chiave</div>
+        <div class="aside-formula">
+          $\nu_{out} \approx \tfrac{4}{3}\gamma^2\nu_{in}$
+          <br><br>
+          $y = \dfrac{4kT_e}{m_e c^2}\max(\tau,\tau^2)$
+          <br><br>
+          $y\gg1$: $F_\nu\propto\nu^{-\alpha_{IC}}$
+          <br>
+          $\alpha_{IC} = -\tfrac{3}{2}+\sqrt{\tfrac{9}{4}+\tfrac{4}{y}}$
+          <br><br>
+          S–Z: $\Delta I/I\propto y T_e$
+        </div>
+        <div class="aside-note">
+          L'effetto Sunyaev–Zel'dovich (S–Z) è usato per rilevare ammassi di galassie
+          indipendentemente dal redshift, rendendolo uno strumento cosmologico cruciale.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /theory-section -->
+</div><!-- /main-wrap -->
+
+<footer>
+  <span>Processi Radiativi in Astrofisica — Simulazione Didattica</span>
+  <span>Fisica · Liceo Scientifico</span>
+</footer>
+
+<!-- ═══════════════════════════ SCRIPT ═══════════════════════════ -->
+<script>
+"use strict";
+
+// ── costanti fisiche ──────────────────────────────────────────
+const h  = 6.626e-34;   // J·s
+const k  = 1.381e-23;   // J/K
+const c  = 3e8;         // m/s
+const me = 9.109e-31;   // kg
+const e_charge = 1.6e-19; // C
+const sigmaT = 6.652e-29; // m²
+
+// ── frequenze log-asse: da 10^7 a 10^25 Hz ──
+const LOG_NU_MIN = 7;
+const LOG_NU_MAX = 25;
+const N_POINTS   = 600;
+
+// ── bande spettrali ──
+const BANDS = [
+  { name:'Radio',      lo: 7,  hi: 10.5, color:'rgba(26,58,107,0.18)' },
+  { name:'Microonde',  lo:10.5,hi: 12,   color:'rgba(45,107,74,0.18)' },
+  { name:'Infrarosso', lo:12,  hi: 14,   color:'rgba(139,74,26,0.22)' },
+  { name:'Ottico',     lo:14,  hi: 15,   color:'rgba(120,80,180,0.18)' },
+  { name:'UV',         lo:15,  hi: 16.5, color:'rgba(45,45,139,0.20)' },
+  { name:'Raggi X',    lo:16.5,hi: 19.5, color:'rgba(26,107,107,0.20)' },
+  { name:'Gamma',      lo:19.5,hi: 25,   color:'rgba(107,26,26,0.22)' },
+];
+
+const BAND_COLORS_LEGEND = [
+  '#3a5f9a','#4a8a6a','#a06030','#8050c0','#4040a0','#2a8888','#882222'
+];
+
+// ── meccanismi colori ──
+const COL = {
+  bb: '#f4c87a',
+  ff: '#7ecfcf',
+  sy: '#d4886a',
+  ic: '#b07dcf',
+  total: '#ffffff'
+};
+
+// ── stato ──
+let axisMode = 'nuFnu'; // 'nuFnu' | 'Fnu'
+let mouseLogNu = null;
+
+// ── canvas setup ──────────────────────────────────────────────
+const canvas = document.getElementById('sed-canvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = rect.width  * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  updatePlot();
+}
+
+// ── parametri ────────────────────────────────────────────────
+function getP() {
+  return {
+    bb: {
+      active: document.getElementById('tog-bb').checked,
+      T:  Math.pow(10, +document.getElementById('sl-bb-T').value),
+      A:  Math.pow(10, +document.getElementById('sl-bb-A').value),
+      rj: document.getElementById('chk-bb-rj').checked,
+    },
+    ff: {
+      active: document.getElementById('tog-ff').checked,
+      T:  Math.pow(10, +document.getElementById('sl-ff-T').value),
+      A:  Math.pow(10, +document.getElementById('sl-ff-A').value),
+      abs: document.getElementById('chk-ff-abs').checked,
+    },
+    sy: {
+      active: document.getElementById('tog-sy').checked,
+      B:    Math.pow(10, +document.getElementById('sl-sy-B').value) * 1e-10, // μG → T
+      p:    +document.getElementById('sl-sy-p').value,
+      gmax: Math.pow(10, +document.getElementById('sl-sy-gmax').value),
+      A:    Math.pow(10, +document.getElementById('sl-sy-A').value),
+      ssa:  document.getElementById('chk-sy-ssa').checked,
+      cool: document.getElementById('chk-sy-cool').checked,
+    },
+    ic: {
+      active: document.getElementById('tog-ic').checked,
+      Te:  Math.pow(10, +document.getElementById('sl-ic-T').value),
+      tau: +document.getElementById('sl-ic-tau').value,
+      nu0: Math.pow(10, +document.getElementById('sl-ic-nu0').value),
+      A:   Math.pow(10, +document.getElementById('sl-ic-A').value),
+    },
+  };
+}
+
+// ── spettri fisici ────────────────────────────────────────────
+
+// Corpo nero: Bν in unità arbitrarie normalizzate
+function planck(nu, T) {
+  const x = h * nu / (k * T);
+  if (x > 700) return 0;
+  if (x < 1e-6) return nu * nu * k * T / (0.5 * h); // R-J limit numericamente stabile
+  return (2 * h * nu * nu * nu / (c * c)) / (Math.exp(x) - 1);
+}
+
+// Rayleigh-Jeans puro
+function rayleigh_jeans(nu, T) {
+  return 2 * nu * nu * k * T / (c * c);
+}
+
+// Wien puro
+function wien(nu, T) {
+  const x = h * nu / (k * T);
+  if (x > 700) return 0;
+  return (2 * h * nu * nu * nu / (c * c)) * Math.exp(-x);
+}
+
+// Bremsstrahlung free-free (normalizzato)
+function bremsstrahlung(nu, T, doAbs) {
+  const x = h * nu / (k * T);
+  if (x > 700) return 0;
+  // Fattore di Gaunt approssimato: g_ff ~ sqrt(3)/pi * ln(kT / h*nu) per x<<1, ≈1 altrove
+  let g_ff = 1.0;
+  if (x < 1) g_ff = Math.max(1, Math.sqrt(3) / Math.PI * Math.log(1 / x + 1));
+  const emissivity = Math.exp(-x) * g_ff; // spettro piatto (T^-1/2 costante globale)
+
+  if (!doAbs) return emissivity;
+
+  // Self-absorption: τ_ff ∝ ν^{-2} T^{-3/2}
+  // frequenza di transizione: scelta a ~ 1 GHz × (T/10^7)^{3/4}
+  const nu_abs = 1e9 * Math.pow(T / 1e7, 0.75);
+  const tau_ff = Math.pow(nu_abs / nu, 2);
+  // Spettro emergente: B_nu * (1 - exp(-tau))  [termine sorgente = corpo nero Rayleigh-Jeans]
+  const bb_rj = rayleigh_jeans(nu, T);
+  const bb_at_nu_abs = rayleigh_jeans(nu_abs, T);
+  const normRJ = bb_rj / bb_at_nu_abs;  // tengo normalizzazione relativa
+  const normFF = emissivity / Math.exp(-h * nu_abs / (k * T)); // allineamento al turnover
+  // uso formula transfer: I = S * (1 - e^{-τ})  con S = B_ν (termalizza) per τ>>1
+  const absorbed = normRJ * (1 - Math.exp(-tau_ff)) + emissivity * Math.exp(-tau_ff);
+  return absorbed;
+}
+
+// Sincrotrone
+function synchrotron(nu, p, B_gauss, gmax, doSSA, doCool) {
+  // Frequenza critica per γ=1: ν_c0 = (3eB)/(4π m_e c)
+  // Usiamo B in Gauss per la formula cgs: ν_c(γ) = 4.2e6 * B_μG * γ²
+  const B_muG = B_gauss; // già in μG dall'esterno
+  const alpha = (p - 1) / 2;
+
+  // frequenza di picco per γ_max
+  const nu_max = 4.2e6 * B_muG * gmax * gmax;
+  // frequenza di cooling break: scegliamo nu_break ~ 0.01 * nu_max (parametro fisso per semplicità)
+  const nu_break = nu_max * 0.005;
+  // SSA turnover: ~ 1 GHz * B_muG^{1/5}  (approssimato)
+  const nu_ssa  = 1e9 * Math.pow(B_muG, 0.2);
+
+  if (nu > nu_max * 10) return 0;
+
+  let F;
+  if (doCool && nu > nu_break) {
+    F = Math.pow(nu_break, -alpha) * Math.pow(nu / nu_break, -(alpha + 0.5));
+  } else {
+    F = Math.pow(nu, -alpha);
+  }
+
+  // Taglio esponenziale oltre nu_max
+  if (nu > nu_max) {
+    F *= Math.exp(-Math.pow(nu / nu_max, 0.5));
+  }
+
+  if (doSSA && nu < nu_ssa * 20) {
+    const tau_ssa = Math.pow(nu_ssa / nu, (alpha + 5/2));
+    const F_ssa   = Math.pow(nu, 5/2) / Math.pow(nu_ssa, 5/2 - (-alpha));
+    // blending otticamente spesso/sottile
+    F = F * (1 - Math.exp(-tau_ssa)) + Math.pow(nu, 5/2) / Math.pow(nu_ssa, 5/2 + alpha) * Math.exp(-tau_ssa) * Math.pow(nu_ssa, alpha);
+    // semplificato: transizione morbida
+    const w = 1 / (1 + Math.pow(nu / nu_ssa, 5/2 + alpha));
+    F = F * (1 - w) + Math.pow(nu / nu_ssa, 5/2) * Math.pow(nu_ssa, -alpha) * w;
+  }
+
+  return F;
+}
+
+// Compton Inverso (Comptonizzazione termica + picchi multipli)
+function inverseCompton(nu, Te, tau, nu0, A) {
+  const kTe_mec2 = k * Te / (me * c * c);
+  const y = 4 * kTe_mec2 * Math.max(tau, tau * tau);
+  const boost = Math.max(1 + 4 * kTe_mec2, 1); // guadagno per scattering
+
+  let total = 0;
+  // fotone seme + ordini successivi di scattering
+  const n_orders = Math.min(6, Math.ceil(Math.log(1e12) / Math.log(boost + 1)));
+  for (let n = 0; n <= n_orders; n++) {
+    const nu_n = nu0 * Math.pow(boost * boost, n + 1);  // picco n-esimo
+    const width = nu_n * 2.5;  // larghezza lognormale
+    const weight = Math.pow(Math.min(tau, 1), n) * Math.exp(-n * 0.3);
+    if (nu_n < 1e26) {
+      // forma spettrale approssimata: legge di potenza + taglio
+      const alpha_ic = (y > 0.01) ? (-1.5 + Math.sqrt(2.25 + 4 / y)) : 2;
+      const x = nu / nu_n;
+      const contrib = weight * Math.pow(x, -Math.abs(alpha_ic)) * Math.exp(-x * x / (2 * width * width / (nu_n * nu_n)));
+      total += contrib;
+    }
+  }
+  // Powerlaw globale (Comptonizzazione) per y > 0.1
+  if (y > 0.1) {
+    const alpha_ic = Math.max(0.1, -1.5 + Math.sqrt(2.25 + 4 / Math.max(y, 0.01)));
+    const nu_cut = nu0 * boost * boost * 10;
+    if (nu > nu0 && nu < nu_cut * 100) {
+      const pl = Math.pow(nu / nu0, -alpha_ic) * Math.exp(-nu / (nu_cut));
+      total = Math.max(total, pl * 0.5);
+    }
+  }
+  return total;
+}
+
+// ── calcolo array spettri ─────────────────────────────────────
+function computeSpectra(P) {
+  const logNus = [];
+  for (let i = 0; i < N_POINTS; i++) {
+    logNus.push(LOG_NU_MIN + (LOG_NU_MAX - LOG_NU_MIN) * i / (N_POINTS - 1));
+  }
+
+  const specs = { bb:[], ff:[], sy:[], ic:[], total:[] };
+
+  // Calcolo valori grezzi
+  for (let i = 0; i < N_POINTS; i++) {
+    const nu = Math.pow(10, logNus[i]);
+
+    let bb_raw = P.bb.active ? planck(nu, P.bb.T) * P.bb.A : 0;
+    let ff_raw = P.ff.active ? bremsstrahlung(nu, P.ff.T, P.ff.abs) * P.ff.A * 1e-26 : 0;
+    let sy_raw = 0;
+    if (P.sy.active) {
+      const B_muG = P.sy.B / 1e-10; // da T a μG
+      sy_raw = synchrotron(nu, P.sy.p, B_muG, P.sy.gmax, P.sy.ssa, P.sy.cool) * P.sy.A;
+    }
+    let ic_raw = P.ic.active ? inverseCompton(nu, P.ic.Te, P.ic.tau, P.ic.nu0, P.ic.A) * P.ic.A * 1e-3 : 0;
+
+    // modo asse: moltiplico per ν se nuFnu
+    const f = axisMode === 'nuFnu' ? nu : 1;
+
+    specs.bb.push(bb_raw * f);
+    specs.ff.push(ff_raw * f);
+    specs.sy.push(sy_raw * f);
+    specs.ic.push(ic_raw * f);
+    specs.total.push((bb_raw + ff_raw + sy_raw + ic_raw) * f);
+  }
+
+  // Normalizzazione: ogni componente al proprio picco (separata), poi scala ampiezza
+  const norm = {};
+  ['bb','ff','sy','ic'].forEach(m => {
+    const max = Math.max(...specs[m].filter(v => isFinite(v) && v > 0));
+    norm[m] = max > 0 ? max : 1;
+  });
+
+  // Combina con normalizzazione per renderlo leggibile
+  const out = { bb:[], ff:[], sy:[], ic:[], total:[], logNus };
+  const REF = Math.max(norm.bb, norm.ff, norm.sy, norm.ic, 1);
+
+  for (let i = 0; i < N_POINTS; i++) {
+    out.bb.push(specs.bb[i] / REF);
+    out.ff.push(specs.ff[i] / REF);
+    out.sy.push(specs.sy[i] / REF);
+    out.ic.push(specs.ic[i] / REF);
+    out.total.push(specs.total[i] / REF);
+  }
+
+  // Varianti: RJ e Wien per corpo nero
+  if (P.bb.rj && P.bb.active) {
+    out.bb_rj = [];
+    out.bb_wien = [];
+    for (let i = 0; i < N_POINTS; i++) {
+      const nu = Math.pow(10, logNus[i]);
+      const f  = axisMode === 'nuFnu' ? nu : 1;
+      out.bb_rj.push(rayleigh_jeans(nu, P.bb.T) * P.bb.A * f / REF);
+      out.bb_wien.push(wien(nu, P.bb.T) * P.bb.A * f / REF);
+    }
+  }
+
+  return out;
+}
+
+// ── disegno ───────────────────────────────────────────────────
+function updatePlot() {
+  const P    = getP();
+  const spec = computeSpectra(P);
+  draw(spec, P);
+}
+
+function draw(spec, P) {
+  const W = canvas.getBoundingClientRect().width;
+  const H = canvas.getBoundingClientRect().height;
+  const DPR = window.devicePixelRatio;
+
+  ctx.clearRect(0, 0, W * DPR, H * DPR);
+  ctx.save();
+  ctx.scale(DPR, DPR);  // già scalato nel resize, ma facciamo così per sicurezza
+  ctx.restore();
+
+  // Margini
+  const ml = 64, mr = 24, mt = 16, mb = 46;
+  const pw = W - ml - mr;
+  const ph = H - mt - mb;
+
+  // helper coordinate
+  function xPx(logNu) {
+    return ml + (logNu - LOG_NU_MIN) / (LOG_NU_MAX - LOG_NU_MIN) * pw;
+  }
+
+  // range y: 1e-6 a 2 in log
+  const LOG_Y_MIN = -6;
+  const LOG_Y_MAX = 0.3;
+
+  function yPx(val) {
+    if (val <= 0) return mt + ph + 10;
+    const logV = Math.log10(val);
+    const clamped = Math.max(LOG_Y_MIN, Math.min(LOG_Y_MAX, logV));
+    return mt + ph - (clamped - LOG_Y_MIN) / (LOG_Y_MAX - LOG_Y_MIN) * ph;
+  }
+
+  // ── sfondo bande spettrali ──
+  BANDS.forEach(b => {
+    ctx.fillStyle = b.color;
+    const x1 = xPx(b.lo), x2 = xPx(b.hi);
+    ctx.fillRect(x1, mt, x2 - x1, ph);
+  });
+
+  // linee griglia verticali (ogni decade)
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let logN = LOG_NU_MIN; logN <= LOG_NU_MAX; logN++) {
+    const x = xPx(logN);
+    ctx.beginPath();
+    ctx.moveTo(x, mt);
+    ctx.lineTo(x, mt + ph);
+    ctx.stroke();
+  }
+
+  // linee griglia orizzontali
+  for (let logY = LOG_Y_MIN; logY <= LOG_Y_MAX; logY += 1) {
+    const y = yPx(Math.pow(10, logY));
+    ctx.strokeStyle = logY === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = logY === 0 ? 1 : 0.8;
+    ctx.beginPath();
+    ctx.moveTo(ml, y);
+    ctx.lineTo(ml + pw, y);
+    ctx.stroke();
+  }
+
+  // ── assi ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ml, mt);
+  ctx.lineTo(ml, mt + ph);
+  ctx.lineTo(ml + pw, mt + ph);
+  ctx.stroke();
+
+  // tick e label x (ogni 2 decadi per leggibilità)
+  ctx.fillStyle = 'rgba(160,140,120,0.7)';
+  ctx.font = `10px IBM Plex Mono, monospace`;
+  ctx.textAlign = 'center';
+  for (let logN = LOG_NU_MIN; logN <= LOG_NU_MAX; logN += 2) {
+    const x = xPx(logN);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, mt + ph);
+    ctx.lineTo(x, mt + ph + 5);
+    ctx.stroke();
+    ctx.fillText(`10¹${logN - 10 >= 0 ? logN - 10 : ''}`, x, mt + ph + 16);
+  }
+
+  // label x asse
+  ctx.fillStyle = 'rgba(160,140,120,0.5)';
+  ctx.font = `10px IBM Plex Mono, monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Frequenza ν [Hz]', ml + pw / 2, mt + ph + 36);
+
+  // tick e label y
+  ctx.textAlign = 'right';
+  for (let logY = LOG_Y_MIN; logY <= Math.floor(LOG_Y_MAX); logY++) {
+    const y = yPx(Math.pow(10, logY));
+    if (y < mt || y > mt + ph) continue;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(ml - 5, y);
+    ctx.lineTo(ml, y);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(160,140,120,0.5)';
+    ctx.fillText(`10${logY}`, ml - 8, y + 3.5);
+  }
+
+  // label y asse
+  ctx.save();
+  ctx.translate(13, mt + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(160,140,120,0.5)';
+  ctx.font = `10px IBM Plex Mono, monospace`;
+  ctx.fillText(axisMode === 'nuFnu' ? 'ν Fν [unità arb.]' : 'Fν [unità arb.]', 0, 0);
+  ctx.restore();
+
+  // ── funzione disegno curva ──
+  function drawCurve(arr, color, lineWidth, dashed) {
+    if (!arr || arr.length === 0) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    if (dashed) ctx.setLineDash([4, 4]);
+    else ctx.setLineDash([]);
+    let started = false;
+    for (let i = 0; i < arr.length; i++) {
+      const x = xPx(spec.logNus[i]);
+      const y = yPx(arr[i]);
+      if (!isFinite(y) || arr[i] <= 0) { started = false; continue; }
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── disegno spettri individuali ──
+  if (P.bb.active) {
+    // glow
+    ctx.shadowColor = COL.bb;
+    ctx.shadowBlur = 8;
+    drawCurve(spec.bb, COL.bb, 2);
+    ctx.shadowBlur = 0;
+    if (spec.bb_rj)   drawCurve(spec.bb_rj,   'rgba(244,200,122,0.35)', 1, true);
+    if (spec.bb_wien) drawCurve(spec.bb_wien,  'rgba(244,200,122,0.35)', 1, true);
+  }
+
+  if (P.ff.active) {
+    ctx.shadowColor = COL.ff;
+    ctx.shadowBlur = 8;
+    drawCurve(spec.ff, COL.ff, 2);
+    ctx.shadowBlur = 0;
+  }
+
+  if (P.sy.active) {
+    ctx.shadowColor = COL.sy;
+    ctx.shadowBlur = 8;
+    drawCurve(spec.sy, COL.sy, 2);
+    ctx.shadowBlur = 0;
+  }
+
+  if (P.ic.active) {
+    ctx.shadowColor = COL.ic;
+    ctx.shadowBlur = 8;
+    drawCurve(spec.ic, COL.ic, 2);
+    ctx.shadowBlur = 0;
+  }
+
+  // totale
+  const anyActive = P.bb.active || P.ff.active || P.sy.active || P.ic.active;
+  const multiActive = [P.bb.active, P.ff.active, P.sy.active, P.ic.active].filter(Boolean).length > 1;
+  if (anyActive && multiActive) {
+    ctx.shadowColor = 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur = 12;
+    drawCurve(spec.total, 'rgba(255,255,255,0.75)', 1.5);
+    ctx.shadowBlur = 0;
+  }
+
+  // ── label bande ──
+  ctx.font = '8.5px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  BANDS.forEach((b, i) => {
+    const x = xPx((b.lo + b.hi) / 2);
+    ctx.fillStyle = BAND_COLORS_LEGEND[i] + 'cc';
+    ctx.fillText(b.name.toUpperCase(), x, mt + 12);
+  });
+
+  // ── etichette curve ──
+  const labels = [
+    { key:'bb', active: P.bb.active, label:'Corpo Nero', color: COL.bb },
+    { key:'ff', active: P.ff.active, label:'Bremsstrahlung', color: COL.ff },
+    { key:'sy', active: P.sy.active, label:'Sincrotrone', color: COL.sy },
+    { key:'ic', active: P.ic.active, label:'Compton Inv.', color: COL.ic },
+  ];
+  let lx = ml + pw - 10;
+  const ly = mt + ph - 10;
+  ctx.textAlign = 'right';
+  ctx.font = '9.5px IBM Plex Mono, monospace';
+  labels.slice().reverse().forEach(l => {
+    if (!l.active) return;
+    ctx.fillStyle = l.color;
+    ctx.fillText(l.label, lx, ly);
+    lx -= 110;
+  });
+  if (multiActive) {
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('Totale', lx, ly);
+  }
+
+  // ── cursore ──
+  if (mouseLogNu !== null) {
+    const xc = xPx(mouseLogNu);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xc, mt);
+    ctx.lineTo(xc, mt + ph);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ── interazione cursore ───────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const ml = 64, mr = 24;
+  const pw = rect.width - ml - mr;
+  const x  = e.clientX - rect.left;
+  if (x < ml || x > ml + pw) { mouseLogNu = null; updatePlot(); return; }
+  mouseLogNu = LOG_NU_MIN + (x - ml) / pw * (LOG_NU_MAX - LOG_NU_MIN);
+  const nu = Math.pow(10, mouseLogNu);
+  const E_eV = h * nu / e_charge;
+  const lambda_m = c / nu;
+
+  let lambdaStr;
+  if (lambda_m >= 1e-2) lambdaStr = (lambda_m * 100).toFixed(1) + ' cm';
+  else if (lambda_m >= 1e-6) lambdaStr = (lambda_m * 1000).toFixed(2) + ' mm';
+  else if (lambda_m >= 1e-9) lambdaStr = (lambda_m * 1e6).toFixed(2) + ' μm';
+  else if (lambda_m >= 1e-12) lambdaStr = (lambda_m * 1e9).toFixed(2) + ' nm';
+  else lambdaStr = (lambda_m * 1e12).toFixed(2) + ' pm';
+
+  let eStr;
+  if (E_eV < 1e-6) eStr = (E_eV * 1e9).toExponential(2) + ' neV';
+  else if (E_eV < 1e-3) eStr = (E_eV * 1e6).toExponential(2) + ' μeV';
+  else if (E_eV < 1) eStr = (E_eV * 1e3).toFixed(2) + ' meV';
+  else if (E_eV < 1e3) eStr = E_eV.toFixed(2) + ' eV';
+  else if (E_eV < 1e6) eStr = (E_eV / 1e3).toFixed(2) + ' keV';
+  else eStr = (E_eV / 1e6).toFixed(2) + ' MeV';
+
+  document.getElementById('cursor-info').innerHTML =
+    `<span>ν = </span><span class="val">10<sup>${mouseLogNu.toFixed(2)}</sup> Hz</span>` +
+    `<span>&nbsp;·&nbsp;λ = </span><span class="val">${lambdaStr}</span>` +
+    `<span>&nbsp;·&nbsp;E = </span><span class="val">${eStr}</span>`;
+
+  updatePlot();
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseLogNu = null;
+  document.getElementById('cursor-info').innerHTML = '<span>Posiziona il cursore sul grafico per leggere i valori</span>';
+  updatePlot();
+});
+
+// ── UI helpers ────────────────────────────────────────────────
+function updateVal(id, html) {
+  document.getElementById('val-' + id).innerHTML = html;
+}
+
+function toggleCard(id) {
+  const card = document.getElementById('card-' + id);
+  card.classList.toggle('active');
+}
+
+function setAxisMode(mode) {
+  axisMode = mode;
+  document.getElementById('btn-nuFnu').classList.toggle('active', mode === 'nuFnu');
+  document.getElementById('btn-Fnu').classList.toggle('active', mode === 'Fnu');
+  updatePlot();
+}
+
+// ── build band legend ─────────────────────────────────────────
+function buildBandLegend() {
+  const leg = document.getElementById('band-legend');
+  BANDS.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'band-item';
+    div.style.background = BAND_COLORS_LEGEND[i] + '33';
+    div.style.color = BAND_COLORS_LEGEND[i];
+    div.textContent = b.name;
+    leg.appendChild(div);
+  });
+}
+
+// ── init ──────────────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvas);
+buildBandLegend();
+resizeCanvas();
+
+// inizializza valori display
+updateVal('bb-T', '10 000 K');
+updateVal('bb-A', '0.0');
+updateVal('ff-T', '10<sup>7</sup> K');
+updateVal('ff-A', '0.0');
+updateVal('sy-B', '10.0 μG');
+updateVal('sy-p', '2.50');
+updateVal('sy-gmax', '10<sup>5</sup>');
+updateVal('sy-A', '0.0');
+updateVal('ic-T', '10<sup>9</sup> K');
+updateVal('ic-tau', '0.50');
+updateVal('ic-nu0', '10<sup>12</sup> Hz');
+updateVal('ic-A', '0.0');
+
+// Attiva tutti i toggle inizialmente disattivati, lascia solo BB attivo
+updatePlot();
+</script>
+</body>
+</html>

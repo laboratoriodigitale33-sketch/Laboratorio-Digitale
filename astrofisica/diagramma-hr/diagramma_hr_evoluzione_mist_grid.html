@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diagramma H-R interattivo con griglia MIST</title>
+
+  <script>
+window.SIM_METADATA = {
+  "title": "Diagramma H-R interattivo con griglia MIST",
+  "description": "Visualizzazione interattiva dell'evoluzione stellare nel diagramma Hertzsprung-Russell con più masse, metallicità e rotazioni MIST.",
+  "category": "Astrofisica",
+  "icon": "⭐",
+  "order": 10,
+  "tags": [
+    "diagramma HR",
+    "Hertzsprung-Russell",
+    "MIST",
+    "metallicità",
+    "rotazione stellare",
+    "evoluzione stellare",
+    "sequenza principale",
+    "giganti rosse",
+    "nane bianche"
+  ],
+  "level": "avanzato"
+};
+</script>
+<style>
+    :root {
+      --bg: #f6f3ec;
+      --panel: rgba(255, 252, 244, 0.95);
+      --ink: #1c1a16;
+      --muted: #686158;
+      --shadow: 0 18px 52px rgba(37, 30, 20, 0.13);
+      --radius: 22px;
+      --accent: #8d672d;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.92), transparent 34rem),
+        linear-gradient(135deg, #fbf7ef 0%, var(--bg) 52%, #eee6d8 100%);
+    }
+
+    main {
+      width: min(1340px, calc(100vw - 32px));
+      margin: 28px auto 54px;
+    }
+
+    header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.75rem, 3vw, 3.15rem);
+      line-height: 1.04;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 980px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 1.02rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 370px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .chart-card, .panel, .theory {
+      background: var(--panel);
+      border: 1px solid rgba(40, 35, 25, 0.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .chart-card {
+      padding: 16px;
+      min-height: 660px;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.12 / 1;
+      min-height: 620px;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: calc(var(--radius) - 8px);
+      background: #fffdfa;
+    }
+
+    .panel {
+      padding: 18px;
+      display: grid;
+      gap: 15px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      color: #4f473d;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .control { display: grid; gap: 7px; }
+
+    label {
+      font-size: 0.84rem;
+      color: #4f473d;
+      font-weight: 650;
+    }
+
+    select, input[type="file"] {
+      border: 1px solid rgba(40,35,25,0.18);
+      background: #fffdf7;
+      border-radius: 12px;
+      padding: 9px 10px;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    button {
+      border: 1px solid rgba(40,35,25,0.18);
+      background: #2b251e;
+      color: white;
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 720;
+      width: 100%;
+    }
+
+    button.secondary {
+      background: #fffdf7;
+      color: var(--ink);
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .checks { display: grid; gap: 8px; font-size: 0.9rem; color: #403a32; }
+    .checks label { display: flex; gap: 8px; align-items: center; font-weight: 520; }
+
+    .readout {
+      border-radius: 16px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid rgba(40,35,25,0.1);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(40,35,25,0.08);
+      padding-bottom: 6px;
+    }
+    .readout div:last-child { border-bottom: 0; padding-bottom: 0; }
+    .readout span:first-child { color: var(--muted); }
+
+    .notice {
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(143, 72, 30, 0.09);
+      color: #61351f;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      display: none;
+    }
+    .notice.visible { display: block; }
+
+    .theory {
+      margin-top: 18px;
+      padding: 22px;
+      line-height: 1.65;
+    }
+
+    .theory h2 { margin-top: 0; }
+    code {
+      background: rgba(0,0,0,0.055);
+      border-radius: 6px;
+      padding: 0.1em 0.3em;
+    }
+
+    @media (max-width: 1020px) {
+      .layout { grid-template-columns: 1fr; }
+      .canvas-wrap { min-height: 520px; }
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <header>
+    <h1>Diagramma H-R interattivo con griglia MIST</h1>
+    <p class="subtitle">
+      Diagramma Hertzsprung-Russell disegnato nativamente in canvas, con selezione di massa iniziale,
+      metallicità e rotazione. Gli assi si adattano automaticamente ai dati caricati, così anche le
+      fasi di nana bianca ad alta temperatura restano visibili.
+    </p>
+  </header>
+
+  <section class="layout">
+    <article class="chart-card">
+      <div class="canvas-wrap">
+        <canvas id="hrCanvas"></canvas>
+      </div>
+    </article>
+
+    <aside class="panel">
+      <h2>Controlli</h2>
+      <div id="notice" class="notice"></div>
+
+      <div class="control">
+        <label for="jsonInput">Carica manualmente un dataset JSON</label>
+        <input id="jsonInput" type="file" accept=".json,application/json" />
+      </div>
+
+      <div class="control">
+        <label for="fehSelect">Metallicità [Fe/H]</label>
+        <select id="fehSelect"></select>
+      </div>
+
+      <div class="control">
+        <label for="rotSelect">Rotazione iniziale v/vcrit</label>
+        <select id="rotSelect"></select>
+      </div>
+
+      <div class="control">
+        <label for="massSelect">Massa iniziale</label>
+        <select id="massSelect"></select>
+      </div>
+
+      <div class="control">
+        <label for="timeSlider">Tempo evolutivo</label>
+        <input id="timeSlider" type="range" min="0" max="10000" value="0" />
+      </div>
+
+      <div class="row">
+        <button id="playBtn">Avvia</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+
+      <div class="control">
+        <label for="speedSlider">Velocità animazione</label>
+        <input id="speedSlider" type="range" min="0.05" max="4" step="0.05" value="1" />
+      </div>
+
+      <div class="control">
+        <label for="timeMode">Mappatura temporale</label>
+        <select id="timeMode">
+          <option value="balanced" selected>didattica bilanciata (consigliata)</option>
+          <option value="arc">didattica geometrica</option>
+          <option value="logage">fisica: età logaritmica</option>
+          <option value="linearage">fisica: età lineare</option>
+        </select>
+      </div>
+
+      <div class="checks">
+        <label><input id="showAll" type="checkbox" checked /> Mostra tutte le masse del dataset corrente</label>
+        <label><input id="showTrail" type="checkbox" checked /> Mostra traiettoria percorsa</label>
+        <label><input id="showLabels" type="checkbox" checked /> Mostra regioni H-R</label>
+        <label><input id="autoScale" type="checkbox" checked /> Assi automatici sul dataset corrente</label>
+      </div>
+
+      <div class="readout" aria-live="polite">
+        <div><span>Modello</span><strong id="outModel">—</strong></div>
+        <div><span>Età</span><strong id="outAge">—</strong></div>
+        <div><span>Massa attuale</span><strong id="outMass">—</strong></div>
+        <div><span>log Teff</span><strong id="outTeff">—</strong></div>
+        <div><span>Teff</span><strong id="outTeffK">—</strong></div>
+        <div><span>log L/L☉</span><strong id="outLogL">—</strong></div>
+        <div><span>L/L☉</span><strong id="outLum">—</strong></div>
+        <div><span>Fase MIST</span><strong id="outPhase">—</strong></div>
+      </div>
+    </aside>
+  </section>
+
+  
+  <section class="theory">
+    <h2>Parte teorica: lettura fisica delle tracce evolutive</h2>
+
+    <p>
+      Il diagramma di Hertzsprung-Russell rappresenta la luminosità stellare in funzione della temperatura efficace.
+      In questa pagina l’ascissa è
+      <strong>\( \log_{10}(T_{\mathrm{eff}}/\mathrm{K}) \)</strong>,
+      con temperatura decrescente verso destra, mentre l’ordinata è
+      <strong>\( \log_{10}(L/L_\odot) \)</strong>,
+      dove \(L\) è la luminosità della stella e \(L_\odot\) quella solare.
+      L’asse destro mostra una magnitudine bolometrica approssimata ottenuta da
+      \( M_{\mathrm{bol}} = 4.74 - 2.5\log_{10}(L/L_\odot) \).
+    </p>
+
+    <p>
+      Le curve mostrate non sono traiettorie “inventate”: sono tracce evolutive pre-calcolate con
+      <strong>MIST (MESA Isochrones and Stellar Tracks)</strong>.
+      Ogni punto della traccia corrisponde a uno stato fisico della stella caratterizzato almeno da età,
+      massa attuale, temperatura efficace, luminosità e fase evolutiva. Quando cambi massa iniziale,
+      metallicità o rotazione, non stai modificando una stessa stella “in diretta”: stai selezionando
+      un modello stellare diverso.
+    </p>
+
+    <h3>1. Fasi evolutive principali</h3>
+
+    <p>
+      <strong>Pre-main sequence (PMS, pre-sequenza principale).</strong>
+      La stella nasce dal collasso gravitazionale di una nube. In questa fase la sorgente principale di energia
+      non è ancora la fusione nucleare stazionaria, ma il rilascio di energia gravitazionale per contrazione.
+      Per stelle di piccola massa la contrazione avviene lungo una traccia simile alla traccia di Hayashi:
+      l’oggetto rimane relativamente freddo ma molto luminoso e poi si scalda gradualmente. Per masse più grandi
+      compare anche una fase di tipo Henyey, più orizzontale nel diagramma H-R.
+    </p>
+
+    <p>
+      <strong>Main sequence (MS, sequenza principale).</strong>
+      La stella raggiunge l’equilibrio idrostatico ed entra nella fase in cui fonde idrogeno in elio nel nucleo.
+      È la fase più lunga della vita stellare. La posizione sulla sequenza principale dipende soprattutto dalla
+      massa iniziale: stelle più massicce sono più luminose e più calde, quindi più in alto a sinistra.
+    </p>
+
+    <p>
+      <strong>Subgiant branch (SGB) e red giant branch (RGB).</strong>
+      Quando l’idrogeno nel nucleo si esaurisce, la combustione nucleare centrale si arresta. Il nucleo di elio
+      si contrae e si scalda, mentre l’idrogeno continua a bruciare in un guscio (“shell”) attorno al nucleo.
+      L’inviluppo esterno si espande, la temperatura superficiale diminuisce e la luminosità aumenta: la stella
+      si sposta verso destra e verso l’alto nel diagramma, entrando nella regione delle giganti rosse.
+    </p>
+
+    <p>
+      <strong>Helium flash.</strong>
+      Nelle stelle di bassa massa il nucleo di elio alla fine della RGB diventa <em>degenere</em> prima di
+      raggiungere la temperatura di accensione dell’elio. In materia degenere la pressione dipende poco dalla
+      temperatura, quindi il nucleo non si espande efficacemente quando il rate di reazione aumenta:
+      l’accensione dell’elio avviene in modo esplosivo, ma l’evento resta quasi completamente confinato
+      all’interno della stella e non distrugge l’inviluppo. Questo è il cosiddetto <strong>helium flash</strong>.
+      In termini di massa iniziale, il flash compare tipicamente per stelle con massa iniziale inferiore a circa
+      \(2\)–\(2.3\,M_\odot\), con valore preciso dipendente dal modello e dalla metallicità.
+    </p>
+
+    <p>
+      <strong>Core helium burning (CHeB).</strong>
+      Dopo l’accensione dell’elio, la stella brucia elio nel nucleo producendo carbonio e ossigeno tramite
+      processo triplo-alfa e reazioni successive. Il percorso nel diagramma dipende dalla massa e dalla perdita
+      di massa precedente: nelle stelle di bassa massa la stella si sposta in una regione spesso associata alla
+      <em>horizontal branch</em> o, per metallicità circa solare, al <em>red clump</em>. Nelle stelle più massive
+      questa fase è meno “orizzontale” e può occupare regioni diverse del diagramma.
+    </p>
+
+    <p>
+      <strong>Asymptotic giant branch (AGB).</strong>
+      Terminato l’elio nel nucleo, il nucleo di carbonio-ossigeno si contrae e la stella brucia elio e idrogeno
+      in shell. L’inviluppo si espande di nuovo e la stella torna nella regione fredda e luminosa del diagramma.
+      In questa fase compaiono pulsazioni termiche, forte perdita di massa e arricchimento chimico dell’inviluppo.
+      Nei modelli MIST questa fase compare come EAGB (early asymptotic giant branch) e TP-AGB (thermally pulsing AGB).
+    </p>
+
+    <p>
+      <strong>Post-AGB e white dwarf cooling sequence.</strong>
+      Quando l’inviluppo viene espulso, il nucleo caldo rimasto si muove rapidamente verso sinistra:
+      la temperatura efficace aumenta molto mentre la luminosità non cala subito in modo drastico. Proprio questo
+      produce il tratto quasi orizzontale o obliquo che avevi notato prima della cooling sequence. Fisicamente
+      è una fase rapida: la stella sta diventando il residuo compatto che ionizza l’eventuale nebulosa planetaria.
+      Una volta entrata nella sequenza di raffreddamento delle nane bianche, non avviene più fusione nucleare
+      significativa: l’oggetto si raffredda lentamente e scende verso il basso nel diagramma.
+    </p>
+
+    <p>
+      <strong>Stelle massicce.</strong>
+      Se la massa è sufficientemente grande, la stella non termina come nana bianca ma prosegue con l’accensione
+      successiva di carbonio, neon, ossigeno e silicio, costruendo un nucleo sempre più pesante fino al ferro.
+      Le tracce possono attraversare regioni di supergigante rossa, supergigante blu o, nei casi estremi,
+      fase di Wolf-Rayet. Alla fine avviene il collasso gravitazionale del nucleo con supernova da collasso del nucleo
+      e formazione di stella di neutroni o buco nero.
+    </p>
+
+    <h3>2. Cosa cambia con la massa iniziale</h3>
+
+    <p>
+      La massa iniziale \(M\) è il parametro più importante dell’evoluzione stellare. In prima approssimazione,
+      all’aumentare di \(M\):
+    </p>
+
+    <ul>
+      <li>aumentano fortemente luminosità e temperatura efficace;</li>
+      <li>diminuisce la durata della sequenza principale;</li>
+      <li>le fasi post-sequenza principale diventano più violente e complesse;</li>
+      <li>cambia il destino finale: nana bianca per masse basse e intermedie, collasso del nucleo per masse elevate.</li>
+    </ul>
+
+    <p>
+      Una differenza fondamentale riguarda anche il <strong>meccanismo dominante di fusione dell’idrogeno</strong>.
+      Nelle stelle di bassa massa, come il Sole, domina la <strong>catena protone-protone (pp)</strong>.
+      Nelle stelle più massicce, tipicamente sopra circa \(1.2\)–\(1.5\,M_\odot\) a seconda della composizione,
+      domina invece il <strong>ciclo CNO (carbonio-azoto-ossigeno)</strong>. Questo accade perché il ciclo CNO ha
+      una dipendenza molto più forte dalla temperatura, quindi diventa efficiente solo quando la temperatura centrale
+      è sufficientemente alta.
+    </p>
+
+    <p>
+      Qui c’è una correzione importante rispetto al dubbio che avevi scritto: sì, il fatto che il nucleo passi dalla
+      catena pp al ciclo CNO ha conseguenze strutturali molto rilevanti. In particolare:
+    </p>
+
+    <ul>
+      <li>nelle stelle di bassa massa la produzione di energia è distribuita in modo relativamente meno concentrato,
+          perciò il <strong>nucleo tende a essere radiativo</strong> e l’<strong>inviluppo convettivo</strong>;</li>
+      <li>nelle stelle più massicce, con dominanza del ciclo CNO, la produzione di energia è molto concentrata nel centro,
+          quindi il <strong>nucleo tende a essere convettivo</strong>, mentre l’<strong>inviluppo è spesso radiativo</strong>.</li>
+    </ul>
+
+    <p>
+      Dunque la tua intuizione era giusta nella sostanza: stelle più massicce mostrano effettivamente una struttura interna
+      diversa, ma in modo più preciso si dice che sviluppano un <strong>nucleo convettivo</strong> e, tipicamente,
+      un <strong>inviluppo radiativo</strong>.
+    </p>
+
+    <h3>3. Cosa cambia con la metallicità</h3>
+
+    <p>
+      La metallicità, qui descritta tramite \([\mathrm{Fe}/\mathrm{H}]\), influenza opacità, struttura termica e velocità
+      di evoluzione. Una stella con metallicità più bassa contiene meno elementi pesanti, quindi in molti regimi ha
+      opacità più bassa: l’energia fuoriesce più facilmente e la stella tende a essere più compatta e più calda.
+      Per questo, a parità di massa, le tracce a bassa metallicità si spostano spesso più verso sinistra nel diagramma.
+    </p>
+
+    <p>
+      La metallicità influenza anche:
+    </p>
+
+    <ul>
+      <li>la lunghezza e la posizione della sequenza principale;</li>
+      <li>la posizione del ramo delle giganti;</li>
+      <li>la morfologia della horizontal branch / red clump;</li>
+      <li>l’efficienza dei venti stellari e quindi la perdita di massa, soprattutto per stelle massicce.</li>
+    </ul>
+
+    <p>
+      Inoltre, poiché il ciclo CNO usa carbonio, azoto e ossigeno come catalizzatori, la composizione chimica iniziale
+      influenza anche il dettaglio della combustione dell’idrogeno nelle stelle abbastanza calde da usare questo ciclo.
+      Quindi massa e metallicità non agiscono in modo indipendente: interagiscono.
+    </p>
+
+    <h3>4. Cosa cambia con la rotazione</h3>
+
+    <p>
+      Se attivi la rotazione, il modello cambia perché il trasporto di momento angolare e il mixing rotazionale
+      modificano i profili interni di composizione. In generale, la rotazione può:
+    </p>
+
+    <ul>
+      <li>prolungare la sequenza principale, perché rifornisce il nucleo di nuovo combustibile;</li>
+      <li>cambiare temperatura e luminosità della traccia;</li>
+      <li>influenzare la perdita di massa e l’evoluzione delle stelle massicce;</li>
+      <li>rendere più probabile il passaggio a fasi di supergigante blu o Wolf-Rayet in certe masse.</li>
+    </ul>
+
+    <p>
+      L’effetto è in genere più evidente per stelle intermedie e massicce che non per stelle poco massicce.
+      Per questo la rotazione è un ottimo parametro aggiuntivo, ma spesso non è il primo asse didattico da studiare:
+      di solito è più immediato partire da massa e metallicità.
+    </p>
+
+    <h3>5. Come leggere questa simulazione</h3>
+
+    <p>
+      La modalità temporale <em>didattica bilanciata</em> è stata introdotta per evitare che alcuni tratti molto rapidi,
+      soprattutto nelle fasi finali, risultino eccessivamente lenti solo perché descritti da molti punti o da una lunga
+      estensione geometrica nel diagramma. Le modalità in età lineare e logaritmica sono invece più “fisiche”, ma meno
+      uniformi visivamente. Quindi:
+    </p>
+
+    <ul>
+      <li>usa <strong>didattica bilanciata</strong> per spiegare il percorso globale;</li>
+      <li>usa <strong>età logaritmica</strong> per percepire meglio la grande differenza di scale temporali;</li>
+      <li>usa <strong>età lineare</strong> se vuoi vedere quanto le fasi brevi siano davvero brevissime rispetto alla sequenza principale.</li>
+    </ul>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("hrCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const fehSelect = document.getElementById("fehSelect");
+  const rotSelect = document.getElementById("rotSelect");
+  const massSelect = document.getElementById("massSelect");
+  const jsonInput = document.getElementById("jsonInput");
+  const timeSlider = document.getElementById("timeSlider");
+  const speedSlider = document.getElementById("speedSlider");
+  const timeMode = document.getElementById("timeMode");
+  const showAll = document.getElementById("showAll");
+  const showTrail = document.getElementById("showTrail");
+  const showLabels = document.getElementById("showLabels");
+  const autoScale = document.getElementById("autoScale");
+  const playBtn = document.getElementById("playBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const notice = document.getElementById("notice");
+
+  const out = {
+    model: document.getElementById("outModel"),
+    age: document.getElementById("outAge"),
+    mass: document.getElementById("outMass"),
+    teff: document.getElementById("outTeff"),
+    teffK: document.getElementById("outTeffK"),
+    logL: document.getElementById("outLogL"),
+    lum: document.getElementById("outLum"),
+    phase: document.getElementById("outPhase")
+  };
+
+  const COLORS = ["#246eb9", "#d9862b", "#2a9d55", "#cc3b33", "#6d3bbf", "#008b8b", "#8d5a2b", "#b24d7c", "#4d7bb2", "#8f7e2d", "#2f9d9a", "#9a4b2d"];
+
+  let manifest = null;
+  let currentDataset = null;
+  let activeIndex = 0;
+  let playing = false;
+  let lastTs = null;
+
+  let AXIS = {
+    logTMin: Math.log10(2500),
+    logTMax: Math.log10(150000),
+    logLMin: -5.2,
+    logLMax: 6.8
+  };
+
+  function showNotice(message) {
+    notice.textContent = message;
+    notice.classList.toggle("visible", Boolean(message));
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function plotBox() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    return {
+      left: 92,
+      right: w - 92,
+      top: 66,
+      bottom: h - 80,
+      width: w - 184,
+      height: h - 146
+    };
+  }
+
+  function xFromLogT(logT) {
+    const b = plotBox();
+    const f = (AXIS.logTMax - logT) / (AXIS.logTMax - AXIS.logTMin);
+    return b.left + f * b.width;
+  }
+
+  function yFromLogL(logL) {
+    const b = plotBox();
+    const f = (logL - AXIS.logLMin) / (AXIS.logLMax - AXIS.logLMin);
+    return b.bottom - f * b.height;
+  }
+
+  function niceTicksTemperature() {
+    const candidates = [300000, 200000, 150000, 100000, 75000, 50000, 30000, 20000, 15000, 10000, 7500, 6000, 5000, 4000, 3000, 2500];
+    return candidates.filter(t => {
+      const lt = Math.log10(t);
+      return lt <= AXIS.logTMax + 1e-9 && lt >= AXIS.logTMin - 1e-9;
+    });
+  }
+
+  function niceTicksLuminosity() {
+    const out = [];
+    for (let k = Math.ceil(AXIS.logLMin); k <= Math.floor(AXIS.logLMax); k++) out.push(k);
+    return out;
+  }
+
+  function logTFromSpectralLabel(label) {
+    const teff = { O: 30000, B: 15000, A: 9000, F: 7000, G: 5700, K: 4500, M: 3200 };
+    return Math.log10(teff[label]);
+  }
+
+  function superscript(n) {
+    const map = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+    return String(n).split("").map(c => map[c] || c).join("");
+  }
+
+  function formatAge(ageYr) {
+    if (!Number.isFinite(ageYr)) return "—";
+    if (ageYr >= 1e9) return `${(ageYr / 1e9).toFixed(3)} Gyr`;
+    if (ageYr >= 1e6) return `${(ageYr / 1e6).toFixed(3)} Myr`;
+    if (ageYr >= 1e3) return `${(ageYr / 1e3).toFixed(3)} kyr`;
+    return `${ageYr.toFixed(0)} yr`;
+  }
+
+  function phaseLabel(p) {
+    const map = {
+      "-1": "PMS / pre-sequenza principale",
+      "0": "MS / sequenza principale",
+      "2": "SGB + RGB / subgigante + gigante rossa",
+      "3": "CHeB / bruciamento centrale dell'elio",
+      "4": "EAGB / early AGB",
+      "5": "TP-AGB / thermal-pulse AGB",
+      "6": "post-AGB / raffreddamento nana bianca",
+      "9": "WR / Wolf-Rayet"
+    };
+    return map[String(p)] || String(p ?? "—");
+  }
+
+  function validPoint(p) {
+    return Number.isFinite(p.logTeff) && Number.isFinite(p.logL);
+  }
+
+  function computeAxisFromDataset(dataset) {
+    const all = [];
+    for (const tr of dataset.tracks || []) {
+      for (const p of tr.points || []) {
+        if (validPoint(p)) all.push(p);
+      }
+    }
+    if (!all.length) {
+      AXIS = { logTMin: Math.log10(2500), logTMax: Math.log10(150000), logLMin: -5.2, logLMax: 6.8 };
+      return;
+    }
+
+    let minT = Math.min(...all.map(p => p.logTeff));
+    let maxT = Math.max(...all.map(p => p.logTeff));
+    let minL = Math.min(...all.map(p => p.logL));
+    let maxL = Math.max(...all.map(p => p.logL));
+
+    if (!autoScale.checked) {
+      AXIS = { logTMin: Math.log10(2500), logTMax: Math.log10(150000), logLMin: -5.2, logLMax: 6.8 };
+      return;
+    }
+
+    const tPad = Math.max(0.05, 0.06 * (maxT - minT));
+    const lPad = Math.max(0.35, 0.08 * (maxL - minL));
+
+    minT = Math.max(Math.log10(2000), minT - tPad);
+    maxT = Math.min(Math.log10(500000), maxT + tPad);
+    minL = minL - lPad;
+    maxL = maxL + lPad;
+
+    // Alcuni limiti didattici ragionevoli.
+    minT = Math.min(minT, Math.log10(3000));
+    maxT = Math.max(maxT, Math.log10(50000));
+    minL = Math.min(minL, -4.5);
+    maxL = Math.max(maxL, 5.5);
+
+    AXIS = { logTMin: minT, logTMax: maxT, logLMin: minL, logLMax: maxL };
+  }
+
+  function drawAxes() {
+    const b = plotBox();
+    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+    ctx.fillStyle = "#fffdfa";
+    ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+    ctx.strokeStyle = "rgba(32,29,25,0.86)";
+    ctx.lineWidth = 1.35;
+    ctx.strokeRect(b.left, b.top, b.width, b.height);
+
+    const tTicks = niceTicksTemperature();
+    ctx.font = "12px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (const t of tTicks) {
+      const x = xFromLogT(Math.log10(t));
+      ctx.strokeStyle = "rgba(34,31,27,0.11)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, b.top);
+      ctx.lineTo(x, b.bottom);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(34,31,27,0.70)";
+      ctx.beginPath();
+      ctx.moveTo(x, b.bottom);
+      ctx.lineTo(x, b.bottom + 6);
+      ctx.stroke();
+
+      ctx.fillStyle = "#2b2721";
+      ctx.fillText(String(t), x, b.bottom + 11);
+    }
+
+    const lTicks = niceTicksLuminosity();
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (const l of lTicks) {
+      const y = yFromLogL(l);
+      ctx.strokeStyle = "rgba(34,31,27,0.11)";
+      ctx.beginPath();
+      ctx.moveTo(b.left, y);
+      ctx.lineTo(b.right, y);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(34,31,27,0.70)";
+      ctx.beginPath();
+      ctx.moveTo(b.left - 6, y);
+      ctx.lineTo(b.left, y);
+      ctx.stroke();
+
+      ctx.fillStyle = "#2b2721";
+      const label = l === 0 ? "1" : `10${superscript(l)}`;
+      ctx.fillText(label, b.left - 10, y);
+    }
+
+    ctx.textAlign = "left";
+    for (let m = -15; m <= 18; m += 5) {
+      const logL = (4.74 - m) / 2.5;
+      if (logL < AXIS.logLMin || logL > AXIS.logLMax) continue;
+      const y = yFromLogL(logL);
+      ctx.strokeStyle = "rgba(34,31,27,0.70)";
+      ctx.beginPath();
+      ctx.moveTo(b.right, y);
+      ctx.lineTo(b.right + 6, y);
+      ctx.stroke();
+
+      ctx.fillStyle = "#2b2721";
+      ctx.fillText(m > 0 ? `+${m}` : String(m), b.right + 10, y);
+    }
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.font = "16px system-ui, sans-serif";
+    for (const s of ["O", "B", "A", "F", "G", "K", "M"]) {
+      const lt = logTFromSpectralLabel(s);
+      if (lt < AXIS.logTMin || lt > AXIS.logTMax) continue;
+      const x = xFromLogT(lt);
+      ctx.strokeStyle = "rgba(34,31,27,0.72)";
+      ctx.beginPath();
+      ctx.moveTo(x, b.top - 6);
+      ctx.lineTo(x, b.top);
+      ctx.stroke();
+      ctx.fillStyle = "#2b2721";
+      ctx.fillText(s, x, b.top - 12);
+    }
+
+    ctx.fillStyle = "#1f1c18";
+    ctx.font = "15px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Temperatura efficace Teff (K)", (b.left + b.right) / 2, canvas.clientHeight - 24);
+    ctx.fillText("Classe spettrale", (b.left + b.right) / 2, 23);
+
+    ctx.save();
+    ctx.translate(25, (b.top + b.bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Luminosità L / L☉", 0, 0);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(canvas.clientWidth - 24, (b.top + b.bottom) / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillText("Magnitudine bolometrica assoluta Mbol", 0, 0);
+    ctx.restore();
+
+    if (showLabels.checked) drawRegionLabels();
+  }
+
+  function drawRegionLabels() {
+    ctx.save();
+    ctx.fillStyle = "rgba(58,52,44,0.38)";
+
+    // Etichette più stabili e fisicamente sensate
+    ctx.font = "italic 16px system-ui, sans-serif";
+    ctx.save();
+    ctx.translate(xFromLogT(Math.log10(7800)), yFromLogL(0.45));
+    ctx.rotate(-0.63);
+    ctx.fillText("Sequenza principale", 0, 0);
+    ctx.restore();
+
+    ctx.font = "italic 17px system-ui, sans-serif";
+    ctx.fillText("Giganti", xFromLogT(Math.log10(4700)), yFromLogL(2.15));
+    ctx.fillText("Supergiganti", xFromLogT(Math.log10(7000)), yFromLogL(5.35));
+    ctx.fillText("Nane bianche", xFromLogT(Math.log10(18000)), yFromLogL(-3.55));
+    ctx.restore();
+  }
+
+  function currentTrack() {
+    return currentDataset?.tracks?.[activeIndex] || null;
+  }
+
+  function segmentWeights(track, mode) {
+    const pts = (track.points || []).filter(validPoint);
+    if (pts.length < 2) return { pts, cumulative: [0, 1], total: 1 };
+
+    const weights = [];
+    const arcScaleT = Math.max(1e-6, AXIS.logTMax - AXIS.logTMin);
+    const arcScaleL = Math.max(1e-6, AXIS.logLMax - AXIS.logLMin);
+
+    const logAgeSteps = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a0 = Math.max(1, Number(pts[i].age_yr));
+      const a1 = Math.max(1, Number(pts[i + 1].age_yr));
+      const dlog = Math.max(0, Math.log10(a1) - Math.log10(a0));
+      if (dlog > 0) logAgeSteps.push(dlog);
+    }
+    const sorted = [...logAgeSteps].sort((a, b) => a - b);
+    const medLogStep = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const dx = (pts[i + 1].logTeff - pts[i].logTeff) / arcScaleT;
+      const dy = (pts[i + 1].logL - pts[i].logL) / arcScaleL;
+      const arc = Math.max(1e-6, Math.hypot(dx, dy));
+
+      const a0 = Math.max(1, Number(pts[i].age_yr));
+      const a1 = Math.max(1, Number(pts[i + 1].age_yr));
+      const dage = Math.max(0, a1 - a0);
+      const dlog = Math.max(0, Math.log10(a1) - Math.log10(a0));
+
+      let w;
+      switch (mode) {
+        case "linearage":
+          w = Math.max(1e-9, dage);
+          break;
+        case "logage":
+          w = Math.max(1e-9, dlog);
+          break;
+        case "arc":
+          w = arc;
+          break;
+        case "balanced":
+        default: {
+          // comprime i segmenti geometricamente lunghi ma quasi istantanei nel tempo
+          const q = medLogStep > 0 ? Math.min(1, dlog / (3 * medLogStep)) : 1;
+          const compression = 0.10 + 0.90 * q;  // minimo 10% del tempo geometrico
+          w = arc * compression;
+          break;
+        }
+      }
+      weights.push(w);
+    }
+
+    const cumulative = [0];
+    for (const w of weights) cumulative.push(cumulative[cumulative.length - 1] + w);
+    const total = cumulative[cumulative.length - 1] || 1;
+    return { pts, cumulative, total };
+  }
+
+  function currentIndex(track) {
+    const f = Number(timeSlider.value) / Number(timeSlider.max);
+    const { pts, cumulative, total } = segmentWeights(track, timeMode.value);
+    if (pts.length < 2) return { pts, idx: 0 };
+
+    const target = f * total;
+    let idx = 0;
+    while (idx < cumulative.length - 1 && cumulative[idx + 1] < target) idx++;
+    idx = Math.max(0, Math.min(pts.length - 1, idx));
+    return { pts, idx };
+  }
+
+  function drawTrack(track, color, alpha = 1, untilIndex = null, lineWidth = 2.0) {
+    const pts = (track.points || []).filter(validPoint);
+    if (pts.length < 2) return;
+    const n = untilIndex === null ? pts.length : Math.max(1, Math.min(pts.length, untilIndex + 1));
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xFromLogT(pts[i].logTeff);
+      const y = yFromLogL(pts[i].logL);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    if (n > 15) {
+      for (let a = 1; a <= 4; a++) {
+        const idx = Math.floor((n - 2) * a / 5);
+        drawArrowHead(pts[idx], pts[idx + 1], color);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawArrowHead(p0, p1, color) {
+    const x0 = xFromLogT(p0.logTeff), y0 = yFromLogL(p0.logL);
+    const x1 = xFromLogT(p1.logTeff), y1 = yFromLogL(p1.logL);
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    const size = 8;
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.translate(x1, y1);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size * 0.55);
+    ctx.lineTo(-size, -size * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPoint(p, color) {
+    const x = xFromLogT(p.logTeff), y = yFromLogL(p.logL);
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#fffdfa";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 17, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawLegend() {
+    if (!currentDataset?.tracks?.length) return;
+    const b = plotBox();
+    const visibleTracks = currentDataset.tracks;
+    const n = Math.min(visibleTracks.length, 12);
+    const h = 18 + n * 22;
+    const x = b.left + 14;
+    const y = b.bottom - h - 12;
+    const w = 220;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(255,253,247,0.9)";
+    ctx.strokeStyle = "rgba(34,31,27,0.18)";
+    roundedRect(x, y, w, h, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = "12px system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    for (let i = 0; i < n; i++) {
+      const yy = y + 18 + i * 22;
+      ctx.strokeStyle = COLORS[i % COLORS.length];
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 14, yy);
+      ctx.lineTo(x + 46, yy);
+      ctx.stroke();
+      const m = visibleTracks[i].model_mass ?? visibleTracks[i].initial_mass;
+      ctx.fillStyle = "#2b2721";
+      ctx.fillText(`${Number(m).toFixed(m < 10 ? 2 : 1)} M☉`, x + 56, yy);
+    }
+    ctx.restore();
+  }
+
+  function getTrackLabel(track) {
+    const m = track.model_mass ?? track.initial_mass;
+    const feh = currentDataset?.feh;
+    const vv = currentDataset?.vvcrit;
+    return `${Number(m).toFixed(m < 10 ? 2 : 1)} M☉, [Fe/H]=${Number(feh).toFixed(2)}, v/vcrit=${Number(vv).toFixed(1)}`;
+  }
+
+  function updateReadout(track, p) {
+    if (!track || !p) {
+      Object.values(out).forEach(el => el.textContent = "—");
+      return;
+    }
+    out.model.textContent = getTrackLabel(track);
+    out.age.textContent = formatAge(Number(p.age_yr));
+    out.mass.textContent = Number.isFinite(p.mass) ? `${Number(p.mass).toFixed(4)} M☉` : "—";
+    out.teff.textContent = Number(p.logTeff).toFixed(4);
+    out.teffK.textContent = `${Math.round(Math.pow(10, Number(p.logTeff))).toLocaleString("it-IT")} K`;
+    out.logL.textContent = Number(p.logL).toFixed(4);
+    out.lum.textContent = `${Math.pow(10, Number(p.logL)).toPrecision(4)} L☉`;
+    out.phase.textContent = phaseLabel(p.phase);
+  }
+
+  function draw() {
+    if (currentDataset) computeAxisFromDataset(currentDataset);
+    drawAxes();
+
+    if (!currentDataset?.tracks?.length) {
+      const b = plotBox();
+      ctx.save();
+      ctx.fillStyle = "rgba(45,40,33,0.64)";
+      ctx.font = "16px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Genera i file con prepare_mist_hr_grid.py oppure carica un dataset JSON.", (b.left + b.right) / 2, (b.top + b.bottom) / 2);
+      ctx.restore();
+      return;
+    }
+
+    const track = currentTrack();
+    const { pts, idx } = currentIndex(track);
+    const color = COLORS[activeIndex % COLORS.length];
+
+    if (showAll.checked) {
+      currentDataset.tracks.forEach((tr, i) => {
+        if (i !== activeIndex) drawTrack(tr, COLORS[i % COLORS.length], 0.30, null, 1.45);
+      });
+    }
+
+    if (showTrail.checked) {
+      drawTrack(track, color, 0.96, idx, 2.65);
+      drawTrack(track, color, 0.20, null, 1.10);
+    } else {
+      drawTrack(track, color, 0.50, null, 1.7);
+    }
+
+    const p = pts[idx] || pts[0];
+    drawPoint(p, color);
+    drawLegend();
+    updateReadout(track, p);
+  }
+
+  function normalizeDataset(raw) {
+    const tracks = Array.isArray(raw.tracks) ? raw.tracks : [];
+    return {
+      source: raw.source || "",
+      source_url: raw.source_url || "",
+      feh: Number(raw.feh),
+      afe: Number(raw.afe),
+      vvcrit: Number(raw.vvcrit),
+      tracks: tracks.map(tr => ({
+        initial_mass: Number(tr.initial_mass ?? tr.target_mass ?? tr.model_mass),
+        model_mass: Number(tr.model_mass ?? tr.initial_mass ?? tr.target_mass),
+        filename: tr.filename ?? "",
+        phases_present: tr.phases_present ?? [],
+        points: (tr.points || []).map(p => ({
+          age_yr: Number(p.age_yr ?? p.star_age),
+          mass: Number(p.mass ?? p.star_mass),
+          logL: Number(p.logL ?? p.log_L),
+          logTeff: Number(p.logTeff ?? p.log_Teff),
+          logR: Number(p.logR ?? p.log_R),
+          logg: Number(p.logg ?? p.log_g),
+          phase: p.phase ?? ""
+        })).filter(validPoint)
+      })).filter(tr => tr.points.length >= 2).sort((a, b) => (a.model_mass || 0) - (b.model_mass || 0))
+    };
+  }
+
+  function formatSigned(x) {
+    return (x >= 0 ? "+" : "") + Number(x).toFixed(2);
+  }
+
+  function populateControlsFromManifest() {
+    if (!manifest) return;
+    const fehValues = [...new Set(manifest.datasets.map(d => Number(d.feh)))].sort((a, b) => a - b);
+    const rotValues = [...new Set(manifest.datasets.map(d => Number(d.vvcrit)))].sort((a, b) => a - b);
+
+    fehSelect.innerHTML = "";
+    for (const feh of fehValues) {
+      const opt = document.createElement("option");
+      opt.value = String(feh);
+      opt.textContent = formatSigned(feh);
+      fehSelect.appendChild(opt);
+    }
+
+    rotSelect.innerHTML = "";
+    for (const vv of rotValues) {
+      const opt = document.createElement("option");
+      opt.value = String(vv);
+      opt.textContent = vv.toFixed(1);
+      rotSelect.appendChild(opt);
+    }
+  }
+
+  function populateMassSelect() {
+    massSelect.innerHTML = "";
+    if (!currentDataset?.tracks?.length) return;
+    currentDataset.tracks.forEach((tr, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      const m = tr.model_mass ?? tr.initial_mass;
+      opt.textContent = `${Number(m).toFixed(m < 10 ? 2 : 1)} M☉`;
+      massSelect.appendChild(opt);
+    });
+    activeIndex = Math.min(activeIndex, Math.max(0, currentDataset.tracks.length - 1));
+    massSelect.value = String(activeIndex);
+  }
+
+  function findDatasetFile(feh, vvcrit) {
+    return manifest?.datasets?.find(d => Math.abs(Number(d.feh) - feh) < 1e-9 && Math.abs(Number(d.vvcrit) - vvcrit) < 1e-9)?.file || null;
+  }
+
+  async function loadDatasetBySelection() {
+    if (!manifest) return;
+    const feh = Number(fehSelect.value);
+    const vvcrit = Number(rotSelect.value);
+    const file = findDatasetFile(feh, vvcrit);
+    if (!file) {
+      showNotice("Nessun dataset disponibile per la combinazione scelta.");
+      currentDataset = null;
+      draw();
+      return;
+    }
+
+    try {
+      const res = await fetch(`data/${file}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      currentDataset = normalizeDataset(await res.json());
+      showNotice("");
+      activeIndex = 0;
+      timeSlider.value = "0";
+      populateMassSelect();
+      draw();
+    } catch (err) {
+      showNotice(`Errore nel caricamento del dataset ${file}: ${err.message}`);
+      currentDataset = null;
+      draw();
+    }
+  }
+
+  async function loadManifest() {
+    try {
+      const res = await fetch("data/manifest_mist_hr.json", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      manifest = await res.json();
+      populateControlsFromManifest();
+
+      if (fehSelect.options.length) fehSelect.selectedIndex = Math.min(2, fehSelect.options.length - 1); // prova a puntare a [Fe/H]=0 se presente
+      if (rotSelect.options.length) rotSelect.selectedIndex = 0;
+      await loadDatasetBySelection();
+    } catch (err) {
+      showNotice("Manifest MIST non trovato. Esegui prepare_mist_hr_grid.py, poi apri questa pagina tramite server locale. In alternativa puoi caricare manualmente un dataset JSON.");
+      draw();
+    }
+  }
+
+  function animate(ts) {
+    if (!playing) return;
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min(80, ts - lastTs);
+    lastTs = ts;
+
+    let v = Number(timeSlider.value) + dt * 0.014 * Number(speedSlider.value);
+    if (v >= Number(timeSlider.max)) {
+      v = Number(timeSlider.max);
+      playing = false;
+      playBtn.textContent = "Avvia";
+    }
+    timeSlider.value = String(v);
+    draw();
+    requestAnimationFrame(animate);
+  }
+
+  playBtn.addEventListener("click", () => {
+    playing = !playing;
+    playBtn.textContent = playing ? "Pausa" : "Avvia";
+    lastTs = null;
+    if (playing) requestAnimationFrame(animate);
+  });
+
+  resetBtn.addEventListener("click", () => {
+    playing = false;
+    playBtn.textContent = "Avvia";
+    timeSlider.value = "0";
+    draw();
+  });
+
+  massSelect.addEventListener("change", () => {
+    activeIndex = Number(massSelect.value);
+    timeSlider.value = "0";
+    draw();
+  });
+
+  fehSelect.addEventListener("change", loadDatasetBySelection);
+  rotSelect.addEventListener("change", loadDatasetBySelection);
+
+  [timeSlider, speedSlider, timeMode, showAll, showTrail, showLabels, autoScale].forEach(el => {
+    el.addEventListener("input", draw);
+    el.addEventListener("change", draw);
+  });
+
+  jsonInput.addEventListener("change", async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      currentDataset = normalizeDataset(JSON.parse(await file.text()));
+      showNotice("");
+      activeIndex = 0;
+      timeSlider.value = "0";
+      populateMassSelect();
+      draw();
+    } catch (err) {
+      showNotice(`Errore nel caricamento del JSON: ${err.message}`);
+      draw();
+    }
+  });
+
+  window.addEventListener("resize", resizeCanvas);
+
+  resizeCanvas();
+  loadManifest();
+})();
+</script>
+</body>
+</html>

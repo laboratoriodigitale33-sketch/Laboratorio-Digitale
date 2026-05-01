@@ -6,24 +6,13 @@
 <title>Meccanismi di Radiazione Astrofisica</title>
 <script>
 window.SIM_METADATA = {
-  "title": "Meccanismi di Radiazione Astrofisica",
-  "description": "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica, con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
-  "category": "Astrofisica",
-  "icon": "🌌",
-  "order": 20,
-  "tags": [
-    "astrofisica",
-    "radiazione",
-    "spettro",
-    "corpo nero",
-    "bremsstrahlung",
-    "sincrotrone",
-    "Compton inverso",
-    "SED",
-    "alte energie",
-    "emissione continua"
-  ],
-  "level": "avanzato"
+  title: "Meccanismi di Radiazione Astrofisica",
+  description: "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
+  category: "Astrofisica",
+  icon: "🌌",
+  order: 20,
+  tags: ["astrofisica", "radiazione", "spettro", "corpo nero", "bremsstrahlung", "sincrotrone", "Compton inverso", "SED", "alte energie", "emissione continua"],
+  level: "avanzato"
 };
 </script>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -438,7 +427,7 @@ window.SIM_METADATA = {
 
   .mechanism-card.active .card-body {
     padding: 1rem 1rem;
-    max-height: 400px;
+    max-height: 720px;
   }
 
   /* ── SLIDER ── */
@@ -684,48 +673,6 @@ window.SIM_METADATA = {
 <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
 <div class="main-wrap">
 
-  <!-- INTRO -->
-  <div class="intro-block">
-    <div class="intro-text">
-      <p>
-        Ogni sorgente astrofisica emette radiazione attraverso uno o più meccanismi fisici distinti.
-        La <em>distribuzione spettrale di energia</em> (SED, Spectral Energy Distribution) — ovvero
-        come il flusso si distribuisce in frequenza — è la firma che permette di diagnosticare
-        la natura della sorgente, le condizioni fisiche del plasma e i processi di accelerazione
-        in atto.
-      </p>
-      <p>
-        In questo simulatore puoi attivare e sovrapporre i quattro principali meccanismi di emissione
-        continua, modificarne i parametri fisici in tempo reale e osservare come si costruisce
-        la SED complessiva. L'asse orizzontale copre circa 18 ordini di grandezza in frequenza,
-        dall'emissione radio ai fotoni gamma ad altissima energia.
-      </p>
-      <p>
-        La visualizzazione in $\nu F_\nu$ (asse y) pesa equamente il contributo energetico
-        di ogni decade di frequenza, rendendo immediatamente visibile dove si concentra
-        la potenza irradiata.
-      </p>
-    </div>
-    <div class="intro-formula">
-      <div class="formula-row">
-        <span class="formula-label">Corpo Nero</span>
-        <span class="formula-eq">$B_\nu \propto \dfrac{\nu^3}{e^{h\nu/kT}-1}$</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-label">Bremsstrahlung</span>
-        <span class="formula-eq">$j_\nu \propto n_e^2\, T^{-1/2}\, e^{-h\nu/kT}\, \bar{g}_{ff}$</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-label">Sincrotrone</span>
-        <span class="formula-eq">$P(\nu) \propto B^{(p+1)/2}\, \nu^{-(p-1)/2}$</span>
-      </div>
-      <div class="formula-row">
-        <span class="formula-label">Compton Inverso</span>
-        <span class="formula-eq">$\nu_{out} \approx \gamma^2 \nu_{in},\quad y = \dfrac{4kT}{m_e c^2}\tau$</span>
-      </div>
-    </div>
-  </div>
-
   <!-- SIMULATORE -->
   <div class="sim-section">
     <h2 class="section-heading">Simulatore Interattivo</h2>
@@ -791,7 +738,7 @@ window.SIM_METADATA = {
       </div>
 
       <!-- BREMSSTRAHLUNG -->
-      <div class="mechanism-card" id="card-ff">
+      <div class="mechanism-card active" id="card-ff">
         <div class="card-header" onclick="toggleCard('ff')">
           <div class="card-header-left">
             <div class="color-dot" style="background:#7ecfcf"></div>
@@ -801,7 +748,7 @@ window.SIM_METADATA = {
             </div>
           </div>
           <label class="toggle-switch" onclick="event.stopPropagation()">
-            <input type="checkbox" id="tog-ff" onchange="updatePlot()">
+            <input type="checkbox" id="tog-ff" checked onchange="updatePlot()">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -825,13 +772,21 @@ window.SIM_METADATA = {
           </div>
           <label class="checkbox-row">
             <input type="checkbox" id="chk-ff-abs" onchange="updatePlot()">
-            Self-absorption (free-free absorption)
+            Autoassorbimento free-free
           </label>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Turnover assorbimento $\nu_{\tau=1}$</span>
+              <span class="param-value" id="val-ff-nuabs">10<sup>9.0</sup> Hz</span>
+            </div>
+            <input type="range" id="sl-ff-nuabs" min="7" max="12" step="0.05" value="9"
+              oninput="updateVal('ff-nuabs', '10<sup>'+(+this.value).toFixed(1)+'</sup> Hz'); updatePlot()">
+          </div>
         </div>
       </div>
 
       <!-- SINCROTRONE -->
-      <div class="mechanism-card" id="card-sy">
+      <div class="mechanism-card active" id="card-sy">
         <div class="card-header" onclick="toggleCard('sy')">
           <div class="card-header-left">
             <div class="color-dot" style="background:#d4886a"></div>
@@ -841,7 +796,7 @@ window.SIM_METADATA = {
             </div>
           </div>
           <label class="toggle-switch" onclick="event.stopPropagation()">
-            <input type="checkbox" id="tog-sy" onchange="updatePlot()">
+            <input type="checkbox" id="tog-sy" checked onchange="updatePlot()">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -858,9 +813,9 @@ window.SIM_METADATA = {
           <div class="param-row">
             <div class="param-label-row">
               <span class="param-name">Indice spettrale $p$</span>
-              <span class="param-value" id="val-sy-p">2.5</span>
+              <span class="param-value" id="val-sy-p">3.2</span>
             </div>
-            <input type="range" id="sl-sy-p" min="1.5" max="4" step="0.05" value="2.5"
+            <input type="range" id="sl-sy-p" min="2" max="5" step="0.05" value="3.2"
               oninput="updateVal('sy-p', (+this.value).toFixed(2)); updatePlot()">
           </div>
           <div class="param-row">
@@ -870,6 +825,22 @@ window.SIM_METADATA = {
             </div>
             <input type="range" id="sl-sy-gmax" min="3" max="8" step="0.05" value="5"
               oninput="updateVal('sy-gmax', '10<sup>'+this.value+'</sup>'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Cooling break $\nu_b$ (log Hz)</span>
+              <span class="param-value" id="val-sy-nub">10<sup>14.0</sup> Hz</span>
+            </div>
+            <input type="range" id="sl-sy-nub" min="9" max="20" step="0.05" value="14"
+              oninput="updateVal('sy-nub', '10<sup>'+(+this.value).toFixed(1)+'</sup> Hz'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Turnover SSA $\nu_{SSA}$ (log Hz)</span>
+              <span class="param-value" id="val-sy-nussa">10<sup>9.0</sup> Hz</span>
+            </div>
+            <input type="range" id="sl-sy-nussa" min="7" max="13" step="0.05" value="9"
+              oninput="updateVal('sy-nussa', '10<sup>'+(+this.value).toFixed(1)+'</sup> Hz'); updatePlot()">
           </div>
           <div class="param-row">
             <div class="param-label-row">
@@ -891,7 +862,7 @@ window.SIM_METADATA = {
       </div>
 
       <!-- COMPTON INVERSO -->
-      <div class="mechanism-card" id="card-ic">
+      <div class="mechanism-card active" id="card-ic">
         <div class="card-header" onclick="toggleCard('ic')">
           <div class="card-header-left">
             <div class="color-dot" style="background:#b07dcf"></div>
@@ -901,7 +872,7 @@ window.SIM_METADATA = {
             </div>
           </div>
           <label class="toggle-switch" onclick="event.stopPropagation()">
-            <input type="checkbox" id="tog-ic" onchange="updatePlot()">
+            <input type="checkbox" id="tog-ic" checked onchange="updatePlot()">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -909,11 +880,11 @@ window.SIM_METADATA = {
         <div class="card-body">
           <div class="param-row">
             <div class="param-label-row">
-              <span class="param-name">Temperatura elettroni $T_e$ (log K)</span>
-              <span class="param-value" id="val-ic-T">10<sup>9</sup> K</span>
+              <span class="param-name">Fattore di Lorentz elettroni $\gamma$</span>
+              <span class="param-value" id="val-ic-gamma">10<sup>3.5</sup></span>
             </div>
-            <input type="range" id="sl-ic-T" min="7" max="12" step="0.05" value="9"
-              oninput="updateVal('ic-T', '10<sup>'+Math.round(+this.value)+'</sup> K'); updatePlot()">
+            <input type="range" id="sl-ic-gamma" min="1" max="6" step="0.05" value="3.5"
+              oninput="updateVal('ic-gamma', '10<sup>'+(+this.value).toFixed(1)+'</sup>'); updatePlot()">
           </div>
           <div class="param-row">
             <div class="param-label-row">
@@ -926,10 +897,18 @@ window.SIM_METADATA = {
           <div class="param-row">
             <div class="param-label-row">
               <span class="param-name">Frequenza seme $\nu_0$ (log Hz)</span>
-              <span class="param-value" id="val-ic-nu0">10<sup>12</sup> Hz</span>
+              <span class="param-value" id="val-ic-nu0">10<sup>14</sup> Hz</span>
             </div>
-            <input type="range" id="sl-ic-nu0" min="8" max="15" step="0.1" value="12"
+            <input type="range" id="sl-ic-nu0" min="8" max="15" step="0.1" value="14"
               oninput="updateVal('ic-nu0', '10<sup>'+this.value+'</sup> Hz'); updatePlot()">
+          </div>
+          <div class="param-row">
+            <div class="param-label-row">
+              <span class="param-name">Larghezza componente IC</span>
+              <span class="param-value" id="val-ic-width">0.55 dex</span>
+            </div>
+            <input type="range" id="sl-ic-width" min="0.25" max="1.2" step="0.05" value="0.55"
+              oninput="updateVal('ic-width', (+this.value).toFixed(2)+' dex'); updatePlot()">
           </div>
           <div class="param-row">
             <div class="param-label-row">
@@ -944,6 +923,49 @@ window.SIM_METADATA = {
 
     </div><!-- /controls-grid -->
   </div><!-- /sim-section -->
+
+
+  <!-- INTRO -->
+  <div class="intro-block">
+    <div class="intro-text">
+      <p>
+        Ogni sorgente astrofisica emette radiazione attraverso uno o più meccanismi fisici distinti.
+        La <em>distribuzione spettrale di energia</em> (SED, Spectral Energy Distribution) — ovvero
+        come il flusso si distribuisce in frequenza — è la firma che permette di diagnosticare
+        la natura della sorgente, le condizioni fisiche del plasma e i processi di accelerazione
+        in atto.
+      </p>
+      <p>
+        In questo simulatore puoi attivare e sovrapporre i quattro principali meccanismi di emissione
+        continua, modificarne i parametri fisici in tempo reale e osservare come si costruisce
+        la SED complessiva. L'asse orizzontale copre circa 18 ordini di grandezza in frequenza,
+        dall'emissione radio ai fotoni gamma ad altissima energia.
+      </p>
+      <p>
+        La visualizzazione in $\nu F_\nu$ (asse y) pesa equamente il contributo energetico
+        di ogni decade di frequenza, rendendo immediatamente visibile dove si concentra
+        la potenza irradiata.
+      </p>
+    </div>
+    <div class="intro-formula">
+      <div class="formula-row">
+        <span class="formula-label">Corpo Nero</span>
+        <span class="formula-eq">$B_\nu \propto \dfrac{\nu^3}{e^{h\nu/kT}-1}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Bremsstrahlung</span>
+        <span class="formula-eq">$j_\nu \propto n_e^2\, T^{-1/2}\, e^{-h\nu/kT}\, \bar{g}_{ff}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Sincrotrone</span>
+        <span class="formula-eq">$P(\nu) \propto B^{(p+1)/2}\, \nu^{-(p-1)/2}$</span>
+      </div>
+      <div class="formula-row">
+        <span class="formula-label">Compton Inverso</span>
+        <span class="formula-eq">$\nu_{out} \approx \gamma^2 \nu_{in},\quad y = \dfrac{4kT}{m_e c^2}\tau$</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════ TEORIA ═══════════════════════════ -->
   <div class="theory-section">
@@ -1208,7 +1230,7 @@ const sigmaT = 6.652e-29; // m²
 // ── frequenze log-asse: da 10^7 a 10^25 Hz ──
 const LOG_NU_MIN = 7;
 const LOG_NU_MAX = 25;
-const N_POINTS   = 600;
+const N_POINTS   = 1200;
 
 // ── bande spettrali ──
 const BANDS = [
@@ -1238,15 +1260,21 @@ const COL = {
 let axisMode = 'nuFnu'; // 'nuFnu' | 'Fnu'
 let mouseLogNu = null;
 
+function toSuperscript(n) {
+  const map = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  return String(n).split('').map(ch => map[ch] || ch).join('');
+}
+
 // ── canvas setup ──────────────────────────────────────────────
 const canvas = document.getElementById('sed-canvas');
 const ctx    = canvas.getContext('2d');
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
-  canvas.width  = rect.width  * window.devicePixelRatio;
-  canvas.height = rect.height * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const DPR = window.devicePixelRatio || 1;
+  canvas.width  = Math.round(rect.width  * DPR);
+  canvas.height = Math.round(rect.height * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   updatePlot();
 }
 
@@ -1264,6 +1292,7 @@ function getP() {
       T:  Math.pow(10, +document.getElementById('sl-ff-T').value),
       A:  Math.pow(10, +document.getElementById('sl-ff-A').value),
       abs: document.getElementById('chk-ff-abs').checked,
+      nuAbs: Math.pow(10, +document.getElementById('sl-ff-nuabs').value),
     },
     sy: {
       active: document.getElementById('tog-sy').checked,
@@ -1273,136 +1302,113 @@ function getP() {
       A:    Math.pow(10, +document.getElementById('sl-sy-A').value),
       ssa:  document.getElementById('chk-sy-ssa').checked,
       cool: document.getElementById('chk-sy-cool').checked,
+      nuBreak: Math.pow(10, +document.getElementById('sl-sy-nub').value),
+      nuSSA: Math.pow(10, +document.getElementById('sl-sy-nussa').value),
     },
     ic: {
       active: document.getElementById('tog-ic').checked,
-      Te:  Math.pow(10, +document.getElementById('sl-ic-T').value),
+      gamma: Math.pow(10, +document.getElementById('sl-ic-gamma').value),
       tau: +document.getElementById('sl-ic-tau').value,
       nu0: Math.pow(10, +document.getElementById('sl-ic-nu0').value),
+      width: +document.getElementById('sl-ic-width').value,
       A:   Math.pow(10, +document.getElementById('sl-ic-A').value),
     },
   };
 }
 
 // ── spettri fisici ────────────────────────────────────────────
+// Le funzioni restituiscono profili in unità arbitrarie. La forma è fisica,
+// mentre la normalizzazione grafica viene applicata dopo, per evitare che
+// fattori dimensionali SI rendano invisibili alcune componenti.
 
-// Corpo nero: Bν in unità arbitrarie normalizzate
+function safeExpm1(x) {
+  if (Math.abs(x) < 1e-5) return x + 0.5 * x * x;
+  return Math.expm1(x);
+}
+
+function logNormal(nu, nu0, sigmaDex) {
+  if (nu <= 0 || nu0 <= 0) return 0;
+  const z = Math.log10(nu / nu0) / sigmaDex;
+  return Math.exp(-0.5 * z * z);
+}
+
+// Corpo nero: legge di Planck Bν(T), stabilizzata nel limite Rayleigh-Jeans.
 function planck(nu, T) {
   const x = h * nu / (k * T);
   if (x > 700) return 0;
-  if (x < 1e-6) return nu * nu * k * T / (0.5 * h); // R-J limit numericamente stabile
-  return (2 * h * nu * nu * nu / (c * c)) / (Math.exp(x) - 1);
+  if (x < 1e-5) return rayleigh_jeans(nu, T);
+  return (2 * h * Math.pow(nu, 3) / (c * c)) / safeExpm1(x);
 }
 
-// Rayleigh-Jeans puro
 function rayleigh_jeans(nu, T) {
   return 2 * nu * nu * k * T / (c * c);
 }
 
-// Wien puro
 function wien(nu, T) {
   const x = h * nu / (k * T);
   if (x > 700) return 0;
-  return (2 * h * nu * nu * nu / (c * c)) * Math.exp(-x);
+  return (2 * h * Math.pow(nu, 3) / (c * c)) * Math.exp(-x);
 }
 
-// Bremsstrahlung free-free (normalizzato)
-function bremsstrahlung(nu, T, doAbs) {
+// Bremsstrahlung free-free termica: quasi piatta in Fν per hν << kT,
+// cutoff esponenziale a hν ≈ kT; eventuale autoassorbimento ∝ ν² sotto ν_abs.
+function bremsstrahlung(nu, T, doAbs, nuAbsParam) {
   const x = h * nu / (k * T);
   if (x > 700) return 0;
-  // Fattore di Gaunt approssimato: g_ff ~ sqrt(3)/pi * ln(kT / h*nu) per x<<1, ≈1 altrove
-  let g_ff = 1.0;
-  if (x < 1) g_ff = Math.max(1, Math.sqrt(3) / Math.PI * Math.log(1 / x + 1));
-  const emissivity = Math.exp(-x) * g_ff; // spettro piatto (T^-1/2 costante globale)
 
-  if (!doAbs) return emissivity;
+  const gff = Math.max(1, Math.min(6, 1 + 0.35 * Math.log10(1 + 1 / Math.max(x, 1e-8))));
+  const thin = Math.exp(-x) * gff / Math.sqrt(T / 1e7);
 
-  // Self-absorption: τ_ff ∝ ν^{-2} T^{-3/2}
-  // frequenza di transizione: scelta a ~ 1 GHz × (T/10^7)^{3/4}
-  const nu_abs = 1e9 * Math.pow(T / 1e7, 0.75);
-  const tau_ff = Math.pow(nu_abs / nu, 2);
-  // Spettro emergente: B_nu * (1 - exp(-tau))  [termine sorgente = corpo nero Rayleigh-Jeans]
-  const bb_rj = rayleigh_jeans(nu, T);
-  const bb_at_nu_abs = rayleigh_jeans(nu_abs, T);
-  const normRJ = bb_rj / bb_at_nu_abs;  // tengo normalizzazione relativa
-  const normFF = emissivity / Math.exp(-h * nu_abs / (k * T)); // allineamento al turnover
-  // uso formula transfer: I = S * (1 - e^{-τ})  con S = B_ν (termalizza) per τ>>1
-  const absorbed = normRJ * (1 - Math.exp(-tau_ff)) + emissivity * Math.exp(-tau_ff);
-  return absorbed;
+  if (!doAbs) return thin;
+
+  const nuAbs = nuAbsParam || (1.5e9 * Math.pow(T / 1e7, -0.35));
+  const tau = Math.pow(nuAbs / nu, 2.1);
+  const thick = Math.pow(nu / nuAbs, 2);
+  const thinAtAbs = Math.exp(-h * nuAbs / (k * T));
+  return thick * (1 - Math.exp(-tau)) * thinAtAbs + thin * Math.exp(-tau);
 }
 
-// Sincrotrone
-function synchrotron(nu, p, B_gauss, gmax, doSSA, doCool) {
-  // Frequenza critica per γ=1: ν_c0 = (3eB)/(4π m_e c)
-  // Usiamo B in Gauss per la formula cgs: ν_c(γ) = 4.2e6 * B_μG * γ²
-  const B_muG = B_gauss; // già in μG dall'esterno
+// Sincrotrone: Fν ∝ ν^{-α}, α=(p-1)/2; SSA: Fν ∝ ν^{5/2}; cutoff da γmax.
+function synchrotron(nu, p, B_muG, gmax, doSSA, doCool, nuBreakParam, nuSSAParam) {
   const alpha = (p - 1) / 2;
+  const nuMax = 4.2e6 * B_muG * gmax * gmax;
+  const nuMin = 1e7;
+  const nu0 = 1e9;
+  const nuBreak = Math.min(nuBreakParam || 0.03 * nuMax, 0.8 * nuMax);
+  const nuSSA = nuSSAParam || (3e8 * Math.pow(Math.max(B_muG, 0.1), 0.2));
 
-  // frequenza di picco per γ_max
-  const nu_max = 4.2e6 * B_muG * gmax * gmax;
-  // frequenza di cooling break: scegliamo nu_break ~ 0.01 * nu_max (parametro fisso per semplicità)
-  const nu_break = nu_max * 0.005;
-  // SSA turnover: ~ 1 GHz * B_muG^{1/5}  (approssimato)
-  const nu_ssa  = 1e9 * Math.pow(B_muG, 0.2);
+  if (nu > 100 * nuMax) return 0;
 
-  if (nu > nu_max * 10) return 0;
+  let F = Math.pow(Math.max(nu, nuMin) / nu0, -alpha);
 
-  let F;
-  if (doCool && nu > nu_break) {
-    F = Math.pow(nu_break, -alpha) * Math.pow(nu / nu_break, -(alpha + 0.5));
-  } else {
-    F = Math.pow(nu, -alpha);
-  }
+  if (doCool && nu > nuBreak) F *= Math.pow(nu / nuBreak, -0.5);
+  if (nu > 0.15 * nuMax) F *= Math.exp(-Math.sqrt(nu / nuMax));
 
-  // Taglio esponenziale oltre nu_max
-  if (nu > nu_max) {
-    F *= Math.exp(-Math.pow(nu / nu_max, 0.5));
-  }
-
-  if (doSSA && nu < nu_ssa * 20) {
-    const tau_ssa = Math.pow(nu_ssa / nu, (alpha + 5/2));
-    const F_ssa   = Math.pow(nu, 5/2) / Math.pow(nu_ssa, 5/2 - (-alpha));
-    // blending otticamente spesso/sottile
-    F = F * (1 - Math.exp(-tau_ssa)) + Math.pow(nu, 5/2) / Math.pow(nu_ssa, 5/2 + alpha) * Math.exp(-tau_ssa) * Math.pow(nu_ssa, alpha);
-    // semplificato: transizione morbida
-    const w = 1 / (1 + Math.pow(nu / nu_ssa, 5/2 + alpha));
-    F = F * (1 - w) + Math.pow(nu / nu_ssa, 5/2) * Math.pow(nu_ssa, -alpha) * w;
+  if (doSSA) {
+    const thick = Math.pow(nu / nuSSA, 2.5) * Math.pow(nuSSA / nu0, -alpha);
+    const tau = Math.pow(nuSSA / nu, alpha + 2.5);
+    const wThin = Math.exp(-tau);
+    F = thick * (1 - wThin) + F * wThin;
   }
 
   return F;
 }
 
-// Compton Inverso (Comptonizzazione termica + picchi multipli)
-function inverseCompton(nu, Te, tau, nu0, A) {
-  const kTe_mec2 = k * Te / (me * c * c);
-  const y = 4 * kTe_mec2 * Math.max(tau, tau * tau);
-  const boost = Math.max(1 + 4 * kTe_mec2, 1); // guadagno per scattering
+// Compton inverso: mostra i fotoni già scatterati, non il campo seme.
+// νIC ≈ (4/3)γ²ν0, con γeff stimato da kTe/mec².
+function inverseCompton(nu, gamma, tau, nu0, widthDex) {
+  const gammaEff = Math.max(1.01, gamma);
+  const boost = (4 / 3) * gammaEff * gammaEff;
+  const nuPeak = nu0 * boost;
 
-  let total = 0;
-  // fotone seme + ordini successivi di scattering
-  const n_orders = Math.min(6, Math.ceil(Math.log(1e12) / Math.log(boost + 1)));
-  for (let n = 0; n <= n_orders; n++) {
-    const nu_n = nu0 * Math.pow(boost * boost, n + 1);  // picco n-esimo
-    const width = nu_n * 2.5;  // larghezza lognormale
-    const weight = Math.pow(Math.min(tau, 1), n) * Math.exp(-n * 0.3);
-    if (nu_n < 1e26) {
-      // forma spettrale approssimata: legge di potenza + taglio
-      const alpha_ic = (y > 0.01) ? (-1.5 + Math.sqrt(2.25 + 4 / y)) : 2;
-      const x = nu / nu_n;
-      const contrib = weight * Math.pow(x, -Math.abs(alpha_ic)) * Math.exp(-x * x / (2 * width * width / (nu_n * nu_n)));
-      total += contrib;
-    }
-  }
-  // Powerlaw globale (Comptonizzazione) per y > 0.1
-  if (y > 0.1) {
-    const alpha_ic = Math.max(0.1, -1.5 + Math.sqrt(2.25 + 4 / Math.max(y, 0.01)));
-    const nu_cut = nu0 * boost * boost * 10;
-    if (nu > nu0 && nu < nu_cut * 100) {
-      const pl = Math.pow(nu / nu0, -alpha_ic) * Math.exp(-nu / (nu_cut));
-      total = Math.max(total, pl * 0.5);
-    }
-  }
-  return total;
+  // Parametrizzazione didattica: tau aumenta il peso relativo e irrigidisce la coda.
+  const yEff = Math.max(0.03, (4 / 3) * gammaEff * gammaEff * Math.max(tau, 0.01));
+  const alpha = Math.max(0.35, Math.min(2.4, 1.35 / Math.sqrt(Math.log10(yEff + 10)) + 0.15));
+  const bump = logNormal(nu, nuPeak, widthDex || 0.55);
+  const lowSide = (nu < nuPeak) ? Math.pow(nu / nuPeak, 0.65) : 0;
+  const highTail = (nu > nuPeak) ? Math.pow(nu / nuPeak, -alpha) * Math.exp(-nu / (40 * nuPeak)) : 0;
+  const visibility = 1 - Math.exp(-Math.max(tau, 0.01));
+  return visibility * Math.max(bump, 0.35 * lowSide, 0.45 * highTail);
 }
 
 // ── calcolo array spettri ─────────────────────────────────────
@@ -1412,59 +1418,45 @@ function computeSpectra(P) {
     logNus.push(LOG_NU_MIN + (LOG_NU_MAX - LOG_NU_MIN) * i / (N_POINTS - 1));
   }
 
-  const specs = { bb:[], ff:[], sy:[], ic:[], total:[] };
+  const raw = { bb:[], ff:[], sy:[], ic:[] };
 
-  // Calcolo valori grezzi
   for (let i = 0; i < N_POINTS; i++) {
     const nu = Math.pow(10, logNus[i]);
+    const axisFactor = axisMode === 'nuFnu' ? nu : 1;
 
-    let bb_raw = P.bb.active ? planck(nu, P.bb.T) * P.bb.A : 0;
-    let ff_raw = P.ff.active ? bremsstrahlung(nu, P.ff.T, P.ff.abs) * P.ff.A * 1e-26 : 0;
-    let sy_raw = 0;
+    raw.bb.push(P.bb.active ? planck(nu, P.bb.T) * axisFactor : 0);
+    raw.ff.push(P.ff.active ? bremsstrahlung(nu, P.ff.T, P.ff.abs, P.ff.nuAbs) * axisFactor : 0);
+
     if (P.sy.active) {
-      const B_muG = P.sy.B / 1e-10; // da T a μG
-      sy_raw = synchrotron(nu, P.sy.p, B_muG, P.sy.gmax, P.sy.ssa, P.sy.cool) * P.sy.A;
-    }
-    let ic_raw = P.ic.active ? inverseCompton(nu, P.ic.Te, P.ic.tau, P.ic.nu0, P.ic.A) * P.ic.A * 1e-3 : 0;
+      const B_muG = P.sy.B / 1e-10;
+      raw.sy.push(synchrotron(nu, P.sy.p, B_muG, P.sy.gmax, P.sy.ssa, P.sy.cool, P.sy.nuBreak, P.sy.nuSSA) * axisFactor);
+    } else raw.sy.push(0);
 
-    // modo asse: moltiplico per ν se nuFnu
-    const f = axisMode === 'nuFnu' ? nu : 1;
-
-    specs.bb.push(bb_raw * f);
-    specs.ff.push(ff_raw * f);
-    specs.sy.push(sy_raw * f);
-    specs.ic.push(ic_raw * f);
-    specs.total.push((bb_raw + ff_raw + sy_raw + ic_raw) * f);
+    raw.ic.push(P.ic.active ? inverseCompton(nu, P.ic.gamma, P.ic.tau, P.ic.nu0, P.ic.width) * axisFactor : 0);
   }
 
-  // Normalizzazione: ogni componente al proprio picco (separata), poi scala ampiezza
-  const norm = {};
-  ['bb','ff','sy','ic'].forEach(m => {
-    const max = Math.max(...specs[m].filter(v => isFinite(v) && v > 0));
-    norm[m] = max > 0 ? max : 1;
-  });
-
-  // Combina con normalizzazione per renderlo leggibile
-  const out = { bb:[], ff:[], sy:[], ic:[], total:[], logNus };
-  const REF = Math.max(norm.bb, norm.ff, norm.sy, norm.ic, 1);
-
-  for (let i = 0; i < N_POINTS; i++) {
-    out.bb.push(specs.bb[i] / REF);
-    out.ff.push(specs.ff[i] / REF);
-    out.sy.push(specs.sy[i] / REF);
-    out.ic.push(specs.ic[i] / REF);
-    out.total.push(specs.total[i] / REF);
+  function normalize(arr, amp) {
+    const max = Math.max(...arr.filter(v => isFinite(v) && v > 0), 0);
+    if (max <= 0) return arr.map(() => 0);
+    return arr.map(v => (isFinite(v) && v > 0) ? (v / max) * amp : 0);
   }
 
-  // Varianti: RJ e Wien per corpo nero
+  const out = { logNus };
+  out.bb = normalize(raw.bb, P.bb.A);
+  out.ff = normalize(raw.ff, P.ff.A);
+  out.sy = normalize(raw.sy, P.sy.A);
+  out.ic = normalize(raw.ic, P.ic.A);
+  out.total = logNus.map((_, i) => out.bb[i] + out.ff[i] + out.ic[i] + out.sy[i]);
+
   if (P.bb.rj && P.bb.active) {
+    const bbMax = Math.max(...raw.bb.filter(v => isFinite(v) && v > 0), 1);
     out.bb_rj = [];
     out.bb_wien = [];
     for (let i = 0; i < N_POINTS; i++) {
       const nu = Math.pow(10, logNus[i]);
-      const f  = axisMode === 'nuFnu' ? nu : 1;
-      out.bb_rj.push(rayleigh_jeans(nu, P.bb.T) * P.bb.A * f / REF);
-      out.bb_wien.push(wien(nu, P.bb.T) * P.bb.A * f / REF);
+      const axisFactor = axisMode === 'nuFnu' ? nu : 1;
+      out.bb_rj.push(rayleigh_jeans(nu, P.bb.T) * axisFactor / bbMax * P.bb.A);
+      out.bb_wien.push(wien(nu, P.bb.T) * axisFactor / bbMax * P.bb.A);
     }
   }
 
@@ -1481,12 +1473,10 @@ function updatePlot() {
 function draw(spec, P) {
   const W = canvas.getBoundingClientRect().width;
   const H = canvas.getBoundingClientRect().height;
-  const DPR = window.devicePixelRatio;
+  const DPR = window.devicePixelRatio || 1;
 
-  ctx.clearRect(0, 0, W * DPR, H * DPR);
-  ctx.save();
-  ctx.scale(DPR, DPR);  // già scalato nel resize, ma facciamo così per sicurezza
-  ctx.restore();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
 
   // Margini
   const ml = 64, mr = 24, mt = 16, mb = 46;
@@ -1559,7 +1549,7 @@ function draw(spec, P) {
     ctx.moveTo(x, mt + ph);
     ctx.lineTo(x, mt + ph + 5);
     ctx.stroke();
-    ctx.fillText(`10¹${logN - 10 >= 0 ? logN - 10 : ''}`, x, mt + ph + 16);
+    ctx.fillText(`10${toSuperscript(logN)}`, x, mt + ph + 16);
   }
 
   // label x asse
@@ -1580,7 +1570,7 @@ function draw(spec, P) {
     ctx.lineTo(ml, y);
     ctx.stroke();
     ctx.fillStyle = 'rgba(160,140,120,0.5)';
-    ctx.fillText(`10${logY}`, ml - 8, y + 3.5);
+    ctx.fillText(`10${toSuperscript(logY)}`, ml - 8, y + 3.5);
   }
 
   // label y asse
@@ -1781,16 +1771,20 @@ updateVal('bb-T', '10 000 K');
 updateVal('bb-A', '0.0');
 updateVal('ff-T', '10<sup>7</sup> K');
 updateVal('ff-A', '0.0');
+updateVal('ff-nuabs', '10<sup>9.0</sup> Hz');
 updateVal('sy-B', '10.0 μG');
-updateVal('sy-p', '2.50');
+updateVal('sy-p', '3.20');
 updateVal('sy-gmax', '10<sup>5</sup>');
+updateVal('sy-nub', '10<sup>14.0</sup> Hz');
+updateVal('sy-nussa', '10<sup>9.0</sup> Hz');
 updateVal('sy-A', '0.0');
-updateVal('ic-T', '10<sup>9</sup> K');
+updateVal('ic-gamma', '10<sup>3.5</sup>');
 updateVal('ic-tau', '0.50');
-updateVal('ic-nu0', '10<sup>12</sup> Hz');
+updateVal('ic-nu0', '10<sup>14</sup> Hz');
+updateVal('ic-width', '0.55 dex');
 updateVal('ic-A', '0.0');
 
-// Attiva tutti i toggle inizialmente disattivati, lascia solo BB attivo
+// Tutti i pannelli partono aperti e tutte le componenti attive in modalità dimostrativa.
 updatePlot();
 </script>
 </body>

@@ -93,6 +93,27 @@
   ],
   "simulations": [
     {
+      "title": "Diagramma H-R interattivo con griglia MIST",
+      "description": "Visualizzazione interattiva dell'evoluzione stellare nel diagramma Hertzsprung-Russell con più masse, metallicità e rotazioni MIST.",
+      "category": "Astrofisica",
+      "icon": "⭐",
+      "order": 10,
+      "tags": [
+        "diagramma HR",
+        "Hertzsprung-Russell",
+        "MIST",
+        "metallicità",
+        "rotazione stellare",
+        "evoluzione stellare",
+        "sequenza principale",
+        "giganti rosse",
+        "nane bianche"
+      ],
+      "level": "avanzato",
+      "file": "astrofisica/diagramma-hr/diagramma_hr_evoluzione_mist_grid.html",
+      "isWip": false
+    },
+    {
       "title": "Traiettorie di missioni spaziali",
       "description": "Viewer interattivo di traiettorie spaziali basato su dataset statici NASA/JPL Horizons per missioni come Artemis, Apollo, Voyager e Parker Solar Probe.",
       "category": "Astrofisica",
@@ -111,6 +132,51 @@
       ],
       "level": "intermedio",
       "file": "astrofisica/traiettorie-missioni-spaziali.html",
+      "isWip": false
+    },
+    {
+      "title": "Meccanismi di Radiazione Astrofisica",
+      "description": "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica, con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
+      "category": "Astrofisica",
+      "icon": "🌌",
+      "order": 20,
+      "tags": [
+        "astrofisica",
+        "radiazione",
+        "spettro",
+        "corpo nero",
+        "bremsstrahlung",
+        "sincrotrone",
+        "Compton inverso",
+        "SED",
+        "alte energie",
+        "emissione continua"
+      ],
+      "level": "avanzato",
+      "file": "astrofisica/radiazione_astrofisica.html",
+      "isWip": false
+    },
+    {
+      "title": "Spettri a Righe di Emissione e Assorbimento",
+      "description": "Simulazione didattica degli spettri a righe con transizioni atomiche, emissione, assorbimento, redshift, velocità radiale, allargamento Doppler, risoluzione strumentale e diagnostica spettroscopica.",
+      "category": "Astrofisica",
+      "icon": "🌈",
+      "order": 21,
+      "tags": [
+        "astrofisica",
+        "spettroscopia",
+        "righe di emissione",
+        "righe di assorbimento",
+        "transizioni atomiche",
+        "redshift",
+        "Doppler",
+        "idrogeno",
+        "elio",
+        "ossigeno ionizzato",
+        "ferro K alpha"
+      ],
+      "level": "intermedio-avanzato",
+      "file": "astrofisica/righe_emissione.html",
       "isWip": false
     },
     {
@@ -255,7 +321,7 @@
         "legge di gravitazione universale"
       ],
       "level": "intermedio",
-      "file": "gravitazione/gravità.html",
+      "file": "gravitazione/gravità.html",
       "isWip": false
     },
     {
@@ -854,7 +920,7 @@
     },
     {
       "title": "Diffrazione 2D",
-      "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, visualizzando apertura, campo propagato, spettro angolare e fase per doppia fenditura, reticolo e ostacolo circolare.",
+      "description": "Simula la diffrazione scalare della luce con il metodo dello spettro angolare, affiancando una vista didattica top-down e una visualizzazione frontale del pattern numerico per doppia fenditura, reticolo e ostacolo circolare.",
       "category": "WIP",
       "icon": "◌",
       "order": 20,
@@ -867,6 +933,7 @@
         "doppia fenditura",
         "reticolo",
         "Poisson-Arago",
+        "Huygens-Fresnel",
         "WebAssembly"
       ],
       "level": "intermedio",

@@ -136,7 +136,7 @@
     },
     {
       "title": "Meccanismi di Radiazione Astrofisica",
-      "description": "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica, con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
+      "description": "Visualizzazione interattiva dei principali meccanismi di emissione continua in astrofisica con corpo nero, bremsstrahlung, sincrotrone e Compton inverso.",
       "category": "Astrofisica",
       "icon": "🌌",
       "order": 20,
@@ -961,26 +961,6 @@
       "isWip": true
     },
     {
-      "title": "Onde di Faraday",
-      "description": "Visualizza l’instabilità parametrica della superficie libera di un fluido sottoposto a vibrazione verticale, mostrando la risposta sub-armonica, i modi normali e la relazione di dispersione gravitocapillare.",
-      "category": "WIP",
-      "icon": "🌊",
-      "order": 20,
-      "tags": [
-        "onde di Faraday",
-        "instabilità parametrica",
-        "fluidodinamica",
-        "onde superficiali",
-        "relazione di dispersione",
-        "modi normali",
-        "Mathieu",
-        "gravitocapillare"
-      ],
-      "level": "avanzato",
-      "file": "WIP/faraday.html",
-      "isWip": true
-    },
-    {
       "title": "Trasformazioni cicliche",
       "description": "Simulazione dei principali cicli termodinamici, con animazione nel diagramma pressione-volume e calcolo di rendimento e coefficienti di prestazione.",
       "category": "WIP",
@@ -1018,6 +998,48 @@
       ],
       "level": "avanzato",
       "file": "WIP/termodinamica/entropia.html",
+      "isWip": true
+    },
+    {
+      "title": "Onde di Faraday",
+      "description": "Visualizza l’instabilità parametrica di superficie in un fluido vibrato verticalmente, con risposta sub-armonica, modi normali, dispersione gravitocapillare e mesh 3D interattiva.",
+      "category": "WIP",
+      "icon": "🌊",
+      "order": 40,
+      "tags": [
+        "onde di Faraday",
+        "instabilità parametrica",
+        "onde superficiali",
+        "fluidodinamica",
+        "risonanza sub-armonica",
+        "Mathieu",
+        "Floquet",
+        "dispersione gravitocapillare",
+        "modi normali"
+      ],
+      "level": "avanzato",
+      "file": "WIP/faraday.html",
+      "isWip": true
+    },
+    {
+      "title": "Sistemi caotici",
+      "description": "Esplora sistemi dinamici non lineari come doppio pendolo, attrattore di Lorenz, attrattore di Rössler e mappa logistica, visualizzando sensibilità alle condizioni iniziali, attrattori strani, biforcazioni ed esponenti di Lyapunov.",
+      "category": "WIP",
+      "icon": "🌀",
+      "order": 90,
+      "tags": [
+        "caos",
+        "sistemi dinamici",
+        "doppio pendolo",
+        "attrattore di Lorenz",
+        "attrattore di Rössler",
+        "mappa logistica",
+        "biforcazioni",
+        "esponente di Lyapunov",
+        "sensibilità alle condizioni iniziali"
+      ],
+      "level": "avanzato",
+      "file": "WIP/sistemi_caotici.html",
       "isWip": true
     },
     {

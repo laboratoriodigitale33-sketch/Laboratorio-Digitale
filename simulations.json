@@ -1022,6 +1022,25 @@
       "isWip": true
     },
     {
+      "title": "Espansione dell'Universo",
+      "description": "Visualizza l'espansione cosmologica in un modello omogeneo e isotropo, con equivalenza degli osservatori comoventi, redshift cosmologico e relazione di Hubble-Lemaître.",
+      "category": "WIP",
+      "icon": "🌌",
+      "order": 70,
+      "tags": [
+        "cosmologia",
+        "espansione dell'universo",
+        "redshift cosmologico",
+        "legge di Hubble",
+        "FLRW",
+        "fattore di scala",
+        "galassie"
+      ],
+      "level": "intermedio",
+      "file": "WIP/espansione_universo.html",
+      "isWip": true
+    },
+    {
       "title": "Sistemi caotici",
       "description": "Esplora sistemi dinamici non lineari come doppio pendolo, attrattore di Lorenz, attrattore di Rössler e mappa logistica, visualizzando sensibilità alle condizioni iniziali, attrattori strani, biforcazioni ed esponenti di Lyapunov.",
       "category": "WIP",

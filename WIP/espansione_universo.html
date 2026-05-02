@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  "title": "Espansione dell'Universo",
+  "description": "Visualizza l'espansione cosmologica in un modello omogeneo e isotropo, con equivalenza degli osservatori comoventi, redshift cosmologico e relazione di Hubble-Lemaître.",
+  "category": "Astrofisica",
+  "icon": "🌌",
+  "order": 70,
+  "tags": ["cosmologia", "espansione dell'universo", "redshift cosmologico", "legge di Hubble", "FLRW", "fattore di scala", "galassie"],
+  "level": "intermedio"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espansione dell'Universo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+:root {
+  --bg:       #f5f0e8;
+  --bg2:      #ede7d9;
+  --bg3:      #e4ddd0;
+  --bg4:      #d8d0c0;
+  --ink:      #1a1610;
+  --gold:     #8a5a10;
+  --gold-dim: #b8924a;
+  --text:     #2a2420;
+  --text-dim: #7a6e60;
+  --border:   #c8bfaa;
+  --border2:  #b0a590;
+  --canvas-bg:#07070f;
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'EB Garamond', Georgia, serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:17px;line-height:1.65;min-height:100vh;}
+
+header{padding:2.6rem 2rem 1.6rem;text-align:center;border-bottom:1px solid var(--border);background:var(--bg2);}
+.eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:.5rem;}
+h1{font-size:clamp(1.8rem,4vw,2.9rem);font-weight:400;color:var(--ink);margin-bottom:.3rem;}
+.subtitle{font-style:italic;color:var(--text-dim);font-size:.98rem;}
+
+/* tabs */
+.tab-bar{display:flex;border-bottom:2px solid var(--border);background:var(--bg3);padding:0 1.2rem;overflow-x:auto;gap:0;}
+.tab-btn{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 1.3rem;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .18s,border-color .18s;}
+.tab-btn:hover{color:var(--gold);}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-num{color:var(--gold-dim);margin-right:.45em;}
+.tab-panel{display:none;}.tab-panel.active{display:block;}
+
+/* panel */
+.panel-inner{max-width:1040px;margin:0 auto;padding:1.8rem 1.4rem 3rem;}
+.description{padding:.8rem 0 1rem;color:var(--text);font-size:.96rem;max-width:740px;}
+.description p{margin-bottom:.65rem;}.description p:last-child{margin-bottom:0;}
+.formula-box{margin:.7rem 0 1.3rem;padding:.85rem 1.2rem;background:var(--bg3);border-left:2px solid var(--gold-dim);border-radius:0 2px 2px 0;font-size:.91rem;color:var(--text);}
+
+/* canvas */
+.canvas-wrap{border:1px solid var(--border);border-radius:3px;overflow:hidden;background:var(--canvas-bg);}
+canvas{display:block;width:100%;background:var(--canvas-bg);cursor:default;}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:.9rem;align-items:center;padding:.8rem 1.1rem;border-top:1px solid var(--border);background:var(--bg3);}
+.ctrl-group{display:flex;align-items:center;gap:.5rem;}
+label{font-family:var(--mono);font-size:.67rem;letter-spacing:.07em;color:var(--text-dim);}
+input[type=range]{-webkit-appearance:none;width:110px;height:2px;background:var(--border2);border-radius:1px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--gold);cursor:pointer;}
+.val-display{font-family:var(--mono);font-size:.69rem;color:var(--gold);min-width:3rem;}
+.ctrl-btn{font-family:var(--mono);font-size:.67rem;letter-spacing:.1em;padding:.32rem .85rem;border:1px solid var(--border2);background:var(--bg2);color:var(--gold);border-radius:2px;cursor:pointer;text-transform:uppercase;transition:all .18s;}
+.ctrl-btn:hover{background:var(--gold);color:var(--bg2);border-color:var(--gold);}
+.ctrl-btn.active{background:var(--gold);color:var(--bg2);border-color:var(--gold);}
+
+/* strips */
+.info-strip{padding:.6rem 1.1rem;border-top:1px solid var(--border);background:var(--bg2);font-family:var(--mono);font-size:.67rem;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:1.4rem;}
+.info-strip .iv{color:var(--gold);}
+.legend{display:flex;flex-wrap:wrap;gap:1.1rem;padding:.6rem 1.1rem;border-top:1px solid var(--border);background:var(--bg2);}
+.leg-item{display:flex;align-items:center;gap:.38rem;font-family:var(--mono);font-size:.64rem;color:var(--text-dim);}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.leg-line{width:14px;height:1px;flex-shrink:0;}
+
+footer{text-align:center;padding:1.6rem;font-family:var(--mono);font-size:.64rem;color:var(--text-dim);border-top:1px solid var(--border);background:var(--bg2);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Cosmologia · Metrica FLRW · Legge di Hubble</div>
+  <h1>Espansione dell'Universo</h1>
+  <p class="subtitle">Lo spazio si dilata ovunque — senza centro, senza bordi</p>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="t1"><span class="tab-num">01</span>Nessun centro privilegiato</button>
+  <button class="tab-btn" data-tab="t2"><span class="tab-num">02</span>Redshift cosmologico</button>
+  <button class="tab-btn" data-tab="t3"><span class="tab-num">03</span>Legge di Hubble</button>
+</nav>
+
+<!-- TAB 1 -->
+<div class="tab-panel active" id="t1">
+<div class="panel-inner">
+  <div class="description">
+    <p>In un universo omogeneo e isotropo ogni punto è equivalente: ogni galassia vede le altre allontanarsi con la stessa legge, esattamente come farebbe qualunque altro osservatore. Non esiste un "centro" dell'espansione — è lo <em>spazio stesso</em> a dilatarsi, descritto dal fattore di scala $a(t)$.</p>
+    <div class="formula-box">$d_\text{propria}(t) = a(t)\,\chi$, dove $\chi$ è la <em>coordinata comovente</em> — costante per oggetti in quiete rispetto al flusso di Hubble.</div>
+    <p>Clicca su qualunque galassia per sceglierla come osservatore: la telecamera scivola fluidamente verso di essa e il pattern di recessione rimane identico, dimostrando l'equivalenza di tutti i punti.</p>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="c1" height="500"></canvas>
+    <div class="controls">
+      <div class="ctrl-group"><label>ESPANSIONE</label><input type="range" id="s1-speed" min="0.1" max="3" step="0.05" value="0.7"><span class="val-display" id="s1-speed-val">×0.7</span></div>
+      <div class="ctrl-group"><label>N. GALASSIE</label><input type="range" id="s1-n" min="40" max="220" step="10" value="120"><span class="val-display" id="s1-n-val">120</span></div>
+      <button class="ctrl-btn" id="s1-pause">PAUSA</button>
+      <button class="ctrl-btn" id="s1-reset">RESET</button>
+    </div>
+    <div class="info-strip">
+      <span>Clicca per scegliere l'osservatore →</span>
+      <span>Osservatore: <span class="iv" id="s1-obs">centro</span></span>
+      <span>a(t) = <span class="iv" id="s1-at">1.000</span></span>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#c8b878"></div>osservatore</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ddd8c8"></div>galassie</div>
+      <div class="leg-item"><div class="leg-line" style="background:rgba(100,140,220,0.6)"></div>velocità di recessione</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TAB 2 -->
+<div class="tab-panel" id="t2">
+<div class="panel-inner">
+  <div class="description">
+    <p>Il redshift cosmologico non è semplicemente un singolo effetto Doppler in uno spazio statico. I fotoni <em>partono</em> dalla galassia con la lunghezza d'onda emessa $\lambda_\text{em}$. Mentre viaggiano verso di noi, il fattore di scala cosmologico aumenta: la lunghezza d'onda si allunga proporzionalmente ad $a(t)$, arrivando più rossa di quanto fosse partita.</p>
+    <div class="formula-box">$z = \dfrac{\lambda_\text{oss}-\lambda_\text{em}}{\lambda_\text{em}} = \dfrac{a(t_0)}{a(t_\text{em})}-1$ &ensp;·&ensp; Nel modello didattico la distanza è trattata come distanza comovente e $z$ è stimato con una cosmologia piatta $\Lambda$CDM semplificata.</div>
+    <p>Ogni pallino è un fotone. Il suo colore mostra la lunghezza d'onda <em>istantanea</em>: parte con il colore della riga emessa (a sinistra, dalla galassia) e si sposta progressivamente verso il rosso durante il percorso, arrivando all'osservatore con il colore osservato. Le barre spettrali a destra mostrano lo spostamento della riga.</p>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="c2" height="460"></canvas>
+    <div class="controls">
+      <div class="ctrl-group"><label>VELOCITÀ FOTONI</label><input type="range" id="s2-speed" min="0.2" max="4" step="0.1" value="1.2"><span class="val-display" id="s2-speed-val">×1.2</span></div>
+      <div class="ctrl-group"><label>λ EMESSA (nm)</label><input type="range" id="s2-lambda" min="380" max="680" step="5" value="434"><span class="val-display" id="s2-lambda-val">434</span></div>
+      <button class="ctrl-btn" id="s2-pause">PAUSA</button>
+      <button class="ctrl-btn" id="s2-reset">RESET</button>
+    </div>
+    <div class="info-strip">
+      <span>λ emessa: <span class="iv" id="s2-lem">434 nm</span></span>
+      <span>Galassia a 2 Gpc → z = <span class="iv" id="s2-zmid">—</span></span>
+      <span>λ ricevuta: <span class="iv" id="s2-lrec">—</span> nm</span>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#c8b878"></div>osservatore (noi)</div>
+      <div class="leg-item">fotone: colore cambia da λ_em a λ_oss durante il viaggio</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TAB 3 -->
+<div class="tab-panel" id="t3">
+<div class="panel-inner">
+  <div class="description">
+    <p>La legge di Hubble-Lemaître $v_\text{rec} = H_0\,d$ è la conseguenza diretta dell'espansione uniforme: se tutte le distanze crescono allo stesso tasso relativo, gli oggetti più lontani si allontanano più rapidamente in valore assoluto. Le galassie si muovono — puoi vedere la loro espansione radiale — e il grafico $v$-$d$ in basso a destra mostra che i punti cadono sulla retta di Hubble.</p>
+    <div class="formula-box">$v_\text{rec} = H_0\,d$ &ensp;·&ensp; Raggio di Hubble: $R_H = c/H_0$ &ensp;·&ensp; Oltre $R_H$: $v_\text{rec} > c$ non viola la relatività ristretta, perché non è una velocità locale attraverso lo spazio.</div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="c3" height="500"></canvas>
+    <div class="controls">
+      <div class="ctrl-group"><label>H₀ (km/s/Mpc)</label><input type="range" id="s3-h0" min="50" max="100" step="1" value="68"><span class="val-display" id="s3-h0-val">68</span></div>
+      <div class="ctrl-group"><label>SCALA TEMPO</label><input type="range" id="s3-speed" min="0.1" max="3" step="0.1" value="0.8"><span class="val-display" id="s3-speed-val">×0.8</span></div>
+      <button class="ctrl-btn" id="s3-pause">PAUSA</button>
+      <button class="ctrl-btn" id="s3-reset">RESET</button>
+    </div>
+    <div class="info-strip">
+      <span>H₀ = <span class="iv" id="s3-h0d">68</span> km/s/Mpc</span>
+      <span>R_H = <span class="iv" id="s3-dh">4412</span> Mpc</span>
+      <span>Oltre orizzonte: <span class="iv" id="s3-nb">—</span></span>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#c8b878"></div>osservatore</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#6090d0"></div>v &lt; c</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#d04040"></div>v &gt; c</div>
+      <div class="leg-item"><div class="leg-line" style="border-top:1px dashed rgba(200,60,60,0.7);width:18px;height:0"></div>raggio di Hubble</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>Simulazione didattica · Cosmologia relativistica · Metrica FLRW (Friedmann–Lemaître–Robertson–Walker) · Legge di Hubble–Lemaître</footer>
+
+<script>
+// ────────────────────────────────────────────
+// UTILS
+// ────────────────────────────────────────────
+function nmToRgb(nm, a=1){
+  nm=Math.max(370,Math.min(810,nm));
+  let r=0,g=0,b=0;
+  if(nm>=380&&nm<440){r=(440-nm)/60;g=0;b=1;}
+  else if(nm<490){r=0;g=(nm-440)/50;b=1;}
+  else if(nm<510){r=0;g=1;b=(510-nm)/20;}
+  else if(nm<580){r=(nm-510)/70;g=1;b=0;}
+  else if(nm<645){r=1;g=(645-nm)/65;b=0;}
+  else{r=1;g=0;b=0;}
+  let f=1;
+  if(nm<420)f=.3+.7*(nm-380)/40;
+  else if(nm>700)f=.3+.7*(780-nm)/80;
+  if(nm>780)f=.12;
+  return `rgba(${Math.round(r*f*255)},${Math.round(g*f*255)},${Math.round(b*f*255)},${a})`;
+}
+function lerp(a,b,t){return a+(b-a)*t;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+const SIM_CANVASES = [];
+
+function mkCanvas(id){
+  const el=document.getElementById(id);
+  const ctx=el.getContext('2d');
+  const declaredH=parseFloat(el.getAttribute('height')) || 460;
+  if(!el.style.height) el.style.height=`${declaredH}px`;
+
+  function resize(){
+    const dpr=window.devicePixelRatio||1;
+    const rect=el.getBoundingClientRect();
+    const cssW=rect.width || el.parentElement?.getBoundingClientRect().width || 800;
+    const cssH=rect.height || declaredH;
+    const pxW=Math.max(1,Math.round(cssW*dpr));
+    const pxH=Math.max(1,Math.round(cssH*dpr));
+    if(el.width!==pxW || el.height!==pxH){
+      el.width=pxW;
+      el.height=pxH;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  const api={
+    el,
+    ctx,
+    resize,
+    W:()=>el.getBoundingClientRect().width || el.parentElement?.getBoundingClientRect().width || 800,
+    H:()=>el.getBoundingClientRect().height || declaredH
+  };
+
+  resize();
+  SIM_CANVASES.push(api);
+  window.addEventListener('resize',resize);
+  return api;
+}
+
+function resizeAllCanvases(){
+  SIM_CANVASES.forEach(c=>c.resize());
+}
+
+// tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    requestAnimationFrame(resizeAllCanvases);
+  });
+});
+
+// ────────────────────────────────────────────
+// TAB 1 — NO CENTER + SMOOTH CAMERA
+// ────────────────────────────────────────────
+(function(){
+  const {el,ctx,W,H}=mkCanvas('c1');
+  let paused=false,speed=0.7,N=120;
+  let galaxies=[],scaleFactor=1;
+  let camX=0,camY=0,targetX=0,targetY=0;
+  let obsIdx=-1; // -1 = center
+
+  function init(){
+    galaxies=[];scaleFactor=1;
+    camX=0;camY=0;targetX=0;targetY=0;obsIdx=-1;
+    const side=Math.ceil(Math.sqrt(N));
+    for(let i=0;i<N;i++){
+      const row=Math.floor(i/side),col=i%side;
+      galaxies.push({
+        cx:(col/side*2-1)+(Math.random()-.5)*.38,
+        cy:(row/side*2-1)+(Math.random()-.5)*.38,
+        r:1.2+Math.random()*1.5
+      });
+    }
+    galaxies.push({cx:0,cy:0,r:2.8,center:true});
+  }
+
+  function obsGalaxy(){return obsIdx<0?{cx:0,cy:0}:galaxies[obsIdx];}
+
+  function draw(){
+    const w=W(),h=H();
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#07070f';ctx.fillRect(0,0,w,h);
+
+    // smooth cam
+    camX+=(targetX-camX)*.055;
+    camY+=(targetY-camY)*.055;
+
+    const zoom=Math.min(w,h)*.38;
+    const mx=chi=>(chi-camX)*scaleFactor*zoom+w/2;
+    const my=chi=>(chi-camY)*scaleFactor*zoom+h/2;
+
+    // grid
+    ctx.strokeStyle='rgba(80,60,140,0.055)';ctx.lineWidth=.5;
+    for(let v=-2.5;v<=2.5;v+=.25){
+      ctx.beginPath();ctx.moveTo(mx(v),my(-3));ctx.lineTo(mx(v),my(3));ctx.stroke();
+      ctx.beginPath();ctx.moveTo(mx(-3),my(v));ctx.lineTo(mx(3),my(v));ctx.stroke();
+    }
+
+    const og=obsGalaxy();
+
+    // vectors
+    galaxies.forEach((g,i)=>{
+      const isObs=(obsIdx<0&&g.center)||i===obsIdx;
+      if(isObs)return;
+      const dx=g.cx-og.cx,dy=g.cy-og.cy;
+      const px=mx(g.cx),py=my(g.cy);
+      const arrowS=zoom*.11;
+      const ex=px+dx*scaleFactor*arrowS,ey=py+dy*scaleFactor*arrowS;
+      const dist=Math.hypot(ex-px,ey-py);
+      if(dist<3)return;
+      ctx.save();
+      ctx.strokeStyle='rgba(100,140,220,0.2)';ctx.lineWidth=.8;ctx.setLineDash([3,5]);
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();
+      ctx.setLineDash([]);
+      const ang=Math.atan2(ey-py,ex-px);
+      ctx.fillStyle='rgba(100,140,220,0.32)';
+      ctx.beginPath();
+      ctx.moveTo(ex,ey);
+      ctx.lineTo(ex-6*Math.cos(ang-.4),ey-6*Math.sin(ang-.4));
+      ctx.lineTo(ex-6*Math.cos(ang+.4),ey-6*Math.sin(ang+.4));
+      ctx.closePath();ctx.fill();
+      ctx.restore();
+    });
+
+    // galaxies
+    galaxies.forEach((g,i)=>{
+      const px=mx(g.cx),py=my(g.cy);
+      const isObs=(obsIdx<0&&g.center)||i===obsIdx;
+      const r=g.r*(isObs?2.1:1);
+      const grd=ctx.createRadialGradient(px,py,0,px,py,r*7);
+      if(isObs){grd.addColorStop(0,'rgba(200,185,110,.9)');grd.addColorStop(.35,'rgba(200,185,110,.18)');grd.addColorStop(1,'transparent');}
+      else{grd.addColorStop(0,'rgba(210,205,190,.6)');grd.addColorStop(.4,'rgba(170,165,210,.1)');grd.addColorStop(1,'transparent');}
+      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,r*7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=isObs?'#c8b878':'#ddd8c8';
+      ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+      if(isObs){
+        ctx.fillStyle='rgba(200,185,110,.75)';ctx.font='10px IBM Plex Mono,monospace';
+        ctx.fillText('osservatore',px+r+5,py-4);
+      }
+    });
+
+    ctx.fillStyle='rgba(80,60,140,.45)';ctx.font='10px IBM Plex Mono,monospace';
+    ctx.fillText(`a(t) = ${scaleFactor.toFixed(3)}`,14,h-14);
+    document.getElementById('s1-at').textContent=scaleFactor.toFixed(3);
+  }
+
+  function step(dt){
+    if(!paused)scaleFactor*=(1+speed*dt*.004);
+    const og=obsGalaxy();
+    targetX=og.cx;targetY=og.cy;
+  }
+
+  let last=null;
+  (function loop(ts){
+    if(last!==null)step((ts-last)/16.67);
+    last=ts;draw();
+    requestAnimationFrame(loop);
+  })(0);
+  init();
+
+  el.addEventListener('click',e=>{
+    const rect=el.getBoundingClientRect();
+    const mx2=e.clientX-rect.left,my2=e.clientY-rect.top;
+    const w=W(),h=H();const zoom=Math.min(w,h)*.38;
+    const mapX=chi=>(chi-camX)*scaleFactor*zoom+w/2;
+    const mapY=chi=>(chi-camY)*scaleFactor*zoom+h/2;
+    let best=null,bestD=28;
+    galaxies.forEach((g,i)=>{
+      const d=Math.hypot(mapX(g.cx)-mx2,mapY(g.cy)-my2);
+      if(d<bestD){bestD=d;best=i;}
+    });
+    if(best!==null){
+      obsIdx=galaxies[best].center?-1:best;
+      const g=galaxies[best];
+      document.getElementById('s1-obs').textContent=g.center?'centro':`χ=(${g.cx.toFixed(2)},${g.cy.toFixed(2)})`;
+    }
+  });
+
+  document.getElementById('s1-speed').addEventListener('input',e=>{speed=+e.target.value;document.getElementById('s1-speed-val').textContent=`×${speed.toFixed(1)}`;});
+  document.getElementById('s1-n').addEventListener('input',e=>{N=+e.target.value;document.getElementById('s1-n-val').textContent=N;init();document.getElementById('s1-obs').textContent='centro';});
+  document.getElementById('s1-pause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'RIPRENDI':'PAUSA';this.classList.toggle('active',paused);});
+  document.getElementById('s1-reset').addEventListener('click',()=>{init();document.getElementById('s1-obs').textContent='centro';});
+})();
+
+
+// ────────────────────────────────────────────
+// TAB 2 — REDSHIFT (fotone si arrossisce mentre viaggia)
+// ────────────────────────────────────────────
+(function(){
+  const {el,ctx,W,H}=mkCanvas('c2');
+  let paused=false,speed=1.2,lambdaEm=434;
+  const H0=68,C=299792.458;
+  const OMEGA_M=0.31, OMEGA_L=0.69;
+
+  const dists=[0.4,0.9,1.4,2.0,2.8,3.8,5.0]; // distanza comovente in Gpc
+
+  function Ez(z){return Math.sqrt(OMEGA_M*Math.pow(1+z,3)+OMEGA_L);}
+  function comovingDistanceGpc(z){
+    const n=96;
+    const dz=z/n;
+    let sum=0;
+    for(let i=0;i<=n;i++){
+      const zi=i*dz;
+      const weight=(i===0||i===n)?1:(i%2===0?2:4);
+      sum+=weight/Ez(zi);
+    }
+    return (C/H0)*(dz/3)*sum/1000;
+  }
+  function getZ(dGpc){
+    let lo=0,hi=8;
+    while(comovingDistanceGpc(hi)<dGpc && hi<20)hi*=1.6;
+    for(let k=0;k<34;k++){
+      const mid=(lo+hi)/2;
+      if(comovingDistanceGpc(mid)<dGpc)lo=mid; else hi=mid;
+    }
+    return (lo+hi)/2;
+  }
+  function lamObs(dGpc){return lambdaEm*(1+getZ(dGpc));}
+
+  // photons: phase 0=galaxy, 1=observer
+  const photons=dists.map((_,i)=>({phase:i/dists.length,trail:[]}));
+
+  function specBar(x,y,w,h2,le,lo){
+    const g=ctx.createLinearGradient(x,0,x+w,0);
+    for(let l=380;l<=780;l+=8)g.addColorStop((l-380)/400,nmToRgb(l,.88));
+    ctx.fillStyle=g;ctx.fillRect(x,y,w,h2);
+    // emitted line
+    const xe=x+clamp((le-380)/400,0,1)*w;
+    ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=1.5;ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(xe,y);ctx.lineTo(xe,y+h2);ctx.stroke();
+    // observed line
+    const xo=x+clamp((lo-380)/400,0,1)*w;
+    ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(xo,y);ctx.lineTo(xo,y+h2);ctx.stroke();
+    ctx.setLineDash([]);
+    if(xo>xe+4){
+      ctx.strokeStyle='rgba(210,70,70,.8)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(xe+2,y+h2/2);ctx.lineTo(xo-2,y+h2/2);ctx.stroke();
+    }
+  }
+
+  function draw(){
+    const w=W(),h=H();
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#07070f';ctx.fillRect(0,0,w,h);
+    const nG=dists.length;
+    const mL=95,mR=215,mT=26,mB=24;
+    const pW=w-mL-mR,rowH=(h-mT-mB)/nG;
+    const maxD=6;
+
+    ctx.fillStyle='rgba(155,145,125,.5)';ctx.font='9px IBM Plex Mono,monospace';
+    ctx.fillText('← fotoni in viaggio →',mL+pW*.2,mT-7);
+    ctx.fillText('spettro emesso/osservato',w-mR+5,mT-7);
+
+    dists.forEach((d,i)=>{
+      const z=getZ(d),lo=lamObs(d);
+      const cy=mT+i*rowH+rowH/2;
+      const gx=mL+(d/maxD)*pW; // galaxy x
+      const ox=mL;              // observer x
+
+      // galaxy glyph — colore = λ osservata
+      const gc=nmToRgb(clamp(lo,380,780),.9);
+      const gg=ctx.createRadialGradient(gx,cy,0,gx,cy,11);
+      gg.addColorStop(0,gc);gg.addColorStop(.5,gc.replace(/[\d.]+\)$/,'0.2)'));gg.addColorStop(1,'transparent');
+      ctx.fillStyle=gg;ctx.beginPath();ctx.arc(gx,cy,11,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=gc;ctx.beginPath();ctx.arc(gx,cy,2.8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(140,130,110,.7)';ctx.font='9px IBM Plex Mono,monospace';
+      ctx.fillText(`${d} Gpc`,gx+6,cy-10);
+
+      // path
+      ctx.strokeStyle='rgba(200,200,200,.06)';ctx.lineWidth=1;ctx.setLineDash([4,7]);
+      ctx.beginPath();ctx.moveTo(gx,cy);ctx.lineTo(ox,cy);ctx.stroke();ctx.setLineDash([]);
+
+      // photon — color interpolates from lambdaEm (phase=0, at galaxy) to lo (phase=1, at observer)
+      const ph=photons[i];
+      const photonX=lerp(gx,ox,ph.phase);
+      // CORRETTA: parte con λ_em (blu), arriva con λ_obs (rosso)
+      const photonLam=lerp(lambdaEm,lo,ph.phase);
+      const pc=nmToRgb(clamp(photonLam,380,780),1);
+
+      // trail
+      ph.trail.push({x:photonX,lam:photonLam});
+      if(ph.trail.length>55)ph.trail.shift();
+      ph.trail.forEach((pt,ti)=>{
+        const al=(ti/ph.trail.length)*.45;
+        ctx.fillStyle=nmToRgb(clamp(pt.lam,380,780),al);
+        ctx.beginPath();ctx.arc(pt.x,cy,2,0,Math.PI*2);ctx.fill();
+      });
+
+      // glow
+      const pg=ctx.createRadialGradient(photonX,cy,0,photonX,cy,8);
+      pg.addColorStop(0,pc);pg.addColorStop(1,'transparent');
+      ctx.fillStyle=pg;ctx.beginPath();ctx.arc(photonX,cy,8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=pc;ctx.beginPath();ctx.arc(photonX,cy,2.5,0,Math.PI*2);ctx.fill();
+
+      // spectrum bar
+      const bx=w-mR+7,by=cy-9,bw=140,bh=18;
+      specBar(bx,by,bw,bh,lambdaEm,clamp(lo,380,800));
+      ctx.fillStyle=z>.8?'#d07070':z>.3?'#c09060':'#7090c0';
+      ctx.font='9px IBM Plex Mono,monospace';
+      ctx.fillText(`z=${z.toFixed(2)}`,bx+bw+4,cy+4);
+    });
+
+    // observer line + glyph
+    ctx.strokeStyle='rgba(200,185,110,.4)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(mL,mT);ctx.lineTo(mL,h-mB);ctx.stroke();
+    const og2=ctx.createRadialGradient(mL,h/2,0,mL,h/2,13);
+    og2.addColorStop(0,'rgba(200,185,110,.85)');og2.addColorStop(1,'transparent');
+    ctx.fillStyle=og2;ctx.beginPath();ctx.arc(mL,h/2,13,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#c8b878';ctx.beginPath();ctx.arc(mL,h/2,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(200,185,110,.65)';ctx.font='10px IBM Plex Mono,monospace';
+    ctx.fillText('noi',mL-22,h/2+4);
+
+    // info
+    const zM=getZ(2.0),loM=lamObs(2.0);
+    document.getElementById('s2-zmid').textContent=zM.toFixed(3);
+    document.getElementById('s2-lrec').textContent=Math.round(loM);
+    document.getElementById('s2-lem').textContent=`${lambdaEm} nm`;
+  }
+
+  function step(dt){
+    if(paused)return;
+    const adv=speed*dt*.006;
+    photons.forEach(ph=>{
+      ph.phase+=adv;
+      if(ph.phase>=1){ph.phase-=1;ph.trail=[];}
+    });
+  }
+
+  let last=null;
+  (function loop(ts){if(last!==null)step((ts-last)/16.67);last=ts;draw();requestAnimationFrame(loop);})(0);
+
+  document.getElementById('s2-speed').addEventListener('input',e=>{speed=+e.target.value;document.getElementById('s2-speed-val').textContent=`×${speed.toFixed(1)}`;});
+  document.getElementById('s2-lambda').addEventListener('input',e=>{lambdaEm=+e.target.value;document.getElementById('s2-lambda-val').textContent=lambdaEm;});
+  document.getElementById('s2-pause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'RIPRENDI':'PAUSA';this.classList.toggle('active',paused);});
+  document.getElementById('s2-reset').addEventListener('click',()=>{photons.forEach((ph,i)=>{ph.phase=i/photons.length;ph.trail=[];});});
+})();
+
+
+// ────────────────────────────────────────────
+// TAB 3 — HUBBLE LAW (galaxies actually move)
+// ────────────────────────────────────────────
+(function(){
+  const {el,ctx,W,H}=mkCanvas('c3');
+  let paused=false,speed=0.8,H0=68;
+  const C=299792.458;
+  let t=0,galaxies=[];
+
+  function init(){
+    galaxies=[];t=0;
+    for(let i=0;i<58;i++){
+      const ang=Math.random()*Math.PI*2;
+      const d0=300+Math.random()*7200; // Mpc
+      galaxies.push({d0,ang,sz:1.7+Math.random()*1.7});
+    }
+  }
+
+  function draw(){
+    const w=W(),h=H();
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='#07070f';ctx.fillRect(0,0,w,h);
+    const cx=w/2,cy=h/2;
+    const maxD=9500;
+    const pxMpc=Math.min(w,h)*.44/maxD;
+    const dH=C/H0;
+    const rH=dH*pxMpc;
+
+    // zone fill
+    const zg=ctx.createRadialGradient(cx,cy,0,cx,cy,rH);
+    zg.addColorStop(0,'rgba(60,100,200,.04)');zg.addColorStop(1,'rgba(60,100,200,.07)');
+    ctx.fillStyle=zg;ctx.beginPath();ctx.arc(cx,cy,rH,0,Math.PI*2);ctx.fill();
+
+    ctx.strokeStyle='rgba(200,60,60,.38)';ctx.lineWidth=1.2;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.arc(cx,cy,rH,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(200,60,60,.5)';ctx.font='10px IBM Plex Mono,monospace';
+    ctx.fillText(`R_H = ${Math.round(dH)} Mpc`,cx+rH*Math.cos(-1.2)+4,cy+rH*Math.sin(-1.2)-4);
+
+    let nB=0;
+    galaxies.forEach(g=>{
+      // d(t) = d0 * exp(H0 * tau), tau grows with t*speed
+      // simplified: d = d0*(1 + H0/C * t * speed * 0.22)
+      const d=g.d0*(1+(H0/C)*t*speed*.22);
+      const v=H0*d;
+      const vr=v/C;
+      const r=d*pxMpc;
+      const px=cx+Math.cos(g.ang)*r;
+      const py=cy+Math.sin(g.ang)*r;
+      if(r>Math.max(w,h)*1.15)return;
+      if(vr>1)nB++;
+
+      // color
+      let rc,gc2,bc;
+      if(vr<.5){const f=vr/.5;rc=Math.round(lerp(60,180,f));gc2=Math.round(lerp(130,80,f));bc=Math.round(lerp(220,200,f));}
+      else if(vr<1){const f=(vr-.5)/.5;rc=Math.round(lerp(180,210,f));gc2=Math.round(lerp(80,45,f));bc=Math.round(lerp(200,55,f));}
+      else{rc=205;gc2=40;bc=40;}
+      const al=vr>1?.48:.85;
+      const col=`rgba(${rc},${gc2},${bc},${al})`;
+
+      // velocity arrow
+      const vLen=clamp(vr*55,4,74);
+      const vx=Math.cos(g.ang)*vLen,vy=Math.sin(g.ang)*vLen;
+      ctx.strokeStyle=`rgba(${rc},${gc2},${bc},${al*.35})`;ctx.lineWidth=.8;
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+vx,py+vy);ctx.stroke();
+      const a=g.ang;
+      ctx.fillStyle=`rgba(${rc},${gc2},${bc},${al*.4})`;
+      ctx.beginPath();ctx.moveTo(px+vx,py+vy);
+      ctx.lineTo(px+vx-5*Math.cos(a-.4),py+vy-5*Math.sin(a-.4));
+      ctx.lineTo(px+vx-5*Math.cos(a+.4),py+vy-5*Math.sin(a+.4));
+      ctx.closePath();ctx.fill();
+
+      // galaxy
+      const gg=ctx.createRadialGradient(px,py,0,px,py,g.sz*5.5);
+      gg.addColorStop(0,col);gg.addColorStop(1,'transparent');
+      ctx.fillStyle=gg;ctx.beginPath();ctx.arc(px,py,g.sz*5.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(px,py,g.sz,0,Math.PI*2);ctx.fill();
+    });
+
+    // observer
+    const og=ctx.createRadialGradient(cx,cy,0,cx,cy,14);
+    og.addColorStop(0,'rgba(200,185,110,.9)');og.addColorStop(1,'transparent');
+    ctx.fillStyle=og;ctx.beginPath();ctx.arc(cx,cy,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#c8b878';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+
+    // mini Hubble diagram
+    const bx=w-192,by=h-145,bw=172,bh=115;
+    ctx.fillStyle='rgba(6,6,13,.93)';ctx.strokeStyle='rgba(55,50,75,.9)';ctx.lineWidth=1;
+    ctx.fillRect(bx-4,by-20,bw+12,bh+28);ctx.strokeRect(bx-4,by-20,bw+12,bh+28);
+    ctx.fillStyle='rgba(155,145,125,.5)';ctx.font='9px IBM Plex Mono,monospace';
+    ctx.fillText('v = H₀ · d',bx+2,by-8);
+    ctx.strokeStyle='rgba(100,90,80,.35)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx,by+bh);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(bx,by+bh);ctx.lineTo(bx+bw,by+bh);ctx.stroke();
+    ctx.fillStyle='rgba(125,115,100,.4)';ctx.font='8px IBM Plex Mono,monospace';
+    ctx.fillText('d →',bx+bw-16,by+bh+10);ctx.fillText('v',bx-10,by+5);
+    // c line
+    const maxV=C*3;
+    const cY=by+bh-(C/maxV)*bh;
+    ctx.strokeStyle='rgba(200,60,60,.48)';ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(bx,cY);ctx.lineTo(bx+bw,cY);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(200,60,60,.55)';ctx.font='8px IBM Plex Mono,monospace';ctx.fillText('v=c',bx+2,cY-2);
+    // Hubble line
+    ctx.strokeStyle='rgba(200,185,110,.55)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(bx,by+bh);
+    ctx.lineTo(bx+bw,by+bh-Math.min(bh,bh*(H0*9000)/maxV));ctx.stroke();
+    // data points
+    galaxies.slice(0,28).forEach(g=>{
+      const d=g.d0*(1+(H0/C)*t*speed*.22);
+      const v=H0*d;
+      const px2=bx+clamp(d/9000,0,1)*bw;
+      const py2=by+bh-clamp(v/maxV,0,1)*bh;
+      ctx.fillStyle=v>C?'rgba(200,60,60,.7)':'rgba(80,140,210,.7)';
+      ctx.beginPath();ctx.arc(px2,py2,1.8,0,Math.PI*2);ctx.fill();
+    });
+
+    document.getElementById('s3-h0d').textContent=H0;
+    document.getElementById('s3-dh').textContent=Math.round(C/H0);
+    document.getElementById('s3-nb').textContent=nB;
+  }
+
+  function step(dt){if(!paused)t+=(dt/16.67)*.015;}
+
+  let last=null;
+  (function loop(ts){if(last!==null)step(ts-last);last=ts;draw();requestAnimationFrame(loop);})(0);
+  init();
+
+  document.getElementById('s3-h0').addEventListener('input',e=>{H0=+e.target.value;document.getElementById('s3-h0-val').textContent=H0;});
+  document.getElementById('s3-speed').addEventListener('input',e=>{speed=+e.target.value;document.getElementById('s3-speed-val').textContent=`×${speed.toFixed(1)}`;});
+  document.getElementById('s3-pause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'RIPRENDI':'PAUSA';this.classList.toggle('active',paused);});
+  document.getElementById('s3-reset').addEventListener('click',()=>{init();});
+})();
+</script>
+</body>
+</html>

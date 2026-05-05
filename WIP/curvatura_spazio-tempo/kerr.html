@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  title: "Curvatura dello spazio-tempo",
+  description: "Simulazione della metrica di Kerr con griglia dinamica, geodetiche nulle, lente gravitazionale e redshift.",
+  category: "Relativita",
+  icon: "BH",
+  order: 1,
+  tags: ["buco nero rotante", "metrica di Kerr", "relativita generale", "geodetiche nulle", "frame dragging"],
+  level: "avanzato"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curvatura spazio-temporale - Metrica di Kerr</title>
+<style>
+:root {
+  --page: #f4f2ec;
+  --panel: #fbfaf6;
+  --panel-2: #e9e4da;
+  --ink: #1d1a16;
+  --muted: #686056;
+  --line: #c8bfb1;
+  --red: #b33a2f;
+  --amber: #b56a1f;
+  --blue: #246a92;
+  --green: #237a57;
+  --black: #080706;
+  --r: 6px;
+  --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --sans: Inter, Segoe UI, Roboto, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--sans);
+  display: flex;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 22px 10px;
+  background: #25211c;
+  color: #fffaf0;
+  border-bottom: 3px solid var(--amber);
+}
+h1 {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+.sub {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #d7cec0;
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px 0;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tab {
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--r) var(--r) 0 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--ink); background: rgba(255,255,255,0.35); }
+.tab.active {
+  background: var(--page);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.main {
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(240px, 286px) minmax(0, 1fr);
+}
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 14px;
+  overflow-y: auto;
+}
+.section {
+  padding: 12px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.section:first-child { padding-top: 0; }
+.section-title {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.control { margin: 0 0 12px; }
+.control:last-child { margin-bottom: 0; }
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.value {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  text-align: right;
+  min-width: 54px;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--amber);
+}
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.btn {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: #fffdf8;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 620;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.on {
+  background: var(--ink);
+  color: #fffaf0;
+  border-color: var(--ink);
+}
+.info {
+  display: grid;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.info-row b { color: var(--muted); font-weight: 500; }
+.info-row span { color: var(--ink); }
+.formula {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.canvas-area {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 14px;
+  gap: 8px;
+  align-items: center;
+  justify-items: center;
+}
+.canvas-shell {
+  width: min(100%, 1050px);
+  display: grid;
+  justify-items: center;
+}
+canvas {
+  width: min(100%, 900px);
+  height: auto;
+  max-height: calc(100vh - 190px);
+  aspect-ratio: 900 / 700;
+  display: block;
+  background: var(--black);
+  border: 1px solid #2d251d;
+  border-radius: var(--r);
+}
+.caption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-align: center;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 14px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.swatch { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.status {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+}
+.status span { color: var(--ink); }
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  text-align: center;
+  background: var(--page);
+  color: var(--ink);
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+#loading strong { font-size: 1.05rem; }
+#loadMsg { color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 820px) {
+  header { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .main { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
+  .canvas-area { padding: 10px; }
+  canvas { max-height: none; }
+}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <strong>Caricamento WASM</strong>
+  <div id="loadMsg">Preparazione del modulo Kerr...</div>
+</div>
+
+<header>
+  <h1>Curvatura spazio-temporale</h1>
+  <div class="sub">Kerr, Boyer-Lindquist, G = c = M = 1</div>
+</header>
+
+<nav class="tabs" aria-label="Modalita di rendering">
+  <button class="tab active" data-mode="0">Griglia / embedding</button>
+  <button class="tab" data-mode="1">Geodetiche luce</button>
+  <button class="tab" data-mode="2">Lente gravitazionale</button>
+  <button class="tab" data-mode="3">Redshift / tempo</button>
+</nav>
+
+<main class="main">
+  <aside class="sidebar">
+    <section class="section">
+      <div class="section-title">Parametri Kerr</div>
+      <div class="control">
+        <div class="label-row"><label for="sA">Spin a/M</label><span class="value" id="vA">0.600</span></div>
+        <input type="range" id="sA" min="0.001" max="0.998" step="0.001" value="0.600">
+      </div>
+      <div class="control">
+        <div class="label-row"><label for="sZ">Zoom</label><span class="value"><span id="vZ">2.20</span>x</span></div>
+        <input type="range" id="sZ" min="1.5" max="4.0" step="0.05" value="2.20">
+      </div>
+      <div class="control">
+        <div class="label-row"><label for="sP">Pitch camera</label><span class="value" id="vP">0.60</span></div>
+        <input type="range" id="sP" min="0.10" max="1.40" step="0.01" value="0.60">
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Geodetiche</div>
+      <div class="control">
+        <div class="label-row"><label for="sN">Numero raggi</label><span class="value" id="vN">40</span></div>
+        <input type="range" id="sN" min="4" max="120" step="2" value="40">
+      </div>
+      <div class="control">
+        <div class="label-row"><label for="sR">Raggio emissione</label><span class="value"><span id="vR">18</span> rg</span></div>
+        <input type="range" id="sR" min="5" max="38" step="1" value="18">
+      </div>
+      <div class="buttons">
+        <button class="btn" id="btnAnim">&#9658; Anima</button>
+        <button class="btn" id="btnRender">Ridisegna</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Quantita fisiche</div>
+      <div class="info">
+        <div class="info-row"><b>r+</b><span id="irp">--</span></div>
+        <div class="info-row"><b>r ergo</b><span id="iergo">--</span></div>
+        <div class="info-row"><b>r ISCO</b><span id="iisco">--</span></div>
+        <div class="info-row"><b>r ph</b><span id="irph">--</span></div>
+        <div class="info-row"><b>&Omega;H</b><span id="iomH">--</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Formule</div>
+      <div class="formula">
+        Delta = r^2 - 2r + a^2<br>
+        Sigma = r^2 + a^2 cos^2(theta)<br>
+        g_tt = -(1 - 2r / Sigma)<br>
+        g_tphi = -2ar / Sigma<br>
+        omega = -g_tphi / g_phiphi<br>
+        z_grav = 1 / sqrt(-g_tt) - 1
+      </div>
+    </section>
+  </aside>
+
+  <section class="canvas-area">
+    <div class="canvas-shell">
+      <canvas id="kerr" width="900" height="700"></canvas>
+      <div class="caption" id="caption">Griglia dinamica - embedding equatoriale</div>
+    </div>
+    <div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:#c0392b"></span>orizzonte r+</span>
+        <span class="legend-item"><span class="swatch" style="background:#e67e22"></span>ergosfera</span>
+        <span class="legend-item"><span class="swatch" style="background:#2980b9"></span>ISCO</span>
+        <span class="legend-item"><span class="swatch" style="background:#27ae60"></span>fotosfera</span>
+      </div>
+      <div class="status">
+        <div>modalita: <span id="stMode">Griglia</span></div>
+        <div>a/M: <span id="stA">0.600</span></div>
+        <div>r+: <span id="stRp">--</span></div>
+        <div id="stFps">fps: --</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const canvas = document.getElementById('kerr');
+const ctx = canvas.getContext('2d', { alpha: false });
+const loading = document.getElementById('loading');
+const loadMsg = document.getElementById('loadMsg');
+
+let wasmReady = false;
+let currentMode = 0;
+let animating = false;
+let animId = null;
+let renderPending = false;
+let imgData = null;
+let lastFrameTime = 0;
+
+const modeLabels = [
+  'Griglia dinamica - embedding equatoriale',
+  'Geodetiche nulle - integrazione RK4',
+  'Lente gravitazionale - sorgente estesa',
+  'Redshift gravitazionale e frame dragging'
+];
+const modeNames = ['Griglia', 'Geodetiche', 'Lente', 'Redshift'];
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function wasm(name, ...args) {
+  const fn = Module['_' + name];
+  if (typeof fn !== 'function') {
+    throw new Error('Funzione WASM mancante: _' + name);
+  }
+  return fn(...args);
+}
+
+function onFrameReady() {
+  if (!wasmReady) return;
+
+  const ptr = wasm('get_pixel_buffer');
+  const w = wasm('get_width');
+  const h = wasm('get_height');
+  if (!imgData || imgData.width !== w || imgData.height !== h) {
+    imgData = ctx.createImageData(w, h);
+    canvas.width = w;
+    canvas.height = h;
+  }
+
+  const heap = Module.HEAPU8 || window.HEAPU8;
+  if (!heap) {
+    loadMsg.textContent = 'Memoria WASM non disponibile.';
+    return;
+  }
+  imgData.data.set(heap.subarray(ptr, ptr + w*h*4));
+  ctx.putImageData(imgData, 0, 0);
+}
+
+function updatePhysicsInfo() {
+  if (!wasmReady) return;
+  const rp = wasm('get_rp');
+  const ergo = wasm('get_rergo');
+  const isco = wasm('get_risco');
+  const rph = wasm('get_rph');
+  const omH = wasm('get_omH');
+
+  setText('irp', rp.toFixed(4) + ' rg');
+  setText('iergo', ergo.toFixed(4) + ' rg');
+  setText('iisco', isco.toFixed(4) + ' rg');
+  setText('irph', rph.toFixed(4) + ' rg');
+  setText('iomH', omH.toFixed(5));
+  setText('stRp', rp.toFixed(4) + ' rg');
+}
+
+function syncControlsToWasm() {
+  wasm('set_spin', parseFloat(document.getElementById('sA').value));
+  wasm('set_zoom', parseFloat(document.getElementById('sZ').value));
+  wasm('set_pitch', parseFloat(document.getElementById('sP').value));
+  wasm('set_nrays', parseInt(document.getElementById('sN').value, 10));
+  wasm('set_remit', parseFloat(document.getElementById('sR').value));
+  wasm('set_mode', currentMode);
+  updatePhysicsInfo();
+}
+
+function renderNow() {
+  if (!wasmReady) return;
+  wasm('render_frame');
+  const now = performance.now();
+  if (lastFrameTime > 0) {
+    setText('stFps', 'fps: ' + Math.round(1000 / Math.max(1, now - lastFrameTime)));
+  }
+  lastFrameTime = now;
+}
+
+function requestRender() {
+  if (!wasmReady || renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => {
+    renderPending = false;
+    renderNow();
+  });
+}
+
+function animationLoop() {
+  if (!animating) return;
+  wasm('step_anim');
+  renderNow();
+  animId = requestAnimationFrame(animationLoop);
+}
+
+function setAnimating(next) {
+  animating = next;
+  const btn = document.getElementById('btnAnim');
+  if (animating) {
+    btn.innerHTML = '&#10074;&#10074; Pausa';
+    btn.classList.add('on');
+    lastFrameTime = 0;
+    animationLoop();
+  } else {
+    if (animId !== null) cancelAnimationFrame(animId);
+    animId = null;
+    btn.innerHTML = '&#9658; Anima';
+    btn.classList.remove('on');
+  }
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.mode, 10) === mode);
+  });
+  setText('caption', modeLabels[mode]);
+  setText('stMode', modeNames[mode]);
+  if (wasmReady) {
+    wasm('set_mode', mode);
+    requestRender();
+  }
+}
+
+function bindSlider(id, valueId, digits, onChange) {
+  const slider = document.getElementById(id);
+  const refresh = () => {
+    const value = parseFloat(slider.value);
+    setText(valueId, value.toFixed(digits));
+    if (wasmReady) {
+      onChange(value);
+      updatePhysicsInfo();
+      if (!animating) requestRender();
+    }
+  };
+  slider.addEventListener('input', refresh);
+  refresh();
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => setMode(parseInt(btn.dataset.mode, 10)));
+});
+
+bindSlider('sA', 'vA', 3, value => {
+  wasm('set_spin', value);
+  setText('stA', value.toFixed(3));
+});
+bindSlider('sZ', 'vZ', 2, value => wasm('set_zoom', value));
+bindSlider('sP', 'vP', 2, value => wasm('set_pitch', value));
+bindSlider('sN', 'vN', 0, value => wasm('set_nrays', value));
+bindSlider('sR', 'vR', 0, value => wasm('set_remit', value));
+
+document.getElementById('btnAnim').addEventListener('click', () => setAnimating(!animating));
+document.getElementById('btnRender').addEventListener('click', () => {
+  setAnimating(false);
+  requestRender();
+});
+
+window.Module = {
+  locateFile: path => path,
+  onFrameReady,
+  onRuntimeInitialized() {
+    wasmReady = true;
+    syncControlsToWasm();
+    loading.style.display = 'none';
+    requestRender();
+  },
+  setStatus(text) {
+    if (text) loadMsg.textContent = text;
+  },
+  monitorRunDependencies(left) {
+    if (left === 0) loadMsg.textContent = 'Modulo pronto.';
+  }
+};
+var Module = window.Module;
+
+const wasmScript = document.createElement('script');
+wasmScript.src = 'kerr.js';
+wasmScript.onerror = () => {
+  loadMsg.textContent = 'Errore: kerr.js non trovato nella stessa cartella.';
+};
+document.head.appendChild(wasmScript);
+</script>
+</body>
+</html>

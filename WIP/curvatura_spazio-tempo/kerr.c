@@ -14,7 +14,7 @@
  *         -O3 -msimd128 \
  *         -s WASM=1 \
  *         -s USE_SDL=0 \
- *         -s EXPORTED_FUNCTIONS='["_main","_set_spin","_set_zoom","_set_mode","_set_nrays","_set_remit","_step_anim"]' \
+ *         -s EXPORTED_FUNCTIONS='["_main","_render_frame","_set_spin","_set_zoom","_set_pitch","_set_mode","_set_nrays","_set_remit","_step_anim","_get_rp","_get_rergo","_get_risco","_get_rph","_get_omH","_get_width","_get_height","_get_pixel_buffer"]' \
  *         -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
  *         -s ALLOW_MEMORY_GROWTH=1 \
  *         --shell-file shell.html
@@ -76,6 +76,7 @@ static int      g_nrays   = 40;
 static double   g_remit   = 18.0;
 static RenderMode g_mode  = MODE_GRID;
 static double   g_phi_off = 0.0;
+static double   g_anim_time = 0.0;
 static double   g_cam_pitch = 0.60;
 static KerrProps g_kp;
 static GeodesicPath g_geo_cache[N_RAYS_MAX];
@@ -96,7 +97,7 @@ static inline void kerr_metric(double r, double a, KerrMetric *m)
     m->Sigma     = r2;
     m->Delta     = r2 - 2.0*r + a2;
     m->gtt       = -(1.0 - 2.0*r/m->Sigma);
-    m->gtphi     =  2.0*a*r/m->Sigma;
+    m->gtphi     = -2.0*a*r/m->Sigma;
     m->grr       =  m->Sigma / m->Delta;
     m->gphiphi   =  r2 + a2 + 2.0*a2*r/m->Sigma;
     m->det       =  m->gtt * m->gphiphi - m->gtphi * m->gtphi;
@@ -129,7 +130,14 @@ static inline double Veff(double r, double a, double E, double L)
 {
     KerrMetric m;
     kerr_metric(r, a, &m);
-    return (E*E*m.gphiphi + 2.0*E*L*m.gtphi + L*L*m.gtt) / m.det;
+    return -(E*E*m.gphiphi + 2.0*E*L*m.gtphi + L*L*m.gtt) / m.det;
+}
+
+static inline double frame_drag_omega(double r, double a)
+{
+    KerrMetric m;
+    kerr_metric(r, a, &m);
+    return -m.gtphi / m.gphiphi;
 }
 
 static void geodesic_derivs(
@@ -168,7 +176,6 @@ static void rk4_step(
     double a, double E, double L, double h)
 {
     double k1r, k1dr, k2r, k2dr, k3r, k3dr, k4r, k4dr;
-    double dp;
 
     geodesic_derivs(*r,          *dr,          a,E,L, &k1r,&k1dr);
     geodesic_derivs(*r+h*k1r/2, *dr+h*k1dr/2, a,E,L, &k2r,&k2dr);
@@ -220,7 +227,9 @@ static void integrate_geodesic(
 {
     double r=r0, phi=phi0;
     double V0=Veff(r,a,E,L);
-    double dr = (V0>=0.0) ? -sqrt(V0) : 0.0;
+    KerrMetric m0;
+    kerr_metric(r, a, &m0);
+    double dr = (V0>=0.0 && m0.grr>0.0) ? -sqrt(V0 / m0.grr) : 0.0;
 
     path->n=0; path->captured=0; path->escaped=0;
 
@@ -361,6 +370,67 @@ static void wavelength_rgb(double lam,
 /* ------------------------------------------------------------------ */
 /*  RENDER 0: GRIGLIA / EMBEDDING DI FLAMM                             */
 /* ------------------------------------------------------------------ */
+static double grid_embedding_z(double r, double a)
+{
+    KerrMetric m;
+    kerr_metric(r, a, &m);
+    if (m.Delta <= 0.0) return 0.0;
+
+    double throat = fmax(0.0, r - g_kp.rp);
+    double slope = sqrt(fmax(0.0, m.grr - 1.0));
+    double throat_weight = slope / (slope + 2.5);
+    double depth = (6.0 + 2.0*a) * throat_weight * exp(-0.10*throat);
+
+    return -depth;
+}
+
+static void grid_project(double r, double phi, double a, double *wx, double *wy)
+{
+    double throat = fmax(0.0, r - g_kp.rp);
+    double omega = frame_drag_omega(r, a);
+    double fall_phase = g_anim_time * 0.65;
+    double inflow = 0.10 * (0.5 + 0.5*sin(2.3*r - fall_phase)) * exp(-0.06*throat);
+    double rr = fmax(g_kp.rp * 1.004, r - inflow);
+    double drag = g_anim_time * (0.08 + 3.0*omega) * exp(-0.045*throat);
+    double p = phi + drag;
+    double z = grid_embedding_z(rr, a);
+
+    z += 0.16 * sin(2.0*log(rr + 0.25) - 1.8*g_anim_time + 2.0*phi) * exp(-0.14*throat);
+
+    *wx = rr * cos(p);
+    *wy = rr * sin(p) * cos(g_cam_pitch) + z * 0.55 * sin(g_cam_pitch);
+}
+
+static void draw_infall_threads(double cx, double cy, double scale, double a,
+                                double r_min, double r_max)
+{
+    for (int i=0; i<28; i++) {
+        double lane = (double)i / 28.0 * TWO_PI;
+        double phase = fmod(0.037*i + g_anim_time*0.12, 1.0);
+        double r_head = r_min + (r_max-r_min) * (1.0 - phase);
+        int px0=0, py0=0, first=1;
+
+        for (int k=0; k<7; k++) {
+            double r = r_head + 0.055*k*(r_max-r_min);
+            if (r < r_min || r > r_max) continue;
+
+            double wx, wy;
+            grid_project(r, lane + 0.14*k, a, &wx, &wy);
+            int sx, sy;
+            w2s(wx, wy, cx, cy, scale, &sx, &sy);
+
+            if (!first) {
+                double fade = 1.0 - (double)k / 7.0;
+                draw_line(px0, py0, sx, sy,
+                          (uint8_t)(230*fade),
+                          (uint8_t)(120*fade),
+                          (uint8_t)(28*fade));
+            }
+            px0=sx; py0=sy; first=0;
+        }
+    }
+}
+
 static void render_grid(void)
 {
     /* Sfondo: nero caldo */
@@ -374,21 +444,16 @@ static void render_grid(void)
     double r_min=g_kp.rp*1.005, r_max=26.0/g_zoom;
     int Nr=70, Np=100;
 
-    /* z(r): embedding approssimato di Kerr
+    /* Embedding qualitativo: z < 0 produce un imbuto verso il basso.
      * Usiamo √(g_rr) - 1 scalato, che diverge correttamente a r→r+ */
-    #define ZFUNC(r_) ({ \
-        KerrMetric _m; kerr_metric((r_),a,&_m); \
-        (_m.Delta>0.0) ? (sqrt(_m.grr)-1.0)*(r_)*0.50 : 0.0; \
-    })
-
     /* Righe iso-φ */
     for(int ip=0;ip<Np;ip++){
         double phi=(double)ip/Np*TWO_PI;
         int px0=0,py0=0,first=1;
         for(int ir=0;ir<=Nr;ir++){
             double r=r_min+(r_max-r_min)*ir/Nr;
-            double z=ZFUNC(r);
-            double wx=r*cos(phi), wy=r*sin(phi)*cos(g_cam_pitch)+z*0.55*sin(g_cam_pitch);
+            double wx, wy;
+            grid_project(r, phi, a, &wx, &wy);
             int sx,sy; w2s(wx,wy,cx,cy,scale,&sx,&sy);
             if(!first){
                 double t=(double)ir/Nr;
@@ -410,7 +475,6 @@ static void render_grid(void)
     /* Righe iso-r */
     for(int ir=0;ir<=Nr;ir++){
         double r=r_min+(r_max-r_min)*ir/Nr;
-        double z=ZFUNC(r);
         KerrMetric mm; kerr_metric(r,a,&mm);
         double curv=(mm.Delta>0.1)?1.0/(r*r):3.0;
         double alpha=0.10+fmin(0.70,curv*5.5);
@@ -422,12 +486,15 @@ static void render_grid(void)
         int px0=0,py0=0,first=1;
         for(int ip=0;ip<=Np;ip++){
             double phi=(double)ip/Np*TWO_PI;
-            double wx=r*cos(phi), wy=r*sin(phi)*cos(g_cam_pitch)+z*0.55*sin(g_cam_pitch);
+            double wx, wy;
+            grid_project(r, phi, a, &wx, &wy);
             int sx,sy; w2s(wx,wy,cx,cy,scale,&sx,&sy);
             if(!first) draw_line(px0,py0,sx,sy,R,G,B);
             px0=sx;py0=sy;first=0;
         }
     }
+
+    draw_infall_threads(cx, cy, scale, a, r_min, r_max);
 
     /* Frame-dragging: frecce tangenziali intorno ergosfera */
     if(a>0.01){
@@ -455,7 +522,6 @@ static void render_grid(void)
     draw_circle(icx,icy,(int)(g_kp.rp    *scale),192, 57, 43,0);
     fill_circle(icx,icy,(int)(g_kp.rp    *scale),  0,  0,  0);
 
-    #undef ZFUNC
 }
 
 /* ------------------------------------------------------------------ */
@@ -770,7 +836,11 @@ EMSCRIPTEN_KEEPALIVE void set_remit(double r)
 }
 
 EMSCRIPTEN_KEEPALIVE void step_anim(void)
-{ g_phi_off+=0.015; }
+{
+    g_anim_time += 0.035;
+    g_phi_off += 0.015;
+    if (g_phi_off > TWO_PI) g_phi_off -= TWO_PI;
+}
 
 EMSCRIPTEN_KEEPALIVE double get_rp(void)    { return g_kp.rp; }
 EMSCRIPTEN_KEEPALIVE double get_rergo(void) { return g_kp.r_ergo; }

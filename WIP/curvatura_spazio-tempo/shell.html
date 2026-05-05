@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <script>
+if (!location.pathname.endsWith('/kerr.html')) {
+  location.replace('kerr.html');
+}
+</script>
+<script>
 window.SIM_METADATA = {
   title: "Curvatura dello spazio-tempo",
   description: "Simulazione della metrica di Kerr attorno a un buco nero rotante, con visualizzazione di geodetiche nulle, lente gravitazionale, redshift gravitazionale e dilatazione temporale.",

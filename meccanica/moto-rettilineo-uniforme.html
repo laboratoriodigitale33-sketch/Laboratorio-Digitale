@@ -15,47 +15,96 @@ window.SIM_METADATA = {
   level: "base"
 };
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f7fa;
-    --panel: #ffffff;
-    --panel2: #f8fafc;
-    --text: #111827;
-    --muted: #4b5563;
-    --border: #d1d5db;
-    --accent: #2563eb;
-    --accent2: #dc2626;
-    --ok: #059669;
+    --bg: #f5f0e8;
+    --panel: #fffaf0;
+    --panel2: #ede6d4;
+    --text: #1a1610;
+    --muted: #6b5e4e;
+    --border: #d4c9b0;
+    --accent: #8b3a1a;
+    --accent2: #c4622d;
+    --ok: #2d6b4a;
   }
 
   * { box-sizing: border-box; }
 
   body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: "IBM Plex Sans", sans-serif;
     background: var(--bg);
     color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(26,22,16,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,22,16,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 22%, transparent 80%);
   }
 
   .container {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 18px;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin: 0;
+    padding: 0 0 4rem;
   }
 
   header {
-    text-align: center;
-    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    background: var(--text);
+    color: var(--bg);
+    border-bottom: 1px solid #2a2218;
+    padding: 3.3rem max(1.5rem, calc((100vw - 1100px) / 2)) 3rem;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 60px,
+      rgba(255,255,255,0.015) 60px,
+      rgba(255,255,255,0.015) 61px
+    );
+    pointer-events: none;
+  }
+
+  header > * {
+    position: relative;
+    max-width: 1100px;
   }
 
   h1 {
-    margin: 0 0 6px;
-    font-size: 2rem;
+    margin: 0 0 1rem;
+    font-family: "EB Garamond", Georgia, serif;
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    line-height: 1.15;
+    font-weight: 500;
   }
 
   .subtitle {
     margin: 0;
-    color: var(--muted);
+    color: #a09080;
+    max-width: 640px;
+    font-weight: 300;
   }
 
   .grid {
@@ -63,6 +112,8 @@ window.SIM_METADATA = {
     grid-template-columns: 1.1fr 0.9fr;
     gap: 18px;
     align-items: start;
+    width: min(1100px, calc(100% - 32px));
+    margin: 0 auto;
   }
 
   .stack {
@@ -73,22 +124,25 @@ window.SIM_METADATA = {
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 4px;
     padding: 14px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   }
 
   .panel h2, .panel h3 {
     margin: 0 0 10px;
-    font-size: 1.05rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
 
   canvas {
     display: block;
     width: 100%;
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 4px;
   }
 
   .controls {
@@ -102,11 +156,16 @@ window.SIM_METADATA = {
   }
 
   .control-row label {
-    font-size: 0.95rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
 
   input[type="range"] {
     width: 100%;
+    accent-color: var(--accent);
   }
 
   .inline {
@@ -129,9 +188,9 @@ window.SIM_METADATA = {
 
   button {
     border: 1px solid var(--border);
-    background: #fff;
+    background: var(--panel);
     color: var(--text);
-    border-radius: 10px;
+    border-radius: 3px;
     padding: 9px 14px;
     cursor: pointer;
     font-size: 0.95rem;
@@ -150,7 +209,7 @@ window.SIM_METADATA = {
   .stat {
     background: var(--panel2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 4px;
     padding: 10px;
   }
 
@@ -191,9 +250,9 @@ window.SIM_METADATA = {
   .formula {
     background: var(--panel2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 3px;
     padding: 10px 12px;
-    font-family: "Times New Roman", serif;
+    font-family: "IBM Plex Mono", monospace;
     font-size: 1.08rem;
     overflow-x: auto;
   }
@@ -486,7 +545,7 @@ window.SIM_METADATA = {
 
     const nTicks = 10;
     ctx.fillStyle = '#475569';
-    ctx.font = '12px Arial';
+    ctx.font = '12px "IBM Plex Sans", sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= nTicks; i++) {
       const xw = bounds.min + (i / nTicks) * (bounds.max - bounds.min);
@@ -552,7 +611,7 @@ window.SIM_METADATA = {
     ctx.lineTo(w - pad.right, pad.top);
     ctx.stroke();
 
-    ctx.font = '12px Arial';
+    ctx.font = '12px "IBM Plex Sans", sans-serif';
     ctx.fillStyle = '#475569';
     ctx.textAlign = 'center';
     const xTicks = 5;

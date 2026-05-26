@@ -15,7 +15,7 @@ window.SIM_METADATA = {
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulatore Moto Parabolico</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script>
 MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, startup: { typeset: false } };
 </script>
@@ -24,22 +24,24 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f4f3ef;
-    --surface: #ffffff;
-    --surface2: #f0efe9;
-    --border: rgba(0,0,0,0.07);
-    --border2: rgba(0,0,0,0.13);
-    --text: #1c1c1a;
-    --text2: #4a5040;
-    --text3: #8a8f80;
+    --bg: #f5f0e8;
+    --surface: #fffaf0;
+    --surface2: #ede6d4;
+    --border: #d4c9b0;
+    --border2: #c8b99f;
+    --text: #1a1610;
+    --text2: #3d3428;
+    --text3: #6b5e4e;
+    --accent: #8b3a1a;
+    --accent-warm: #c4622d;
     --accent-traj: #1a6fd4;
     --accent-L: #c04f20;
     --accent-h: #0e8a5a;
     --accent-vec: #222222;
     --accent-pt: #6d4fc0;
     --accent-line: #2a2a26;
-    --mono: 'DM Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
     --serif: 'EB Garamond', Georgia, serif;
   }
 
@@ -48,54 +50,86 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2.5rem 1rem 3.5rem;
+    line-height: 1.7;
+    overflow-x: hidden;
+    padding: 0 0 4rem;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(26,22,16,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,22,16,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 22%, transparent 80%);
   }
 
   header {
+    position: relative;
+    overflow: hidden;
     width: 100%;
-    max-width: 900px;
+    max-width: none;
     margin-bottom: 2rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--accent-line);
+    padding: 3.3rem max(1.5rem, calc((100vw - 1100px) / 2)) 3rem;
+    border-bottom: 1px solid #2a2218;
+    background: var(--text);
+    color: var(--bg);
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: end;
     gap: 1rem;
   }
 
-  .header-left {}
+  header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 60px,
+      rgba(255,255,255,0.015) 60px,
+      rgba(255,255,255,0.015) 61px
+    );
+    pointer-events: none;
+  }
+
+  .header-left,
+  .header-badge {
+    position: relative;
+  }
 
   header h1 {
     font-family: var(--serif);
-    font-size: 1.75rem;
-    font-weight: 400;
-    font-style: italic;
-    color: var(--text);
-    letter-spacing: 0.01em;
-    line-height: 1.2;
-    margin-bottom: 4px;
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    font-weight: 500;
+    font-style: normal;
+    color: var(--bg);
+    letter-spacing: 0;
+    line-height: 1.15;
+    margin-bottom: 1rem;
   }
 
   header .subtitle {
     font-family: var(--mono);
     font-size: 0.7rem;
-    color: var(--text3);
-    letter-spacing: 0.06em;
+    color: #a09080;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
   }
 
   .header-badge {
     font-family: var(--mono);
     font-size: 0.68rem;
-    color: var(--text3);
-    border: 0.5px solid var(--border2);
-    border-radius: 4px;
+    color: #a09080;
+    border: 1px solid #2a2218;
+    border-radius: 3px;
     padding: 5px 10px;
     white-space: nowrap;
-    background: var(--surface);
+    background: rgba(255,255,255,0.025);
   }
 
   .header-badge span {
@@ -105,7 +139,11 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
 
   .container {
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    padding: 0 1rem;
     display: grid;
     grid-template-columns: 260px 1fr;
     gap: 16px;
@@ -113,10 +151,9 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
 
   .panel {
     background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
 
   .panel-title {
@@ -127,7 +164,7 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
     color: var(--text3);
     margin-bottom: 18px;
     padding-bottom: 8px;
-    border-bottom: 0.5px solid var(--border);
+    border-bottom: 1px solid var(--border);
   }
 
   .ctrl-group {
@@ -196,7 +233,7 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
 
   .metric {
     background: var(--surface2);
-    border-radius: 7px;
+    border-radius: 4px;
     padding: 10px 12px;
   }
 
@@ -229,17 +266,16 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
 
   .canvas-panel {
     background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 16px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
 
   canvas {
     width: 100%;
-    border-radius: 6px;
+    border-radius: 4px;
     display: block;
   }
 
@@ -249,7 +285,7 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
     flex-wrap: wrap;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 0.5px solid var(--border);
+    border-top: 1px solid var(--border);
   }
 
   .leg-item {
@@ -269,23 +305,22 @@ MathJax = { tex: { inlineMath: [['$','$']] }, svg: { fontCache: 'global' }, star
 
   .eq-section {
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
     margin-top: 14px;
     background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 16px 20px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
 
   .eq-card {
     background: var(--surface2);
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 14px 16px;
-    border: 0.5px solid var(--border);
+    border: 1px solid var(--border);
   }
 
   .eq-label {
@@ -515,7 +550,7 @@ function draw() {
 
   // tick labels
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.font = '10px "DM Mono", monospace';
+  ctx.font = '10px "IBM Plex Mono", monospace';
   ctx.textAlign = 'right';
   for (let i=0;i<=5;i++) {
     const y = minY+(maxY-minY)*i/5;
@@ -526,7 +561,7 @@ function draw() {
     const x = minX+(maxX-minX)*i/6;
     ctx.fillText(x.toFixed(0), tx(x), pad.t+plotH+16);
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.font = '11px "DM Mono", monospace';
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.font = '11px "IBM Plex Mono", monospace';
   ctx.fillText('x (m)', pad.l+plotW/2, H-6);
   ctx.save(); ctx.translate(13, pad.t+plotH/2); ctx.rotate(-Math.PI/2);
   ctx.fillText('y (m)', 0,0); ctx.restore();
@@ -539,7 +574,7 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(tx(xA),ty(comp.hmax)); ctx.lineTo(tx(xA),ty(0)); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(pad.l+2,ty(comp.hmax)); ctx.lineTo(tx(xA),ty(comp.hmax)); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='rgba(14,138,90,1)'; ctx.font='italic 12px "DM Mono", monospace'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(14,138,90,1)'; ctx.font='italic 12px "IBM Plex Mono", monospace'; ctx.textAlign='left';
     ctx.fillText('h_max', pad.l+5, ty(comp.hmax)-6);
   }
 
@@ -554,7 +589,7 @@ function draw() {
     ctx.lineTo(cx+dir*6,yg-4); ctx.lineTo(cx+dir*6,yg+4);
     ctx.fillStyle='rgba(192,79,32,1)'; ctx.fill();
   });
-  ctx.fillStyle='rgba(192,79,32,1)'; ctx.font='italic 12px "DM Mono", monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(192,79,32,1)'; ctx.font='italic 12px "IBM Plex Mono", monospace'; ctx.textAlign='center';
   ctx.fillText('L', (tx(inp.x0)+tx(comp.xLand))/2, yg+20);
 
   // tangent velocity vectors along trajectory
@@ -612,7 +647,7 @@ function draw() {
 
     if (isFirst) {
       ctx.fillStyle = '#1a1a18';
-      ctx.font = 'bold 10px "DM Mono", monospace';
+      ctx.font = 'bold 10px "IBM Plex Mono", monospace';
       ctx.textAlign = 'left';
       ctx.fillText('v₀='+inp.v0+' m/s', ex3+6, ey3-4);
     }
@@ -621,7 +656,7 @@ function draw() {
   // angle arc sul punto di partenza
   ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=0.8;
   ctx.beginPath(); ctx.arc(tx(inp.x0),ty(inp.y0),22,-inp.theta,0); ctx.stroke();
-  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.font='10px "DM Mono", monospace'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.font='10px "IBM Plex Mono", monospace'; ctx.textAlign='left';
   ctx.fillText('θ='+Math.round(inp.theta*180/Math.PI)+'°', tx(inp.x0)+26, ty(inp.y0)-2);
 
   // trajectory glow
@@ -645,7 +680,7 @@ function draw() {
   drawDot(xA, comp.hmax, '#0e8a5a');
   drawDot(comp.xLand, 0, '#c04f20');
 
-  ctx.fillStyle='#6d4fc0'; ctx.font='10px "DM Mono", monospace'; ctx.textAlign='left';
+  ctx.fillStyle='#6d4fc0'; ctx.font='10px "IBM Plex Mono", monospace'; ctx.textAlign='left';
 }
 
 function updateMetrics() {

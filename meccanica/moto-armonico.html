@@ -15,56 +15,142 @@ window.SIM_METADATA = {
 </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulazione Moto Circolare e Armonico</title>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --cream: #f5f0e8;
+            --paper: #fffaf0;
+            --parchment: #ede6d4;
+            --warm-mid: #d4c9b0;
+            --ink: #1a1410;
+            --ink-soft: #3a302a;
+            --ink-light: #6a5a50;
+            --accent: #8b3a1a;
+            --accent2: #2a5a8b;
+            --accent3: #2a7a4a;
+            --border: #c4b89a;
+            --grid: rgba(196, 184, 154, 0.28);
+            --radius: 4px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1400px;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: var(--ink);
+            background: var(--cream);
             margin: 0 auto;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0;
             min-height: 100vh;
+            line-height: 1.55;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+                linear-gradient(var(--grid) 1px, transparent 1px);
+            background-size: 28px 28px;
+            mask-image: linear-gradient(to bottom, transparent 0, black 140px, black 100%);
+            opacity: 0.35;
         }
         
         .container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
         }
         
         h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'EB Garamond', serif;
+            font-size: clamp(2rem, 4vw, 3.25rem);
+            font-weight: 500;
+            line-height: 1.08;
+            text-align: left;
+            color: var(--cream);
+            background: var(--ink);
+            margin: 0;
+            padding: 2.7rem max(1rem, calc((100vw - 1100px) / 2)) 0.55rem;
+        }
+
+        h1::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(212, 201, 176, 0.08) 1px, transparent 1px),
+                linear-gradient(rgba(212, 201, 176, 0.07) 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.35;
         }
         
         .subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 30px;
+            color: var(--warm-mid);
+            background: var(--ink);
+            border-bottom: 1px solid #2a2218;
+            font-size: 0.95rem;
+            font-weight: 300;
+            margin: 0 0 2rem;
+            padding: 0 max(1rem, calc((100vw - 1100px) / 2)) 2.25rem;
+            max-width: none;
         }
         
         .canvas-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 1rem;
+            width: min(1100px, calc(100% - 32px));
+            margin: 0 auto 1rem;
+        }
+
+        .canvas-container > div,
+        .controls,
+        .legend,
+        .info-panel {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .canvas-container > div {
+            padding: 1rem;
+        }
+
+        .canvas-container h3,
+        .controls h3,
+        .controls h4,
+        .info-panel h3 {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--accent) !important;
+        }
+
+        .canvas-container h3 {
+            margin: 0 0 0.75rem;
         }
         
         canvas {
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            background: #f9f9f9;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--paper);
             display: block;
             width: 100%;
         }
         
         .controls {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            width: min(1100px, calc(100% - 32px));
+            padding: 1rem 1.25rem;
+            margin: 0 auto 1rem;
         }
         
         .control-group {
@@ -74,40 +160,72 @@ window.SIM_METADATA = {
         label {
             display: inline-block;
             width: 200px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             font-weight: 600;
-            color: #444;
+            color: var(--ink-light);
         }
         
         input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
             width: 200px;
+            height: 4px;
+            background: var(--warm-mid);
+            border-radius: 2px;
+            outline: none;
             vertical-align: middle;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--paper);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--paper);
+            cursor: pointer;
         }
         
         .value-display {
             display: inline-block;
             width: 80px;
             text-align: right;
-            font-family: monospace;
-            color: #667eea;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--accent);
             font-weight: bold;
         }
         
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: var(--paper) !important;
+            color: var(--ink);
+            border: 1px solid var(--border);
+            padding: 0.55rem 0.9rem;
+            border-radius: var(--radius);
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
             margin-right: 10px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
         
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            background: var(--ink) !important;
+            border-color: var(--ink);
+            color: var(--cream);
         }
         
         button:active {
@@ -122,78 +240,96 @@ window.SIM_METADATA = {
         }
         
         .toggle-btn {
-            background: #e0e0e0;
-            color: #333;
-            padding: 8px 20px;
-            font-size: 14px;
+            background: transparent !important;
+            color: var(--ink-soft);
+            padding: 0.5rem 0.8rem;
+            font-size: 0.7rem;
         }
         
         .toggle-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--accent) !important;
+            border-color: var(--accent);
+            color: var(--paper);
         }
         
         .legend {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
+            gap: 12px;
+            width: min(1100px, calc(100% - 32px));
+            padding: 1rem 1.25rem;
+            margin: 0 auto 1rem;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
             gap: 10px;
+            color: var(--ink-soft);
         }
         
         .color-box {
-            width: 30px;
-            height: 20px;
-            border-radius: 4px;
-            border: 2px solid #333;
+            width: 26px;
+            height: 14px;
+            border-radius: 2px;
+            border: 1px solid var(--border);
         }
         
         .info-panel {
-            background: #f0f7ff;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            margin-top: 20px;
-        }
-        
-        .info-panel h3 {
-            margin-top: 0;
-            color: #667eea;
+            width: min(1100px, calc(100% - 32px));
+            background: var(--parchment);
+            padding: 1.2rem 1.4rem;
+            border-left: 3px solid var(--accent2);
+            margin: 0 auto 4rem;
         }
         
         .info-panel p {
             margin: 8px 0;
             line-height: 1.6;
-            color: #444;
+            color: var(--ink-soft);
+        }
+
+        @media (max-width: 760px) {
+            .canvas-container,
+            .legend {
+                grid-template-columns: 1fr;
+            }
+
+            label,
+            input[type="range"],
+            .value-display {
+                width: 100%;
+            }
+
+            .control-group {
+                display: grid;
+                gap: 0.45rem;
+            }
+
+            button {
+                margin: 0 0 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔄 Simulazione Moto Circolare Uniforme e Moto Armonico</h1>
+        <h1>Simulazione moto circolare uniforme e moto armonico</h1>
         <p class="subtitle">Visualizzazione dei vettori posizione, velocità e accelerazione - Proiezione sull'asse x</p>
         
         <div class="canvas-container">
             <div>
-                <h3 style="text-align: center; color: #667eea;">Moto Circolare e Proiezione Armonica</h3>
+                <h3 style="text-align: center;">Moto Circolare e Proiezione Armonica</h3>
                 <canvas id="circleCanvas" width="600" height="600"></canvas>
             </div>
             <div>
-                <h3 style="text-align: center; color: #667eea;">Grafici Temporali (Moto Armonico)</h3>
+                <h3 style="text-align: center;">Grafici Temporali (Moto Armonico)</h3>
                 <canvas id="graphCanvas" width="600" height="600"></canvas>
             </div>
         </div>
         
         <div class="controls">
-            <h3 style="margin-top: 0; color: #667eea;">⚙️ Controlli della Simulazione</h3>
+            <h3 style="margin-top: 0;">Controlli della simulazione</h3>
             
             <div class="control-group">
                 <label>Raggio (r):</label>
@@ -214,50 +350,50 @@ window.SIM_METADATA = {
             </div>
             
             <div style="margin-top: 20px;">
-                <button id="playPauseBtn">⏸️ Pausa</button>
-                <button id="resetBtn">🔄 Reset</button>
+                <button id="playPauseBtn">Pausa</button>
+                <button id="resetBtn">Reset</button>
             </div>
             
             <div style="margin-top: 20px;">
-                <h4 style="margin-bottom: 10px; color: #667eea;">📐 Posiziona il punto agli angoli caratteristici:</h4>
+                <h4 style="margin-bottom: 10px;">Posiziona il punto agli angoli caratteristici:</h4>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button id="angle0Btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">θ = 0° (x max)</button>
-                    <button id="angle90Btn" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">θ = 90° (π/2)</button>
-                    <button id="angle180Btn" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">θ = 180° (π)</button>
-                    <button id="angle270Btn" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">θ = 270° (3π/2)</button>
+                    <button id="angle0Btn">θ = 0° (x max)</button>
+                    <button id="angle90Btn">θ = 90° (π/2)</button>
+                    <button id="angle180Btn">θ = 180° (π)</button>
+                    <button id="angle270Btn">θ = 270° (3π/2)</button>
                 </div>
             </div>
             
             <div class="toggle-buttons">
                 <h4 style="width: 100%; margin: 10px 0;">Seleziona grandezze da visualizzare nei grafici:</h4>
-                <button class="toggle-btn active" data-graph="position">📍 Posizione (x)</button>
-                <button class="toggle-btn active" data-graph="velocity">⚡ Velocità (vx)</button>
-                <button class="toggle-btn active" data-graph="acceleration">🎯 Accelerazione (ax)</button>
-                <button class="toggle-btn active" data-graph="angularVelocity">🔄 Velocità Angolare (ω)</button>
+                <button class="toggle-btn active" data-graph="position">Posizione (x)</button>
+                <button class="toggle-btn active" data-graph="velocity">Velocità (vx)</button>
+                <button class="toggle-btn active" data-graph="acceleration">Accelerazione (ax)</button>
+                <button class="toggle-btn active" data-graph="angularVelocity">Velocità Angolare (ω)</button>
             </div>
         </div>
         
         <div class="legend">
             <div class="legend-item">
-                <div class="color-box" style="background: #ff8800;"></div>
+                <div class="color-box" style="background: #8b3a1a;"></div>
                 <span><strong>Raggio vettore (r) e Velocità Angolare (ω)</strong></span>
             </div>
             <div class="legend-item">
-                <div class="color-box" style="background: #ff4444;"></div>
+                <div class="color-box" style="background: #a3482b;"></div>
                 <span><strong>Posizione armonica (x)</strong></span>
             </div>
             <div class="legend-item">
-                <div class="color-box" style="background: #44ff44;"></div>
+                <div class="color-box" style="background: #2a7a4a;"></div>
                 <span><strong>Velocità (v)</strong></span>
             </div>
             <div class="legend-item">
-                <div class="color-box" style="background: #4444ff;"></div>
+                <div class="color-box" style="background: #2a5a8b;"></div>
                 <span><strong>Accelerazione (a)</strong></span>
             </div>
         </div>
         
         <div class="info-panel">
-            <h3>📚 Relazioni Fisiche</h3>
+            <h3>Relazioni fisiche</h3>
             <p><strong>Moto Circolare Uniforme:</strong> Un punto si muove su una circonferenza di raggio r con velocità angolare costante ω. La velocità tangenziale ha modulo v = ωr e l'accelerazione centripeta ha modulo a = ω²r, diretta sempre verso il centro.</p>
             <p><strong>Moto Armonico:</strong> La proiezione del moto circolare sull'asse x genera un moto armonico semplice. La posizione è x(t) = r·cos(ωt + φ), la velocità è vx(t) = -ωr·sin(ωt + φ), e l'accelerazione è ax(t) = -ω²r·cos(ωt + φ) = -ω²x. Tutte le grandezze oscillano sinusoidalmente con la stessa frequenza angolare ω ma con sfasamenti di π/2 radianti (90°).</p>
             <p><strong>Relazione tra i vettori:</strong> Nel moto circolare, velocità e posizione sono sempre perpendicolari, mentre l'accelerazione è sempre opposta alla posizione. Nel moto armonico (proiezione), queste relazioni si manifestano attraverso le funzioni seno e coseno che descrivono l'andamento temporale. Notare che: quando θ=0 (punto a destra) la posizione è massima, la velocità è nulla e l'accelerazione è massima verso sinistra; quando θ=π/2 (punto in alto) la posizione è nulla, la velocità è massima verso sinistra e l'accelerazione è nulla; quando θ=π (punto a sinistra) la posizione è minima (massima verso sinistra), la velocità è nulla e l'accelerazione è massima verso destra; quando θ=3π/2 (punto in basso) la posizione è nulla, la velocità è massima verso destra e l'accelerazione è nulla.</p>
@@ -320,7 +456,7 @@ window.SIM_METADATA = {
         
         playPauseBtn.addEventListener('click', () => {
             isPlaying = !isPlaying;
-            playPauseBtn.textContent = isPlaying ? '⏸️ Pausa' : '▶️ Play';
+            playPauseBtn.textContent = isPlaying ? 'Pausa' : 'Play';
         });
         
         resetBtn.addEventListener('click', () => {
@@ -358,7 +494,7 @@ window.SIM_METADATA = {
             
             // Metti in pausa
             isPlaying = false;
-            playPauseBtn.textContent = '▶️ Play';
+            playPauseBtn.textContent = 'Play';
         }
         
         // Event listeners per i pulsanti degli angoli caratteristici
@@ -421,7 +557,7 @@ window.SIM_METADATA = {
             // Etichetta
             if (label) {
                 ctx.fillStyle = color;
-                ctx.font = 'bold 14px Arial';
+                ctx.font = 'bold 14px "IBM Plex Sans", sans-serif';
                 ctx.fillText(label, toX + 10, toY - 10);
             }
         }
@@ -529,7 +665,7 @@ window.SIM_METADATA = {
             
             // Etichette degli assi
             ctxCircle.fillStyle = '#333';
-            ctxCircle.font = 'bold 16px Arial';
+            ctxCircle.font = 'bold 16px "IBM Plex Sans", sans-serif';
             ctxCircle.fillText('x', circleCanvas.width - 30, centerY - 10);
             ctxCircle.fillText('y', centerX + 10, 20);
             ctxCircle.fillText('x', centerX + radius + 30, harmonicY + 5);
@@ -540,20 +676,20 @@ window.SIM_METADATA = {
             // Salva il contesto per applicare la trasparenza
             ctxCircle.save();
             ctxCircle.globalAlpha = 0.7;
-            drawArrow(ctxCircle, centerX, centerY, x, y, '#ff8800', 'r');
+            drawArrow(ctxCircle, centerX, centerY, x, y, '#8b3a1a', 'r');
             ctxCircle.restore();
             
             // Vettore velocità (tangente alla circonferenza)
             const vx_circ = -radius * angularVelocity * Math.sin(angle);
             const vy_circ = -radius * angularVelocity * Math.cos(angle);
             const vScale = vectorScale * 0.35;
-            drawArrow(ctxCircle, x, y, x + vx_circ * vScale, y + vy_circ * vScale, '#44ff44', 'v');
+            drawArrow(ctxCircle, x, y, x + vx_circ * vScale, y + vy_circ * vScale, '#2a7a4a', 'v');
             
             // Vettore accelerazione centripeta (verso il centro)
             const ax_circ = -radius * angularVelocity * angularVelocity * Math.cos(angle);
             const ay_circ = radius * angularVelocity * angularVelocity * Math.sin(angle);
             const aScale = vectorScale * 0.125;
-            drawArrow(ctxCircle, x, y, x + ax_circ * aScale, y + ay_circ * aScale, '#4444ff', 'a');
+            drawArrow(ctxCircle, x, y, x + ax_circ * aScale, y + ay_circ * aScale, '#2a5a8b', 'a');
             
             // Disegna il punto sul cerchio (grigio)
             ctxCircle.fillStyle = '#888';
@@ -571,7 +707,7 @@ window.SIM_METADATA = {
             const accX = -angularVelocity * angularVelocity * radius * Math.cos(angle);
             
             // Vettore posizione (dalla posizione di equilibrio al punto proiettato sull'asse x centrale)
-            drawArrow(ctxCircle, centerX, centerY, harmonicXCenter, centerY, '#ff4444', '');
+            drawArrow(ctxCircle, centerX, centerY, harmonicXCenter, centerY, '#a3482b', '');
             
             // Disegna il punto proiettato sull'asse x centrale
             ctxCircle.fillStyle = '#333';
@@ -581,7 +717,7 @@ window.SIM_METADATA = {
             
             // Etichetta "Proiezione sull'asse x"
             ctxCircle.fillStyle = '#666';
-            ctxCircle.font = 'bold 11px Arial';
+            ctxCircle.font = 'bold 11px "IBM Plex Sans", sans-serif';
             ctxCircle.fillText('Proiezione', centerX + radius/2, centerY - 85);
             ctxCircle.fillText('sull\'asse x', centerX + radius/2, centerY - 72);
             
@@ -642,7 +778,7 @@ window.SIM_METADATA = {
             
             // Scrivi "m" sulla massa
             ctxCircle.fillStyle = 'white';
-            ctxCircle.font = 'bold 16px Arial';
+            ctxCircle.font = 'bold 16px "IBM Plex Sans", sans-serif';
             ctxCircle.textAlign = 'center';
             ctxCircle.textBaseline = 'middle';
             ctxCircle.fillText('m', harmonicXBottom, massY);
@@ -650,30 +786,30 @@ window.SIM_METADATA = {
             ctxCircle.textBaseline = 'alphabetic';
             
             // Vettore posizione (dalla posizione di equilibrio alla massa)
-            drawArrow(ctxCircle, centerX, harmonicY, harmonicXBottom, harmonicY, '#ff4444', '');
+            drawArrow(ctxCircle, centerX, harmonicY, harmonicXBottom, harmonicY, '#a3482b', '');
             
             // Vettore velocità (orizzontale, parte dalla massa)
             const velScaleHarm = vectorScale * 0.35;
             if (Math.abs(velX) > 0.1) {
                 drawArrow(ctxCircle, harmonicXBottom, harmonicY - 50, 
-                         harmonicXBottom + velX * velScaleHarm, harmonicY - 50, '#44ff44', 'v');
+                         harmonicXBottom + velX * velScaleHarm, harmonicY - 50, '#2a7a4a', 'v');
             }
             
             // Vettore accelerazione (orizzontale, parte dalla massa)
             const accScaleHarm = vectorScale * 0.125;
             if (Math.abs(accX) > 0.1) {
                 drawArrow(ctxCircle, harmonicXBottom, harmonicY - 80, 
-                         harmonicXBottom + accX * accScaleHarm, harmonicY - 80, '#4444ff', 'a');
+                         harmonicXBottom + accX * accScaleHarm, harmonicY - 80, '#2a5a8b', 'a');
             }
             
             // Etichetta "Sistema massa-molla"
             ctxCircle.fillStyle = '#666';
-            ctxCircle.font = 'bold 14px Arial';
+            ctxCircle.font = 'bold 14px "IBM Plex Sans", sans-serif';
             ctxCircle.fillText('Sistema massa-molla', centerX - 60, harmonicY + 35);
             
             // Indicatori di posizione angolare
             ctxCircle.fillStyle = '#999';
-            ctxCircle.font = '12px Arial';
+            ctxCircle.font = '12px "IBM Plex Sans", sans-serif';
             const normalizedAngle = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             ctxCircle.fillText('θ = ' + (normalizedAngle * 180 / Math.PI).toFixed(1) + '°', centerX - 40, centerY - radius - 20);
         }
@@ -692,10 +828,10 @@ window.SIM_METADATA = {
             const maxOmega = angularVelocity * 1.2; // Un po' di margine per il grafico
             
             const graphs = [
-                { data: positionHistory, max: maxPos, color: '#ff4444', label: 'Posizione x(t) [px]', show: showGraphs.position, type: 'position' },
-                { data: velocityHistory, max: maxVel, color: '#44ff44', label: 'Velocità vx(t) [px/s]', show: showGraphs.velocity, type: 'velocity' },
-                { data: accelerationHistory, max: maxAcc, color: '#4444ff', label: 'Accelerazione ax(t) [px/s²]', show: showGraphs.acceleration, type: 'acceleration' },
-                { data: angularVelocityHistory, max: maxOmega, color: '#ff8800', label: 'Velocità Angolare ω(t) [rad/s]', show: showGraphs.angularVelocity, type: 'angularVelocity' }
+                { data: positionHistory, max: maxPos, color: '#a3482b', label: 'Posizione x(t) [px]', show: showGraphs.position, type: 'position' },
+                { data: velocityHistory, max: maxVel, color: '#2a7a4a', label: 'Velocità vx(t) [px/s]', show: showGraphs.velocity, type: 'velocity' },
+                { data: accelerationHistory, max: maxAcc, color: '#2a5a8b', label: 'Accelerazione ax(t) [px/s²]', show: showGraphs.acceleration, type: 'acceleration' },
+                { data: angularVelocityHistory, max: maxOmega, color: '#8b3a1a', label: 'Velocità Angolare ω(t) [rad/s]', show: showGraphs.angularVelocity, type: 'angularVelocity' }
             ];
             
             let graphIndex = 0;
@@ -759,7 +895,7 @@ window.SIM_METADATA = {
                                 ctxGraph.stroke();
                                 
                                 ctxGraph.fillStyle = '#666';
-                                ctxGraph.font = '10px Arial';
+                                ctxGraph.font = '10px "IBM Plex Sans", sans-serif';
                                 let angleLabel = '';
                                 if (Math.abs(currentAngle) < tolerance || Math.abs(currentAngle - 2 * Math.PI) < tolerance) {
                                     angleLabel = '0';
@@ -781,48 +917,48 @@ window.SIM_METADATA = {
                 
                 // Etichette
                 ctxGraph.fillStyle = '#333';
-                ctxGraph.font = 'bold 14px Arial';
+                ctxGraph.font = 'bold 14px "IBM Plex Sans", sans-serif';
                 ctxGraph.fillText(graph.label, padding, yOffset - 10);
                 
                 // Etichette simboliche in base al tipo di grafico con pedici
                 if (graph.type === 'position') {
                     // Disegna x in normale e max come pedice
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x', padding - 45, yOffset + 5);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('max', padding - 37, yOffset + 9);
                     
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x', padding - 45, yOffset + graphHeight);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('min', padding - 38, yOffset + graphHeight + 4);
                 } else if (graph.type === 'velocity') {
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('v', padding - 45, yOffset + 5);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x,max', padding - 39, yOffset + 9);
                     
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('v', padding - 45, yOffset + graphHeight);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x,min', padding - 39, yOffset + graphHeight + 4);
                 } else if (graph.type === 'acceleration') {
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('a', padding - 45, yOffset + 5);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x,max', padding - 38, yOffset + 9);
                     
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('a', padding - 45, yOffset + graphHeight);
-                    ctxGraph.font = '9px Arial';
+                    ctxGraph.font = '9px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('x,min', padding - 38, yOffset + graphHeight + 4);
                 } else if (graph.type === 'angularVelocity') {
                     // Per la velocità angolare mostriamo solo ω costante
-                    ctxGraph.font = '12px Arial';
+                    ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                     ctxGraph.fillText('ω', padding - 25, zeroY + graphHeight/2 - 5);
                 }
                 
-                ctxGraph.font = '12px Arial';
+                ctxGraph.font = '12px "IBM Plex Sans", sans-serif';
                 if (graph.type !== 'angularVelocity') {
                     ctxGraph.fillText('0', padding - 20, zeroY + 5);
                 }

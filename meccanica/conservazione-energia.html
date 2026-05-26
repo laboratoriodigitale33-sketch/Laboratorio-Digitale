@@ -16,36 +16,53 @@ window.SIM_METADATA = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Conservazione dell'Energia</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
     :root {
-      --bg:#ffffff;
-      --surface:#f8f9fb;
-      --surface2:#eef2f7;
-      --card:#ffffff;
-      --text:#0f172a;
-      --dim:#64748b;
-      --border:#cbd5e1;
-      --c1:#0077cc;
-      --c2:#e0142a;
-      --c3:#2e8b00;
-      --c4:#a855f7;
-      --shadow:0 10px 30px rgba(15,23,42,.08);
-      --radius:18px;
+      --bg:#f5f0e8;
+      --surface:#ede6d4;
+      --surface2:#e1d6bf;
+      --card:#fffaf0;
+      --text:#1a1410;
+      --dim:#6a5a50;
+      --border:#c4b89a;
+      --c1:#8b3a1a;
+      --c2:#a3482b;
+      --c3:#2a7a4a;
+      --c4:#2a5a8b;
+      --shadow:none;
+      --radius:4px;
     }
 
     * { box-sizing:border-box; }
     body {
       margin:0;
-      font-family:'Syne',system-ui,sans-serif;
-      background:linear-gradient(180deg,#ffffff 0%,#f6f8fb 100%);
+      font-family:'IBM Plex Sans',system-ui,sans-serif;
+      background:var(--bg);
       color:var(--text);
+      overflow-x:hidden;
+      position:relative;
+    }
+
+    body::before {
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg, rgba(196,184,154,.28) 1px, transparent 1px),
+        linear-gradient(rgba(196,184,154,.28) 1px, transparent 1px);
+      background-size:28px 28px;
+      mask-image:linear-gradient(to bottom, transparent 0, black 140px, black 100%);
+      opacity:.35;
     }
 
     .page {
-      max-width:1400px;
+      max-width:1180px;
       margin:0 auto;
-      padding:22px;
+      padding:0 22px 4rem;
+      position:relative;
+      z-index:1;
     }
 
     .hero {
@@ -53,19 +70,42 @@ window.SIM_METADATA = {
       justify-content:space-between;
       align-items:flex-start;
       gap:18px;
-      margin-bottom:18px;
+      margin:0 calc(50% - 50vw) 18px;
+      padding:2.7rem max(1rem, calc((100vw - 1180px)/2)) 2.25rem;
+      background:var(--text);
+      color:var(--bg);
+      border-bottom:1px solid #2a2218;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(90deg, rgba(212,201,176,.08) 1px, transparent 1px),
+        linear-gradient(rgba(212,201,176,.07) 1px, transparent 1px);
+      background-size:32px 32px;
+      opacity:.35;
+    }
+
+    .hero > * {
+      position:relative;
     }
 
     .title-wrap h1 {
       margin:0;
-      font-size:clamp(1.9rem,3vw,3rem);
-      font-weight:800;
-      letter-spacing:.02em;
+      font-family:'EB Garamond',serif;
+      font-size:clamp(2rem,4vw,3.25rem);
+      font-weight:500;
+      line-height:1.08;
+      letter-spacing:0;
     }
 
     .title-wrap p {
       margin:8px 0 0;
-      color:var(--dim);
+      color:#d4c9b0;
       max-width:860px;
       line-height:1.45;
       font-size:0.98rem;
@@ -76,12 +116,12 @@ window.SIM_METADATA = {
       align-items:center;
       gap:8px;
       padding:10px 14px;
-      background:var(--card);
+      background:rgba(255,250,240,.08);
       border:1px solid var(--border);
-      border-radius:999px;
+      border-radius:4px;
       box-shadow:var(--shadow);
       font-size:.86rem;
-      color:var(--dim);
+      color:#d4c9b0;
       white-space:nowrap;
     }
 
@@ -97,9 +137,11 @@ window.SIM_METADATA = {
       background:var(--card);
       color:var(--text);
       border:1px solid var(--border);
-      border-radius:999px;
+      border-radius:4px;
       padding:11px 16px;
-      font:600 .95rem 'Syne',sans-serif;
+      font:500 .78rem 'IBM Plex Mono',monospace;
+      letter-spacing:.06em;
+      text-transform:uppercase;
       cursor:pointer;
       box-shadow:var(--shadow);
       transition:.18s ease;
@@ -107,7 +149,7 @@ window.SIM_METADATA = {
 
     .tab.active {
       background:var(--text);
-      color:#fff;
+      color:var(--bg);
       transform:translateY(-1px);
     }
 
@@ -139,7 +181,7 @@ window.SIM_METADATA = {
     .group {
       margin:0 0 16px;
       padding:12px 12px 10px;
-      border-radius:14px;
+      border-radius:4px;
       background:var(--surface);
       border:1px solid #e2e8f0;
     }
@@ -166,7 +208,7 @@ window.SIM_METADATA = {
 
     .row-label span:last-child {
       color:var(--c1);
-      font-family:'Space Mono',monospace;
+      font-family:'IBM Plex Mono',monospace;
       font-size:.84rem;
     }
 
@@ -174,8 +216,8 @@ window.SIM_METADATA = {
     input[type="range"] { accent-color:var(--c1); cursor:pointer; }
 
     select, button {
-      font:600 .92rem 'Syne',sans-serif;
-      border-radius:12px;
+      font:500 .86rem 'IBM Plex Sans',sans-serif;
+      border-radius:4px;
       border:1px solid var(--border);
       padding:10px 12px;
       background:#fff;
@@ -225,7 +267,7 @@ window.SIM_METADATA = {
       min-height:500px;
       background:linear-gradient(180deg,#f8fbff 0%,#f2f6fb 100%);
       border:1px solid #d9e2ec;
-      border-radius:16px;
+      border-radius:4px;
       overflow:hidden;
     }
 
@@ -260,7 +302,7 @@ window.SIM_METADATA = {
     }
 
     .stat .value {
-      font-family:'Space Mono',monospace;
+      font-family:'IBM Plex Mono',monospace;
       font-size:1rem;
     }
 
@@ -290,7 +332,7 @@ window.SIM_METADATA = {
       gap:10px;
       font-size:.86rem;
     }
-    .mono { font-family:'Space Mono',monospace; }
+    .mono { font-family:'IBM Plex Mono',monospace; }
 
     .legend {
       margin-top:16px;
@@ -350,6 +392,42 @@ window.SIM_METADATA = {
       .grid { grid-template-columns:1fr; }
       .canvas-card { min-height:540px; }
     }
+
+    /* Tema grafico condiviso */
+    .panel,
+    .canvas-card,
+    .theory,
+    .energy-panel,
+    .group,
+    .stat,
+    .law,
+    select,
+    button,
+    .tab,
+    .badge {
+      border-radius:4px;
+      box-shadow:none;
+    }
+    .group,
+    .stat,
+    .law {
+      background:var(--surface);
+      border-color:var(--border);
+    }
+    .row-label span:last-child,
+    .value,
+    .mono {
+      font-family:'IBM Plex Mono',monospace;
+    }
+    .canvas-wrap {
+      background:var(--card);
+      border-color:var(--border);
+    }
+    .theory p,
+    .theory li {
+      color:var(--text);
+    }
+    input[type="range"] { accent-color:var(--c1); }
   </style>
   <script>
     window.MathJax = {
@@ -573,24 +651,24 @@ window.SIM_METADATA = {
             </div>
             <div class="bars">
               <div class="bar-block">
-                <div class="bar-meta"><span id="${cfg.id}-ep-label">Energia potenziale \(E_p\)</span><span class="mono" id="${cfg.id}-ep">0.00 J</span></div>
+                <div class="bar-meta"><span id="${cfg.id}-ep-label">Energia potenziale (E_p)</span><span class="mono" id="${cfg.id}-ep">0.00 J</span></div>
                 <div class="bar-line"><div class="bar-fill" id="${cfg.id}-ep-bar" style="background:var(--c1)"></div></div>
               </div>
               ${cfg.kind==='track' ? `
               <div class="bar-block" id="${cfg.id}-eel-block" style="display:none;">
-                <div class="bar-meta"><span>Energia potenziale elastica \(E_{\text{el}}\)</span><span class="mono" id="${cfg.id}-eel">0.00 J</span></div>
+                <div class="bar-meta"><span>Energia potenziale elastica (E_el)</span><span class="mono" id="${cfg.id}-eel">0.00 J</span></div>
                 <div class="bar-line"><div class="bar-fill" id="${cfg.id}-eel-bar" style="background:#f59e0b"></div></div>
               </div>` : ''}
               <div class="bar-block">
-                <div class="bar-meta"><span>Energia cinetica \(E_k\)</span><span class="mono" id="${cfg.id}-ek">0.00 J</span></div>
+                <div class="bar-meta"><span>Energia cinetica (E_k)</span><span class="mono" id="${cfg.id}-ek">0.00 J</span></div>
                 <div class="bar-line"><div class="bar-fill" id="${cfg.id}-ek-bar" style="background:var(--c2)"></div></div>
               </div>
               <div class="bar-block">
-                <div class="bar-meta"><span>Energia termica \(E_{\text{th}}\)</span><span class="mono" id="${cfg.id}-eth">0.00 J</span></div>
+                <div class="bar-meta"><span>Energia termica (E_th)</span><span class="mono" id="${cfg.id}-eth">0.00 J</span></div>
                 <div class="bar-line"><div class="bar-fill" id="${cfg.id}-eth-bar" style="background:var(--c3)"></div></div>
               </div>
               <div class="bar-block">
-                <div class="bar-meta"><span>Energia totale \(E_{\text{tot}}\)</span><span class="mono" id="${cfg.id}-etot">0.00 J</span></div>
+                <div class="bar-meta"><span>Energia totale (E_tot)</span><span class="mono" id="${cfg.id}-etot">0.00 J</span></div>
                 <div class="bar-line"><div class="bar-fill" id="${cfg.id}-etot-bar" style="background:var(--c4)"></div></div>
               </div>
             </div>
@@ -765,11 +843,11 @@ window.SIM_METADATA = {
           ctx.stroke();
         };
 
-        plotLine('Ep', '#0077cc');
+        plotLine('Ep', '#8b3a1a');
         if (this.history.some(p => (p.Eel || 0) > 1e-6)) plotLine('Eel', '#f59e0b');
-        plotLine('Ek', '#e0142a');
-        plotLine('Eth', '#2e8b00');
-        plotLine('Etot', '#a855f7');
+        plotLine('Ek', '#a3482b');
+        plotLine('Eth', '#2a7a4a');
+        plotLine('Etot', '#2a5a8b');
       }
 
       updateLabels() {
@@ -813,7 +891,7 @@ window.SIM_METADATA = {
         ctx.save();
         const padX = 14;
         const padY = 10;
-        ctx.font = '600 14px Syne';
+        ctx.font = '600 14px "IBM Plex Sans"';
         const textW = ctx.measureText(this.stopMessage).width;
         const boxW = Math.min(w - 32, textW + 2*padX);
         const boxH = 38;
@@ -872,7 +950,7 @@ window.SIM_METADATA = {
         if (!this.kSpringControl || !this.ui.shape) return;
         const hasSpring = this.ui.shape.value === 'ramp';
         this.kSpringControl.style.display = hasSpring ? '' : 'none';
-        if (this.ui.epLabel) this.ui.epLabel.textContent = hasSpring ? 'Energia potenziale gravitazionale \(E_{\text{pg}}\)' : 'Energia potenziale \(E_p\)';
+        if (this.ui.epLabel) this.ui.epLabel.textContent = hasSpring ? 'Energia potenziale gravitazionale (E_pg)' : 'Energia potenziale (E_p)';
         if (this.ui.eelBlock) this.ui.eelBlock.style.display = hasSpring ? '' : 'none';
         if (this.ui.eelLegend) this.ui.eelLegend.style.display = hasSpring ? '' : 'none';
       }
@@ -1117,7 +1195,7 @@ window.SIM_METADATA = {
           const yy = y0 - hScale*hGrid;
           ctx.beginPath(); ctx.moveTo(18,yy); ctx.lineTo(w-20,yy); ctx.stroke();
           ctx.fillStyle = '#64748b';
-          ctx.font = '12px Space Mono';
+          ctx.font = '12px "IBM Plex Mono"';
           ctx.fillText(`${hGrid.toFixed(1)} m`, 22, yy-5);
         }
 
@@ -1156,10 +1234,10 @@ window.SIM_METADATA = {
         const mag = Math.hypot(tangent.x,tangent.y) || 1;
         const tx = tangent.x/mag, ty = tangent.y/mag;
         const speedScale = Math.max(-80, Math.min(80, this.vx*26));
-        drawArrow(ctx, cx, cy-28, cx + tx*speedScale, cy-28 + ty*speedScale, '#e0142a', 3);
+        drawArrow(ctx, cx, cy-28, cx + tx*speedScale, cy-28 + ty*speedScale, '#a3482b', 3);
 
         ctx.fillStyle = '#0f172a';
-        ctx.font = '600 14px Syne';
+        ctx.font = '600 14px "IBM Plex Sans"';
         ctx.textAlign = 'left';
         ctx.fillText('Quota di riferimento: y = 0', 18, h-18);
         this.drawStopMessage(ctx);
@@ -1297,12 +1375,12 @@ window.SIM_METADATA = {
         const py = toY(this.visual?.y ?? this.h0());
         drawHeatedMass(ctx, px, py, 14 + 2*Math.sqrt(this.mass()), this.getHeatVisual());
 
-        drawArrow(ctx, px, py-28, px + 46, py-28, '#e0142a', 3);
+        drawArrow(ctx, px, py-28, px + 46, py-28, '#a3482b', 3);
 
         const vTopMin = Math.sqrt(this.grav()*R);
         const hMin = 2.5*R;
         ctx.fillStyle = '#0f172a';
-        ctx.font = '600 14px Syne';
+        ctx.font = '600 14px "IBM Plex Sans"';
         ctx.fillText(`h₀,min ≈ ${hMin.toFixed(2)} m`, 24, 28);
         ctx.fillText(`v_top,min = √(gR) ≈ ${vTopMin.toFixed(2)} m/s`, 24, 50);
         this.drawStopMessage(ctx);
@@ -1402,10 +1480,10 @@ window.SIM_METADATA = {
         ctx.beginPath(); ctx.arc(ox,oy,7,0,Math.PI*2); ctx.fill();
         drawHeatedMass(ctx, bx, by, 16 + 2*Math.sqrt(this.mass()), this.getHeatVisual());
 
-        drawArrow(ctx, bx, by-28, bx + Math.cos(this.theta)*this.omega*L*22, by-28, '#e0142a', 3);
+        drawArrow(ctx, bx, by-28, bx + Math.cos(this.theta)*this.omega*L*22, by-28, '#a3482b', 3);
 
         ctx.fillStyle = '#0f172a';
-        ctx.font = '600 14px Syne';
+        ctx.font = '600 14px "IBM Plex Sans"';
         ctx.fillText(`θ = ${(this.theta*180/Math.PI).toFixed(1)}°`, 24, 28);
         ctx.fillText(`L = ${L.toFixed(2)} m`, 24, 50);
       }
@@ -1542,7 +1620,7 @@ window.SIM_METADATA = {
 
       if (label) {
         ctx.fillStyle = '#ffffff';
-        ctx.font = '700 12px Space Mono';
+        ctx.font = '700 12px "IBM Plex Mono"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, x, y + 1);

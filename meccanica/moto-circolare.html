@@ -15,49 +15,99 @@ window.SIM_METADATA = {
 </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simulazione Moto Circolare</title>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #ffffff;
-      --bg2: #f5f4f0;
-      --bg3: #eeede8;
-      --text: #1a1a18;
-      --text2: #73726c;
-      --text3: #9c9a92;
-      --border: rgba(0,0,0,0.12);
-      --border2: rgba(0,0,0,0.22);
-      --blue: #378ADD;
-      --blue-dark: #185FA5;
-      --blue-label: #0C447C;
-      --red: #E24B4A;
-      --red-dark: #A32D2D;
-      --green: #639922;
-      --purple: #534AB7;
-      --radius-md: 8px;
-      --radius-lg: 12px;
+      --cream: #f5f0e8;
+      --paper: #fffaf0;
+      --parchment: #ede6d4;
+      --warm-mid: #d4c9b0;
+      --ink: #1a1410;
+      --ink-soft: #3a302a;
+      --ink-light: #6a5a50;
+      --accent: #8b3a1a;
+      --accent2: #2a5a8b;
+      --accent3: #2a7a4a;
+      --accent4: #6b4ba3;
+      --border: #c4b89a;
+      --grid: rgba(196, 184, 154, 0.28);
+      --radius: 4px;
     }
 
-
-
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 2rem;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
       min-height: 100vh;
+      line-height: 1.55;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(var(--grid) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, transparent 0, black 140px, black 100%);
+      opacity: 0.35;
+    }
+
+    header {
+      position: relative;
+      z-index: 1;
+      background: var(--ink);
+      color: var(--cream);
+      padding: 2.7rem max(1rem, calc((100vw - 1100px) / 2)) 2.25rem;
+      border-bottom: 1px solid #2a2218;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(212, 201, 176, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(212, 201, 176, 0.07) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.35;
+    }
+
+    header > * {
+      position: relative;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     h1 {
-      font-size: 22px;
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(2rem, 4vw, 3.25rem);
       font-weight: 500;
-      margin-bottom: 0.25rem;
+      line-height: 1.08;
+      margin-bottom: 0.6rem;
     }
 
     .subtitle {
-      font-size: 14px;
-      color: var(--text2);
-      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: var(--warm-mid);
+      max-width: 68ch;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 2rem 0 4rem;
     }
 
     .top-grid {
@@ -69,13 +119,17 @@ window.SIM_METADATA = {
 
     @media (max-width: 640px) {
       .top-grid { grid-template-columns: 1fr; }
-      body { padding: 1rem; }
+      header { padding: 2.2rem 1rem 1.8rem; }
+      main { width: min(100% - 24px, 1100px); }
+      .slider-row { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .slider-row label { min-width: 0; }
+      .slider-val { text-align: left; }
     }
 
     .card {
-      background: var(--bg);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-lg);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 1rem 1.25rem;
     }
 
@@ -88,8 +142,11 @@ window.SIM_METADATA = {
     .slider-row:last-child { margin-bottom: 0; }
 
     .slider-row label {
-      font-size: 13px;
-      color: var(--text2);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-light);
       min-width: 170px;
     }
 
@@ -98,7 +155,7 @@ window.SIM_METADATA = {
       -webkit-appearance: none;
       appearance: none;
       height: 4px;
-      background: var(--bg3);
+      background: var(--warm-mid);
       border-radius: 2px;
       outline: none;
       cursor: pointer;
@@ -107,22 +164,23 @@ window.SIM_METADATA = {
       -webkit-appearance: none;
       width: 18px; height: 18px;
       border-radius: 50%;
-      background: var(--text);
+      background: var(--accent);
       cursor: pointer;
-      border: 0.5px solid var(--border2);
+      border: 2px solid var(--paper);
     }
     .slider-row input[type=range]::-moz-range-thumb {
       width: 18px; height: 18px;
       border-radius: 50%;
-      background: var(--text);
+      background: var(--accent);
       cursor: pointer;
-      border: 0.5px solid var(--border2);
+      border: 2px solid var(--paper);
     }
 
     .slider-val {
-      font-size: 13px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
       font-weight: 500;
-      color: var(--text);
+      color: var(--accent);
       min-width: 52px;
       text-align: right;
     }
@@ -134,29 +192,33 @@ window.SIM_METADATA = {
     }
 
     .metric {
-      background: var(--bg2);
-      border-radius: var(--radius-md);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 0.75rem 1rem;
     }
     .metric-label {
-      font-size: 12px;
-      color: var(--text2);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-light);
       margin-bottom: 4px;
     }
     .metric-value {
       font-size: 20px;
       font-weight: 500;
-      color: var(--text);
+      color: var(--ink);
     }
     .metric-unit {
       font-size: 12px;
-      color: var(--text3);
+      color: var(--ink-light);
     }
 
     .canvas-card {
-      background: var(--bg);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-lg);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 0.75rem 1.25rem 1rem;
       margin-bottom: 1rem;
     }
@@ -177,7 +239,7 @@ window.SIM_METADATA = {
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      color: var(--text2);
+      color: var(--ink-light);
     }
     .vleg-line {
       width: 24px;
@@ -191,18 +253,19 @@ window.SIM_METADATA = {
     }
 
     .formulas {
-      background: var(--bg2);
-      border-radius: var(--radius-lg);
+      background: var(--parchment);
+      border-radius: var(--radius);
       padding: 1rem 1.25rem;
-      border: 0.5px solid var(--border);
+      border: 1px solid var(--border);
     }
     .formulas h2 {
-      font-size: 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
       font-weight: 500;
-      color: var(--text2);
+      color: var(--ink-light);
       margin-bottom: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
     }
     .formula-grid {
       display: grid;
@@ -210,34 +273,44 @@ window.SIM_METADATA = {
       gap: 8px;
     }
     .formula-item {
-      background: var(--bg);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-md);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 0.6rem 0.9rem;
       min-height: 64px;
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
+    .formula-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.67rem;
+      color: var(--ink-light);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
     .formula-eq {
       font-size: 15px;
-      color: var(--text);
+      color: var(--ink);
       margin-top: 4px;
     }
 
     footer {
       margin-top: 1.5rem;
       font-size: 12px;
-      color: var(--text3);
+      color: var(--ink-light);
       text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <h1>Simulazione moto circolare uniforme</h1>
-  <p class="subtitle">Modifica velocità angolare e raggio per osservare come variano velocità tangenziale e accelerazione centripeta.</p>
+  <header>
+    <h1>Simulazione moto circolare uniforme</h1>
+    <p class="subtitle">Modifica velocità angolare e raggio per osservare come variano velocità tangenziale e accelerazione centripeta.</p>
+  </header>
 
+  <main>
   <div class="top-grid">
     <div class="card">
       <div class="slider-row">
@@ -312,6 +385,7 @@ window.SIM_METADATA = {
   </div>
 
   <footer>Simulazione moto circolare uniforme &mdash; velocità angolare e accelerazione centripeta</footer>
+  </main>
 
   <script>
     const canvas = document.getElementById('c');
@@ -388,7 +462,7 @@ window.SIM_METADATA = {
       ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
 
       // etichette assi
-      ctx.font = '12px system-ui, sans-serif';
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = textCol;
       ctx.textAlign = 'center';
       ctx.fillText('x', W - 14, cy - 8);
@@ -418,7 +492,7 @@ window.SIM_METADATA = {
       // etichetta raggio
       const rmx = cx + Math.cos(angle) * r * SCALE * 0.48;
       const rmy = cy - Math.sin(angle) * r * SCALE * 0.48;
-      ctx.font = '12px system-ui, sans-serif';
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = textCol;
       ctx.textAlign = 'center';
       const rOffX = Math.cos(angle + Math.PI / 2) * 16;
@@ -431,7 +505,7 @@ window.SIM_METADATA = {
       ctx.beginPath();
       ctx.arc(cx, cy, 28, -angle, 0, angle > 0);
       ctx.stroke();
-      ctx.font = '11px system-ui, sans-serif';
+      ctx.font = '11px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = textCol;
       ctx.textAlign = 'left';
       const thetaDeg = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) * 180 / Math.PI;
@@ -446,7 +520,7 @@ window.SIM_METADATA = {
       const tvy = -Math.cos(angle) * vtDraw;
       drawArrow(px, py, px + tvx, py + tvy, blueV, 2.5);
 
-      ctx.font = '12px system-ui, sans-serif';
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = blueTxt;
       let lvx = px + tvx + 9, lvy = py + tvy + 4;
       if (lvx > W - 90) lvx = px + tvx - 90;
@@ -463,7 +537,7 @@ window.SIM_METADATA = {
       const ay2 = py + (cy - py) / dist * acDraw;
       drawArrow(px, py, ax2, ay2, redA, 2.5);
 
-      ctx.font = '12px system-ui, sans-serif';
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = redTxt;
       let lax = ax2 + 9, lay = ay2 + 16;
       if (lax > W - 110) lax = ax2 - 110;
@@ -478,7 +552,7 @@ window.SIM_METADATA = {
       ctx.strokeStyle = dotStroke; ctx.lineWidth = 1.5; ctx.stroke();
 
       // ω in basso a destra
-      ctx.font = '12px system-ui, sans-serif';
+      ctx.font = '12px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = textCol;
       ctx.textAlign = 'right';
       ctx.fillText('ω = ' + omega.toFixed(1) + ' rad/s', W - 12, H - 14);

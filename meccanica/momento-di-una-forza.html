@@ -19,20 +19,21 @@ window.SIM_METADATA = {
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 :root{
-  --bg:#f5f6fa;--bg2:#eef0f7;--panel:#fff;--border:#dde1ee;
-  --accent:#0e9e82;--accent3:#c89200;--text:#1e2340;--text-dim:#8891b0;
-  --fl:#e0335a;--fr:#0e9e82;--fulc:#c89200;
+  --bg:#f5f0e8;--bg2:#ede6d4;--panel:#fffaf0;--border:#c4b89a;
+  --accent:#8b3a1a;--accent3:#2a5a8b;--text:#1a1410;--text-dim:#6a5a50;
+  --fl:#a3482b;--fr:#2a7a4a;--fulc:#8b3a1a;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh}
-nav{display:flex;align-items:center;padding:0 32px;height:52px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.nav-title{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-right:40px}
-.nav-tab{height:52px;padding:0 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;cursor:pointer;transition:all .2s}
-.nav-tab:hover{color:var(--text)}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(196,184,154,.28) 1px,transparent 1px),linear-gradient(rgba(196,184,154,.28) 1px,transparent 1px);background-size:28px 28px;opacity:.32}
+nav{display:flex;align-items:center;padding:0 32px;height:56px;background:var(--text);border-bottom:1px solid #2a2218;position:sticky;top:0;z-index:100;box-shadow:none}
+.nav-title{font-family:'EB Garamond',serif;font-size:20px;font-weight:500;color:var(--bg);letter-spacing:0;text-transform:none;margin-right:40px}
+.nav-tab{height:56px;padding:0 20px;background:none;border:none;border-bottom:2px solid transparent;color:#d4c9b0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;cursor:pointer;transition:all .2s}
+.nav-tab:hover{color:var(--bg)}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.page{display:none;padding:28px 32px 48px}
+.page{display:none;padding:28px 32px 48px;position:relative;z-index:1;max-width:1180px;margin:0 auto}
 .page.active{display:block}
 .sim-layout{display:grid;grid-template-columns:275px 1fr;gap:20px;align-items:start}
 #p1 .sim-layout{grid-template-columns:255px 1fr;gap:24px}
@@ -56,7 +57,7 @@ input[type=range].sn::-webkit-slider-thumb{-webkit-appearance:none;width:13px;he
 .rrow.hl-r{border-left-color:var(--fl)}.rrow.hl-g{border-left-color:var(--fr)}.rrow.hl-y{border-left-color:var(--accent3)}
 .rlabel{font-size:11px;color:var(--text-dim)}
 .rval{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text)}
-.canvas-wrap{position:relative;background:#fff;border:1px solid var(--border);border-radius:4px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.canvas-wrap{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;box-shadow:none}
 canvas{display:block}
 .mbadge{position:absolute;top:12px;right:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.07em;padding:3px 9px;border-radius:3px;border:1px solid;opacity:.9}
 .b-static{background:rgba(136,145,176,.1);border-color:var(--text-dim);color:var(--text-dim)}
@@ -88,6 +89,32 @@ canvas{display:block}
 .eq-no{background:rgba(224,51,90,.1);border-color:var(--fl);color:var(--fl)}
 .gen-2{background:rgba(14,158,130,.1);border-color:var(--fr);color:var(--fr)}
 .gen-3{background:rgba(224,51,90,.1);border-color:var(--fl);color:var(--fl)}
+.panel,
+.description,
+.formula-row,
+.ltype-btn,
+.dir-btn,
+.dir-btn-r,
+.rrow,
+.btn-reset {
+  border-radius:4px;
+}
+.rrow,
+.formula-row,
+.ltype-btn,
+.dir-btn,
+.dir-btn-r {
+  background:#ede6d4;
+}
+.description {
+  background:var(--panel);
+}
+.description p {
+  color:var(--text);
+}
+.btn-reset {
+  font-weight:500;
+}
 </style>
 </head>
 <body>
@@ -457,7 +484,7 @@ function drawSim1(ts){
 
   // Frecce forze: i vettori (f1x,f1y) sono in coord. fisiche → arrow1 li converte
   arrow1(ctx, lx, ly, d.f1x, d.f1y, '#e0335a', 'F\u2081');
-  arrow1(ctx, rx, ry, d.f2x, d.f2y, '#0e9e82', 'F\u2082');
+  arrow1(ctx, rx, ry, d.f2x, d.f2y, '#2a7a4a', 'F\u2082');
   if(d.ftot > 0.5) arrow1(ctx, cx, cy, d.ftx, d.fty, '#c89200', 'F_tot', true);
 
   // Info testo
@@ -793,20 +820,20 @@ function drawSim2(ts){
     ctx.fillText('d\u2082='+d.d2.toFixed(2)+'m', f2px+6, f2py-18);
     // Pallini applicazione forze
     ctx.beginPath(); ctx.arc(f1px,f1py,4,0,Math.PI*2); ctx.fillStyle='#e0335a'; ctx.fill();
-    ctx.beginPath(); ctx.arc(f2px,f2py,4,0,Math.PI*2); ctx.fillStyle='#0e9e82'; ctx.fill();
+    ctx.beginPath(); ctx.arc(f2px,f2py,4,0,Math.PI*2); ctx.fillStyle='#2a7a4a'; ctx.fill();
   }
   ctx.restore();
 
   // Tipo leva label (canvas in alto a sx)
   ctx.save(); ctx.font='600 12px IBM Plex Mono';
   if(levaType===1){ ctx.fillStyle='#c89200'; ctx.fillText('Leva 1\u00b0 genere',10,20); }
-  else if(d.autoGenere===2){ ctx.fillStyle='#0e9e82'; ctx.fillText('Leva 2\u00b0 genere',10,20); }
+  else if(d.autoGenere===2){ ctx.fillStyle='#2a7a4a'; ctx.fillText('Leva 2\u00b0 genere',10,20); }
   else{ ctx.fillStyle='#e0335a'; ctx.fillText('Leva 3\u00b0 genere',10,20); }
   ctx.restore();
 
   // Frecce forze
   vertArrow(ctx, f1px, f1py, d.f1m, d.sign1, '#e0335a', 'F\u2081');
-  vertArrow(ctx, f2px, f2py, d.f2m, d.sign2, '#0e9e82', 'F\u2082');
+  vertArrow(ctx, f2px, f2py, d.f2m, d.sign2, '#2a7a4a', 'F\u2082');
   // Reazione vincolare al fulcro (verso opposto alla risultante delle forze esterne)
   const totFy = d.sign1*d.f1m + d.sign2*d.f2m;
   if(Math.abs(totFy) > 2)

@@ -16,43 +16,56 @@ window.SIM_METADATA = {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Piano Inclinato — Simulazione Fisica</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
   :root {
-    --bg:     #f4f1ec;
-    --surf:   #ffffff;
-    --panel:  #edeae3;
-    --border: #d4cfc5;
-    --text:   #1a1814;
-    --muted:  #7a746a;
-    --accent: #c0392b;
-    --col-fg:    #c0392b;
-    --col-fpar:  #d35400;
-    --col-fperp: #2471a3;
-    --col-fn:    #7d3c98;
-    --col-fa:    #1e8449;
+    --bg:     #f5f0e8;
+    --surf:   #fffaf0;
+    --panel:  #ede6d4;
+    --border: #c4b89a;
+    --text:   #1a1410;
+    --muted:  #6a5a50;
+    --accent: #8b3a1a;
+    --warm-mid: #d4c9b0;
+    --col-fg:    #8b3a1a;
+    --col-fpar:  #a3482b;
+    --col-fperp: #2a5a8b;
+    --col-fn:    #6b4ba3;
+    --col-fa:    #2a7a4a;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); }
-  body { display:flex; flex-direction:column; min-height:100vh; }
+  html, body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text); }
+  body { display:flex; flex-direction:column; min-height:100vh; overflow-x:hidden; position:relative; }
+  body::before {
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(90deg, rgba(196,184,154,.28) 1px, transparent 1px),
+      linear-gradient(rgba(196,184,154,.28) 1px, transparent 1px);
+    background-size:28px 28px;
+    opacity:.25;
+  }
 
   /* HEADER */
   header {
-    padding: 8px 20px;
-    border-bottom: 1.5px solid var(--border);
-    background: var(--surf);
+    padding: 10px 20px;
+    border-bottom: 1px solid #2a2218;
+    background: var(--text);
+    color: var(--bg);
     display: flex; align-items: center; gap: 12px;
     flex-shrink: 0;
     position: sticky; top: 0; z-index: 10;
   }
-  header h1 { font-size:1.05rem; font-weight:800; letter-spacing:-0.02em; color:var(--accent); }
-  header .sub { font-family:'Space Mono',monospace; font-size:0.58rem; color:var(--muted); letter-spacing:0.1em; }
+  header h1 { font-family:'EB Garamond',serif; font-size:1.25rem; font-weight:500; color:var(--bg); }
+  header .sub { font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--warm-mid); letter-spacing:0.1em; }
 
   /* CONTROLS BAR */
   .cbar {
     background: var(--panel);
-    border-bottom: 1.5px solid var(--border);
+    border-bottom: 1px solid var(--border);
     padding: 8px 20px;
     display: flex; align-items: center; gap: 18px; flex-shrink: 0;
     position: sticky; top: 37px; z-index: 9;
@@ -64,9 +77,9 @@ gap:8px;
 flex:1 1 220px; 
 min-width:0;
 }
-  .cl { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); white-space:nowrap; }
+  .cl { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; font-weight:500; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); white-space:nowrap; }
   .cv { 
-font-family:'Space Mono',monospace; 
+font-family:'IBM Plex Mono',monospace; 
 font-size:0.72rem; 
 font-weight:700; 
 color:var(--text); 
@@ -83,22 +96,22 @@ flex-shrink:0;
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance:none; width:13px; height:13px; border-radius:50%;
     background:var(--accent); border:2px solid white;
-    box-shadow:0 1px 4px rgba(0,0,0,.18); cursor:pointer; transition:transform .12s;
+    box-shadow:none; cursor:pointer; transition:transform .12s;
   }
   input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.2); }
   .div { width:1px; height:22px; background:var(--border); flex-shrink:0; }
 
   .spill {
     display:flex; align-items:center; gap:6px; padding:4px 11px;
-    border-radius:20px; border:1.5px solid var(--border);
+    border-radius:4px; border:1px solid var(--border);
     background:var(--surf); flex-shrink:0;
   }
   .sdot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition:background .3s; }
-  .stxt { font-family:'Space Mono',monospace; font-size:0.63rem; font-weight:700; color:var(--muted); transition:color .3s; letter-spacing:.04em; }
+  .stxt { font-family:'IBM Plex Mono',monospace; font-size:0.63rem; font-weight:700; color:var(--muted); transition:color .3s; letter-spacing:.04em; }
 
   .btn {
-    background:none; border:1.5px solid var(--border); color:var(--muted);
-    font-family:'Syne',sans-serif; font-size:0.65rem; font-weight:700;
+    background:none; border:1px solid var(--border); color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:0.65rem; font-weight:500;
     letter-spacing:.07em; padding:5px 12px; border-radius:6px;
     cursor:pointer; transition:border-color .15s, color .15s; flex-shrink:0; text-transform:uppercase;
   }
@@ -120,10 +133,10 @@ flex-shrink:0;
   .fr { display:flex; justify-content:space-between; align-items:center; gap:5px; }
   .fn2 { display:flex; align-items:center; gap:6px; font-size:0.66rem; color:var(--muted); }
   .fd { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .fv { font-family:'Space Mono',monospace; font-size:0.66rem; font-weight:700; color:var(--text); }
+  .fv { font-family:'IBM Plex Mono',monospace; font-size:0.66rem; font-weight:700; color:var(--text); }
   .kr { display:flex; justify-content:space-between; align-items:center; }
   .kk { font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-  .kv { font-family:'Space Mono',monospace; font-size:0.66rem; font-weight:700; color:var(--text); }
+  .kv { font-family:'IBM Plex Mono',monospace; font-size:0.66rem; font-weight:700; color:var(--text); }
   .li { display:flex; align-items:center; gap:6px; font-size:0.61rem; color:var(--muted); }
   .ll { width:15px; height:3px; border-radius:2px; flex-shrink:0; }
 
@@ -183,7 +196,7 @@ flex-shrink:0;
     font-weight: 600;
   }
   .f-eq {
-    font-family: 'Space Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.78rem;
     color: var(--text);
     letter-spacing: -0.01em;
@@ -211,6 +224,42 @@ flex-shrink:0;
     font-family: inherit;
     font-size: 0.80rem;
     letter-spacing: 0;
+  }
+
+  /* Tema grafico condiviso */
+  .cbar, .main, .bottom-section, .dp, header { position:relative; z-index:1; }
+  .cbar { top:43px; }
+  .main { height:calc(100vh - 43px - 41px); }
+  .cv, .stxt, .fv, .kv, .st, .bs-title, .f-eq { font-family:'IBM Plex Mono', monospace; }
+  input[type=range]::-webkit-slider-thumb {
+    background:var(--accent);
+    border:2px solid var(--surf);
+    box-shadow:none;
+  }
+  .spill,
+  .btn,
+  .f-cond {
+    border-radius:4px;
+    border-width:1px;
+  }
+  .btn {
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:500;
+  }
+  .cwrap,
+  .dp,
+  .bottom-section {
+    background:var(--surf);
+  }
+  .bs-block + .bs-block,
+  .dp {
+    border-color:var(--border);
+  }
+  .bs-title {
+    font-weight:500;
+  }
+  .bs-text {
+    color:var(--text);
   }
 </style>
 <script>
@@ -463,7 +512,7 @@ function arrow(x1,y1,x2,y2,col,lw,hl) {
 
 function lbl(x,y,txt,col,align,fs) {
   ctx.save();
-  ctx.font=`700 ${fs??12}px "Space Mono",monospace`;
+  ctx.font=`700 ${fs??12}px "IBM Plex Mono",monospace`;
   ctx.fillStyle=col; ctx.textAlign=align??'left'; ctx.textBaseline='middle';
   ctx.shadowColor='rgba(255,255,255,0.97)'; ctx.shadowBlur=7;
   ctx.fillText(txt,x,y);
@@ -586,7 +635,7 @@ function draw(ph) {
     ctx.strokeStyle = '#2471a370'; ctx.lineWidth = 1.3; ctx.stroke();
     // midpoint dell'arco antiorario
     const midArc = angIpo + rad / 2;  // = -π + 3rad/2  — punto centrale dell'arco
-    ctx.font = 'bold 11px "Space Mono",monospace';
+    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
     ctx.fillStyle = '#2471a3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.shadowColor='rgba(255,255,255,0.9)'; ctx.shadowBlur=4;
     // etichetta θ sotto il piano, lungo la base orizzontale
@@ -692,7 +741,7 @@ function draw(ph) {
     ctx.arc(ox, oy, arcR2, angFg2, angFpe2, false);
     ctx.strokeStyle = '#c0392b70'; ctx.lineWidth = 1.2; ctx.stroke();
     const midA2 = (angFg2 + angFpe2) / 2;
-    ctx.font = 'bold 10px "Space Mono",monospace';
+    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
     ctx.fillStyle = '#c0392b'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='rgba(255,255,255,0.9)'; ctx.shadowBlur=4;
     ctx.fillText('θ', ox+Math.cos(midA2)*(arcR2+11), oy+Math.sin(midA2)*(arcR2+11));

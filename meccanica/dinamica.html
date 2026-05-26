@@ -329,6 +329,105 @@ button.action:active { transform: scale(0.98); }
   .law2-live { flex-direction: column; }
   .tab { font-size: 12px; padding: 7px 12px; }
 }
+
+/* Tema grafico condiviso */
+:root {
+  --cream:#f5f0e8;
+  --paper:#fffaf0;
+  --parchment:#ede6d4;
+  --warm-mid:#d4c9b0;
+  --ink:#1a1410;
+  --ink2:#3a302a;
+  --ink3:#6a5a50;
+  --rule:#d4c9b0;
+  --rule2:#c4b89a;
+  --accent:#8b3a1a;
+  --accent2:#2a7a4a;
+  --warm:#2a5a8b;
+  --card:#ede6d4;
+  --card2:#fffaf0;
+  --shadow:transparent;
+}
+body {
+  background:var(--cream);
+  padding:0;
+  overflow-x:hidden;
+  position:relative;
+}
+body::before {
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg, rgba(196,184,154,.28) 1px, transparent 1px),
+    linear-gradient(rgba(196,184,154,.28) 1px, transparent 1px);
+  background-size:28px 28px;
+  mask-image:linear-gradient(to bottom, transparent 0, black 140px, black 100%);
+  opacity:.35;
+}
+.page {
+  position:relative;
+  z-index:1;
+  max-width:1100px;
+  padding-bottom:4rem;
+}
+.page-header {
+  position:relative;
+  overflow:hidden;
+  margin:0 calc(50% - 50vw) 2rem;
+  padding:2.7rem max(1rem, calc((100vw - 1100px)/2)) 2.25rem;
+  background:var(--ink);
+  border-bottom:1px solid #2a2218;
+}
+.page-header::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg, rgba(212,201,176,.08) 1px, transparent 1px),
+    linear-gradient(rgba(212,201,176,.07) 1px, transparent 1px);
+  background-size:32px 32px;
+  opacity:.35;
+}
+.page-header > * {
+  position:relative;
+  max-width:1100px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.page-eyebrow,
+.page-subtitle { color:var(--warm-mid); }
+.page-title {
+  color:var(--cream);
+  font-size:clamp(2rem,4vw,3.25rem);
+}
+.tab {
+  border-radius:4px 4px 0 0;
+  font-family:'IBM Plex Mono', monospace;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.law-formula-box,
+.info-box,
+.theory-card,
+.example-strip,
+.warning-strip,
+.p3-stat-card,
+.p3-info-strip {
+  border-radius:4px;
+  box-shadow:none;
+}
+canvas {
+  border-radius:4px;
+  background:var(--paper);
+}
+.canvas-action,
+button.action {
+  border-radius:4px;
+  font-family:'IBM Plex Mono', monospace;
+}
+input[type=range] { accent-color:var(--accent); }
 </style>
 </head>
 <body>

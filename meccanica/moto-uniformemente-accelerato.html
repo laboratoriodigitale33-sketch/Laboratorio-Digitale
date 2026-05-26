@@ -11,58 +11,97 @@
       description: "Simulazione interattiva del moto uniformemente accelerato in una dimensione, con visualizzazione sincronizzata del moto dell’oggetto e dei grafici posizione-tempo e velocità-tempo.",
       icon: "📈",
       order: 5,
-      category: "Meccanica"
+      category: "Meccanica",
+      tags: ["moto uniformemente accelerato", "accelerazione costante", "grafico posizione-tempo", "grafico velocità-tempo", "cinematica"],
+      level: "base"
     };
   </script>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
   <style>
     :root{
-      --bg:#f4f7fb;
-      --panel:#ffffff;
-      --panel-soft:#f8fbff;
-      --text:#162033;
-      --muted:#627086;
-      --border:#d8e1ee;
-      --accent:#2563eb;
-      --accent-soft:#dbeafe;
-      --green:#059669;
-      --green-soft:#d1fae5;
-      --red:#dc2626;
-      --red-soft:#fee2e2;
-      --grid:#e9eef6;
-      --shadow:0 10px 30px rgba(15,23,42,0.08);
-      --radius:20px;
-      --radius-sm:14px;
+      --bg:#f5f0e8;
+      --panel:#fffaf0;
+      --panel-soft:#ede6d4;
+      --text:#1a1610;
+      --muted:#6b5e4e;
+      --border:#d4c9b0;
+      --accent:#8b3a1a;
+      --accent-soft:rgba(196,98,45,0.12);
+      --green:#2d6b4a;
+      --green-soft:#e4eddc;
+      --red:#c4622d;
+      --red-soft:#f2dfd2;
+      --grid:#e8dfc8;
+      --shadow:none;
+      --radius:4px;
+      --radius-sm:3px;
     }
 
     *{box-sizing:border-box}
 
     body{
       margin:0;
-      font-family:Inter, Arial, Helvetica, sans-serif;
+      font-family:"IBM Plex Sans", sans-serif;
       color:var(--text);
-      background:
-        radial-gradient(circle at top left, #eef5ff 0%, transparent 30%),
-        radial-gradient(circle at top right, #f8fbff 0%, transparent 26%),
-        var(--bg);
+      background:var(--bg);
+      line-height:1.7;
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(26,22,16,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,22,16,0.025) 1px, transparent 1px);
+      background-size:60px 60px;
+      mask-image:linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 22%, transparent 80%);
     }
 
     .wrap{
-      max-width:1450px;
-      margin:0 auto;
-      padding:22px;
+      position:relative;
+      z-index:1;
+      width:100%;
+      margin:0;
+      padding:0 0 4rem;
     }
 
     .hero{
-      margin-bottom:18px;
-      padding:22px 24px;
-      border:1px solid var(--border);
-      border-radius:24px;
-      background:linear-gradient(135deg, #ffffff 0%, #f6faff 100%);
-      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+      margin-bottom:2rem;
+      padding:3.3rem max(1.5rem, calc((100vw - 1100px) / 2)) 3rem;
+      border:0;
+      border-bottom:1px solid #2a2218;
+      border-radius:0;
+      background:var(--text);
+      color:var(--bg);
+      box-shadow:none;
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.015) 60px,
+        rgba(255,255,255,0.015) 61px
+      );
+      pointer-events:none;
     }
 
     .hero-top{
+      position:relative;
+      max-width:1100px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -89,15 +128,17 @@
 
     h1{
       margin:0;
-      font-size:2rem;
-      line-height:1.05;
+      font-family:"EB Garamond", Georgia, serif;
+      font-size:clamp(2.2rem,4vw,3.4rem);
+      line-height:1.15;
+      font-weight:500;
     }
 
     .subtitle{
       margin-top:8px;
-      color:var(--muted);
-      line-height:1.5;
-      max-width:980px;
+      color:#a09080;
+      max-width:640px;
+      font-weight:300;
     }
 
     .hero-badges{
@@ -112,12 +153,13 @@
       align-items:center;
       gap:8px;
       padding:8px 12px;
-      border-radius:999px;
-      background:#fff;
-      border:1px solid var(--border);
-      color:#334155;
-      font-size:0.92rem;
-      font-weight:600;
+      border-radius:3px;
+      background:rgba(255,255,255,0.025);
+      border:1px solid #2a2218;
+      color:#a09080;
+      font-family:"IBM Plex Mono", monospace;
+      font-size:0.68rem;
+      font-weight:400;
     }
 
     .layout{
@@ -125,6 +167,8 @@
       grid-template-columns:355px 1fr;
       gap:18px;
       align-items:start;
+      width:min(1100px, calc(100% - 32px));
+      margin:0 auto;
     }
 
     .panel{
@@ -142,13 +186,17 @@
 
     .controls h2{
       margin:0 0 14px 0;
-      font-size:1.08rem;
+      font-family:"IBM Plex Mono", monospace;
+      font-size:0.7rem;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--muted);
     }
 
     .section-card{
-      background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      background:var(--panel-soft);
       border:1px solid var(--border);
-      border-radius:18px;
+      border-radius:4px;
       padding:14px;
       margin-bottom:14px;
     }
@@ -171,8 +219,11 @@
       justify-content:space-between;
       align-items:center;
       gap:10px;
-      font-size:0.95rem;
-      font-weight:700;
+      font-family:"IBM Plex Mono", monospace;
+      font-size:0.7rem;
+      font-weight:400;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
       margin-bottom:7px;
     }
 
@@ -196,8 +247,8 @@
 
     select, button{
       border:1px solid var(--border);
-      border-radius:12px;
-      background:#fff;
+      border-radius:3px;
+      background:var(--panel);
       color:var(--text);
       font-size:0.95rem;
       padding:10px 12px;
@@ -236,18 +287,18 @@
     .primary{
       background:var(--accent);
       border-color:var(--accent);
-      color:#fff;
-      box-shadow:0 8px 18px rgba(37,99,235,0.2);
+      color:var(--bg);
+      box-shadow:none;
     }
 
     .secondary{
-      background:#eef4ff;
-      border-color:#cfe0ff;
+      background:var(--panel-soft);
+      border-color:var(--border);
       color:var(--accent);
     }
 
     .ghost{
-      background:#fff;
+      background:var(--panel);
     }
 
     .metrics{
@@ -918,7 +969,7 @@ g  = accelerazione di gravità`;
         ctx.stroke();
 
         ctx.fillStyle = "#334155";
-        ctx.font = "13px Inter, Arial, sans-serif";
+        ctx.font = "13px IBM Plex Sans, Arial, sans-serif";
         ctx.fillText(xLabel, right - 36, bottom - 9);
 
         ctx.save();
@@ -983,7 +1034,7 @@ g  = accelerazione di gravità`;
 
         ctx.save();
         ctx.fillStyle = "#475569";
-        ctx.font = "12px Inter, Arial, sans-serif";
+        ctx.font = "12px IBM Plex Sans, Arial, sans-serif";
         for (let i = 0; i <= 5; i++) {
           const tt = tEnd * i / 5;
           ctx.fillText(fmt(tt,1), xMap(tt) - 11, bottom + 20);
@@ -1060,7 +1111,7 @@ g  = accelerazione di gravità`;
 
         ctx.save();
         ctx.fillStyle = "#475569";
-        ctx.font = "12px Inter, Arial, sans-serif";
+        ctx.font = "12px IBM Plex Sans, Arial, sans-serif";
         for (let i = 0; i <= 5; i++) {
           const tt = tEnd * i / 5;
           ctx.fillText(fmt(tt,1), xMap(tt) - 11, bottom + 20);
@@ -1158,7 +1209,7 @@ g  = accelerazione di gravità`;
           drawArrow(ctx, xObj, yObj - 66, xObj + p.a * accScale, yObj - 66, "#dc2626", 3.5);
 
           ctx.fillStyle = "#1f2937";
-          ctx.font = "13px Inter, Arial, sans-serif";
+          ctx.font = "13px IBM Plex Sans, Arial, sans-serif";
           ctx.fillText("v", xObj + v * velScale + 8, yObj - 34);
           ctx.fillText("a", xObj + p.a * accScale + 8, yObj - 62);
           ctx.fillText("asse x", right - 48, axisY - 14);
@@ -1240,7 +1291,7 @@ g  = accelerazione di gravità`;
           drawArrow(ctx, xObj + 68, yObj, xObj + 68, yObj - p.a * accScale, "#dc2626", 3.5);
 
           ctx.fillStyle = "#1f2937";
-          ctx.font = "13px Inter, Arial, sans-serif";
+          ctx.font = "13px IBM Plex Sans, Arial, sans-serif";
           ctx.fillText("v", xObj + 46, yObj - v * velScale - 8);
           ctx.fillText("a", xObj + 76, yObj - p.a * accScale - 8);
           ctx.fillText("asse y", axisX + 14, top + 14);

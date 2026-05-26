@@ -230,25 +230,6 @@
       "isWip": false
     },
     {
-      "title": "Grandezze e unità di misura",
-      "description": "Convertitore esteso tra grandezze fisiche e unità metriche con spiegazioni su unità fondamentali, derivate, prefissi SI e unità specialistiche come barn e jansky.",
-      "category": "Fondamenti",
-      "icon": "📏",
-      "order": 0,
-      "tags": [
-        "grandezze fisiche",
-        "unità di misura",
-        "SI",
-        "prefissi metrici",
-        "conversioni",
-        "barn",
-        "jansky"
-      ],
-      "level": "base",
-      "file": "fondamenti/grandezze-fondamentali.html",
-      "isWip": false
-    },
-    {
       "title": "Grandezze vettoriali",
       "description": "Introduzione alle grandezze vettoriali e alle principali operazioni tra vettori nel piano.",
       "category": "Fondamenti",

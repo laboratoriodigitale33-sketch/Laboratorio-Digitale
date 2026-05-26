@@ -27,36 +27,38 @@ window.SIM_METADATA = {
 <title>Traiettorie di missioni spaziali</title>
 <meta name="description" content="Esplora traiettorie reali di missioni spaziali a partire da vettori di stato NASA/JPL Horizons precaricati nel sito.">
 <meta name="keywords" content="NASA JPL Horizons, missioni spaziali, traiettorie spaziali, Artemis, Apollo, Voyager, Parker Solar Probe, orbite">
-<meta name="theme-color" content="#06090f">
+<meta name="theme-color" content="#1a1610">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-0: #06090f;
-  --bg-1: #0a0f1a;
-  --bg-2: #0f1623;
-  --bg-3: #152033;
-  --surface: rgba(255,255,255,0.05);
-  --surface-hi: rgba(255,255,255,0.08);
-  --border: rgba(255,255,255,0.1);
-  --border-hi: rgba(255,255,255,0.2);
-  --text: #e8edf7;
-  --text-soft: #9aa9c3;
-  --text-dim: #5e6d86;
-  --gold: #f0c060;
-  --gold-dim: rgba(240,192,96,0.16);
-  --cyan: #7dd3fc;
-  --trail: #fb923c;
-  --future: #60a5fa;
-  --ok: #86efac;
-  --danger: #f87171;
-  --mono: "DM Mono", monospace;
-  --sans: "DM Sans", sans-serif;
-  --display: "Crimson Pro", Georgia, serif;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
+  --bg-0: #f5f0e8;
+  --bg-1: #ede6d4;
+  --bg-2: #fffaf0;
+  --bg-3: #e8dfc8;
+  --surface: #fffaf0;
+  --surface-hi: #f8f0df;
+  --border: #d4c9b0;
+  --border-hi: #c4622d;
+  --text: #1a1610;
+  --text-soft: #3d3428;
+  --text-dim: #6b5e4e;
+  --gold: #b8922a;
+  --gold-dim: rgba(196,98,45,0.13);
+  --accent: #8b3a1a;
+  --accent-warm: #c4622d;
+  --cyan: #1a6b6b;
+  --trail: #c4622d;
+  --future: #457b9d;
+  --ok: #2d6b4a;
+  --danger: #8b3a1a;
+  --mono: "IBM Plex Mono", monospace;
+  --sans: "IBM Plex Sans", sans-serif;
+  --display: "EB Garamond", Georgia, serif;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 }
 
 *,
@@ -70,10 +72,9 @@ body {
   min-height: 100vh;
   font-family: var(--sans);
   color: var(--text);
-  background:
-    radial-gradient(ellipse 75% 55% at 10% 5%, rgba(125,211,252,0.08), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 92% 0%, rgba(240,192,96,0.08), transparent 55%),
-    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 45%, var(--bg-2) 100%);
+  background: var(--bg-0);
+  font-size: 16px;
+  line-height: 1.7;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -84,18 +85,18 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 52px 52px;
-  mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, rgba(0,0,0,0.8), transparent 78%);
+    linear-gradient(rgba(26,22,16,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,22,16,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 22%, transparent 80%);
 }
 
 .page {
   position: relative;
   z-index: 1;
-  width: min(1320px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 36px 0 64px;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 4rem;
 }
 
 .topline {
@@ -103,7 +104,10 @@ body::before {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 24px;
+  margin: 0;
+  padding: 1.2rem max(1.5rem, calc((100vw - 1100px) / 2));
+  background: var(--text);
+  border-bottom: 1px solid #2a2218;
 }
 
 .wordmark,
@@ -117,56 +121,71 @@ body::before {
 
 .wordmark {
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: #7f7060;
 }
 
-.wordmark span { color: var(--gold); }
+.wordmark span { color: var(--accent-warm); }
 
 .hero {
-  padding: 20px 8px 34px;
+  position: relative;
+  overflow: hidden;
+  padding: 2.4rem max(1.5rem, calc((100vw - 1100px) / 2)) 3rem;
+  background: var(--text);
+  color: var(--bg-0);
+  border-bottom: 1px solid #2a2218;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 60px,
+    rgba(255,255,255,0.015) 60px,
+    rgba(255,255,255,0.015) 61px
+  );
+  pointer-events: none;
 }
 
 .hero-label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(240,192,96,0.26);
-  background: var(--gold-dim);
-  color: var(--gold);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-warm);
   font-family: var(--mono);
   font-size: 0.7rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  position: relative;
 }
 
 .hero-label::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 14px rgba(240,192,96,0.7);
+  display: none;
 }
 
 h1 {
-  margin: 18px 0 14px;
+  margin: 1rem 0;
   font-family: var(--display);
-  font-size: clamp(2.8rem, 6vw, 5rem);
-  line-height: 1.02;
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  line-height: 1.15;
+  font-weight: 500;
+  color: var(--bg-0);
+  letter-spacing: 0;
 }
 
 .hero p {
-  max-width: 860px;
+  max-width: 640px;
   margin: 0;
-  color: var(--text-soft);
-  font-size: 1.04rem;
-  line-height: 1.8;
+  color: #a09080;
+  font-size: 0.95rem;
+  font-weight: 300;
 }
 
 .hero-meta {
@@ -177,17 +196,17 @@ h1 {
 }
 
 .meta-chip {
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-soft);
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
+  padding: 7px 10px;
+  border-radius: 3px;
+  border: 1px solid #2a2218;
+  background: rgba(255,255,255,0.025);
+  color: #a09080;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
 }
 
 .meta-chip strong {
-  color: var(--text);
+  color: var(--accent-warm);
   font-weight: 500;
 }
 
@@ -195,7 +214,8 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  margin: 0 8px 18px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 3rem auto 1.5rem;
 }
 
 .info-card,
@@ -203,7 +223,6 @@ h1 {
 .theory-card {
   border: 1px solid var(--border);
   background: var(--surface);
-  backdrop-filter: blur(12px);
 }
 
 .info-card {
@@ -230,7 +249,8 @@ h1 {
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
-  margin: 0 8px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
 }
 
 .stack {
@@ -242,6 +262,7 @@ h1 {
 .panel {
   border-radius: var(--radius-md);
   padding: 16px;
+  background: var(--bg-1);
 }
 
 .section-kicker {
@@ -272,16 +293,16 @@ select,
 input,
 button {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 3px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.06);
+  background: var(--bg-2);
   color: var(--text);
   padding: 10px 12px;
   font: inherit;
 }
 
 select option {
-  background: #101827;
+  background: var(--bg-2);
   color: var(--text);
 }
 
@@ -298,16 +319,18 @@ button {
 button:hover {
   transform: translateY(-1px);
   border-color: var(--border-hi);
+  background: #fff6e6;
 }
 
 button.primary {
-  background: linear-gradient(135deg, #1d4ed8, #0891b2);
-  border-color: transparent;
-  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-0);
+  font-weight: 500;
 }
 
 button.secondary {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-2);
 }
 
 .row2,
@@ -357,8 +380,8 @@ button.secondary {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(5,8,16,0.95), rgba(3,6,12,0.98));
+  border: 1px solid #2a2218;
+  background: #0f0d0a;
   min-height: 720px;
 }
 
@@ -424,13 +447,14 @@ button.secondary {
 }
 
 .minor {
-  color: var(--text-dim);
+  color: #7f7060;
   font-size: 0.68rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
 .theory {
-  margin: 28px 8px 0;
+  width: min(1100px, calc(100% - 32px));
+  margin: 3rem auto 0;
 }
 
 .theory-head {
@@ -442,7 +466,7 @@ button.secondary {
   margin: 0 0 10px;
   font-family: var(--display);
   font-size: 2rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .theory-head p {
@@ -467,7 +491,7 @@ button.secondary {
   font-family: var(--display);
   font-size: 1.32rem;
   font-weight: 500;
-  color: var(--gold);
+  color: var(--accent);
 }
 
 .theory-card p {
@@ -480,9 +504,9 @@ button.secondary {
 .formula {
   margin-top: 12px;
   padding: 12px 14px;
-  border-left: 3px solid var(--gold);
-  border-radius: 0 10px 10px 0;
-  background: rgba(255,255,255,0.04);
+  border-left: 3px solid var(--accent-warm);
+  border-radius: 0 3px 3px 0;
+  background: var(--bg-3);
   color: var(--cyan);
   font-family: var(--mono);
   font-size: 0.8rem;
@@ -490,10 +514,10 @@ button.secondary {
 }
 
 code {
-  color: #cae9ff;
-  background: rgba(125,211,252,0.08);
+  color: var(--accent);
+  background: var(--bg-3);
   padding: 0.08rem 0.3rem;
-  border-radius: 0.35rem;
+  border-radius: 3px;
 }
 
 @media (max-width: 1100px) {
@@ -1277,7 +1301,7 @@ function drawVelocity(p) {
 }
 
 function drawLabel(s, text) {
-  ctx.font = '700 13px "DM Sans", sans-serif';
+  ctx.font = '700 13px "IBM Plex Sans", sans-serif';
   const tw = ctx.measureText(text).width;
   ctx.fillStyle = 'rgba(7,12,25,0.72)';
   roundRect(s.x + 14, s.y - 30, tw + 18, 28, 10);

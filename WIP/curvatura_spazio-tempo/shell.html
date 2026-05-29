@@ -3,11 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <script>
-if (!location.pathname.endsWith('/kerr.html')) {
-  location.replace('kerr.html');
-}
-</script>
-<script>
 window.SIM_METADATA = {
   title: "Curvatura dello spazio-tempo",
   description: "Simulazione della metrica di Kerr attorno a un buco nero rotante, con visualizzazione di geodetiche nulle, lente gravitazionale, redshift gravitazionale e dilatazione temporale.",
@@ -95,7 +90,7 @@ input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
        align-items:center;justify-content:center;
        background:var(--bg);padding:12px;overflow:hidden;}
 canvas{border:1px solid var(--border);display:block;
-       max-width:100%;max-height:calc(100vh - 180px);}
+       max-width:100%;max-height:calc(100vh - 260px);}
 .clabel{font-family:var(--mono);font-size:.60rem;color:var(--text2);
         margin-top:5px;text-align:center;letter-spacing:.03em;}
 .legend{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;
@@ -103,6 +98,17 @@ canvas{border:1px solid var(--border);display:block;
 .li{display:flex;align-items:center;gap:4px;
     font-family:var(--mono);font-size:.60rem;color:var(--text2);}
 .ld{width:10px;height:3px;border-radius:1px;}
+.mode-note{display:none;width:100%;max-width:900px;margin-top:9px;
+           border-top:1px solid var(--border);padding-top:8px;
+           font-family:var(--sans);font-size:.72rem;line-height:1.45;
+           color:var(--text2);}
+.mode-note.show{display:block;}
+.mode-note .nt{font-family:var(--mono);font-size:.62rem;color:var(--accent);
+               letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.mode-note .ng{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+               gap:12px;}
+.mode-note b{color:var(--text);font-weight:500;}
+.mode-note code{font-family:var(--mono);font-size:.66rem;color:var(--accent);}
 
 /* ---- Loading overlay ---- */
 #loading{position:fixed;inset:0;background:var(--bg);
@@ -218,6 +224,14 @@ canvas{border:1px solid var(--border);display:block;
       <div class="li"><div class="ld" style="background:#2980b9"></div>r<sub>ISCO</sub></div>
       <div class="li"><div class="ld" style="background:#27ae60"></div>r<sub>fotosfera</sub></div>
     </div>
+    <div class="mode-note" id="redshiftNote">
+      <div class="nt">Cosa mostra Redshift / Dilatazione</div>
+      <div class="ng">
+        <p><b>Mappa a sinistra.</b> Immagina una sorgente che emette luce verde a riposo locale. Lontano dal buco nero resta quasi verde; vicino a \(r_+\) la frequenza osservata all'infinito cala e il colore vira verso il rosso. L'area arancione indica la regione in cui \(g_{tt}\) cambia segno: l'ergosfera.</p>
+        <p><b>Grafici a destra.</b> La curva blu è \(d\tau/dt\): quanto tempo proprio passa per un osservatore statico rispetto al tempo di un osservatore lontano. La curva rossa è \(\log(1+z)\), cioè il redshift compresso su scala logaritmica per non schiacciare tutto vicino all'orizzonte.</p>
+        <p><b>Rotazione dello spazio-tempo.</b> La curva verde è \(|\Omega|\), la velocità angolare locale del trascinamento dei sistemi inerziali. L'asse orizzontale è logaritmico in \(r\), quindi le regioni \(r_+\), ergosfera, ISCO e orbita fotonica restano leggibili nello stesso pannello.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -229,7 +243,11 @@ canvas{border:1px solid var(--border);display:block;
 </div>
 
 <!-- Emscripten glue (generato da emcc) -->
-<script src="kerr.js"></script>
+<script>
+const BUILD_ID = '20260529-1815';
+const runningFromFile = location.protocol === 'file:';
+window.Module = window.Module || {};
+</script>
 
 <script>
 /* ================================================================
@@ -238,6 +256,7 @@ canvas{border:1px solid var(--border);display:block;
 
 const canvas  = document.getElementById('kerr');
 const ctx     = canvas.getContext('2d');
+const loadMsg = document.getElementById('loadMsg');
 
 let wasmReady = false;
 let animating = false;
@@ -253,6 +272,21 @@ const modeLabels = [
   'Redshift gravitazionale e dilatazione temporale',
 ];
 const modeNames = ['Griglia','Geodetiche','Lente','Redshift'];
+const redshiftNote = document.getElementById('redshiftNote');
+
+function updateModeChrome(mode) {
+  document.getElementById('clabel').textContent = modeLabels[mode];
+  document.getElementById('stMode').textContent = modeNames[mode];
+  redshiftNote.classList.toggle('show', mode === 3);
+  if (mode === 3 && typeof renderMathInElement === 'function') {
+    renderMathInElement(redshiftNote,{
+      delimiters:[
+        {left:'\\(',right:'\\)',display:false},
+        {left:'\\[',right:'\\]',display:true}
+      ]
+    });
+  }
+}
 
 /* ---- Callback dal modulo WASM quando il frame è pronto ---- */
 Module.onFrameReady = function() {
@@ -339,8 +373,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     currentMode = parseInt(btn.dataset.mode);
     Module._set_mode(currentMode);
-    document.getElementById('clabel').textContent  = modeLabels[currentMode];
-    document.getElementById('stMode').textContent  = modeNames[currentMode];
+    updateModeChrome(currentMode);
     requestRender();
   });
 });
@@ -376,14 +409,6 @@ function stopAnim() {
 }
 
 document.getElementById('btnAnim').addEventListener('click', () => {
-  if (currentMode !== 1) {
-    currentMode = 1;
-    Module._set_mode(1);
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    document.querySelector('[data-mode="1"]').classList.add('active');
-    document.getElementById('clabel').textContent = modeLabels[1];
-    document.getElementById('stMode').textContent = modeNames[1];
-  }
   if (animating) {
     stopAnim();
   } else {
@@ -405,8 +430,36 @@ Module.setStatus = function(text) {
 };
 Module.monitorRunDependencies = function(left) {
   if (left === 0)
-    document.getElementById('loadMsg').textContent = 'Modulo pronto.';
+    loadMsg.textContent = 'Modulo pronto.';
 };
+
+function showLoadMessage(html) {
+  const spinner = document.querySelector('.spinner');
+  if (spinner) spinner.style.display = 'none';
+  loadMsg.innerHTML = html;
+}
+
+function loadWasmModule() {
+  if (runningFromFile) {
+    showLoadMessage('Questa simulazione WebAssembly non va aperta da file locale. Avvia un server nella cartella e apri <a href="http://127.0.0.1:8001/shell.html?v=' + BUILD_ID + '">http://127.0.0.1:8001/shell.html</a>.');
+    return;
+  }
+
+  Module.locateFile = function(path, prefix) {
+    if (path === 'kerr.wasm') return prefix + path + '?v=' + BUILD_ID;
+    return prefix + path;
+  };
+
+  const glue = document.createElement('script');
+  glue.src = 'kerr.js?v=' + BUILD_ID;
+  glue.async = false;
+  glue.onerror = function() {
+    showLoadMessage('Non riesco a caricare <code>kerr.js</code>. Controlla che <code>shell.html</code>, <code>kerr.js</code> e <code>kerr.wasm</code> siano nella stessa cartella servita via HTTP.');
+  };
+  document.body.appendChild(glue);
+}
+
+loadWasmModule();
 </script>
 
 </body>

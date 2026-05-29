@@ -2,13 +2,52 @@ Build consigliata dalla root del progetto:
 
 py .\build_wasm.py kerr
 
-Comando Emscripten equivalente:
+Nota:
+il comando sopra funziona se build_wasm.py punta alla tua installazione di
+Emscripten. In alternativa puoi compilare direttamente dalla cartella di questa
+simulazione con uno dei comandi sotto.
+
+
+Avvio locale della simulazione:
+
+Non aprire shell.html direttamente con file://: il browser puo bloccare o
+caricare male kerr.wasm. Dopo la compilazione avvia invece un piccolo server
+HTTP nella cartella della simulazione.
+
+macOS:
+
+cd /Users/roberto/Documents/GitHub/Laboratorio-Digitale/WIP/curvatura_spazio-tempo
+python3 -m http.server 8001
+
+Poi apri:
+http://127.0.0.1:8001/shell.html
+
+Windows:
+
+cd C:\Users\rober\OneDrive\Desktop\Simulazioni\WIP\curvatura_spazio-tempo
+py -3 -m http.server 8001
+
+Poi apri:
+http://127.0.0.1:8001/shell.html
+
+
+macOS / Homebrew:
+
+cd /Users/roberto/Documents/GitHub/Laboratorio-Digitale/WIP/curvatura_spazio-tempo
+mkdir -p /Users/roberto/Documents/Codex/emscripten-cache
+EM_CACHE=/Users/roberto/Documents/Codex/emscripten-cache emcc kerr.c -o kerr.js -O3 -msimd128 -s WASM=1 -s EXPORTED_FUNCTIONS='["_main","_render_frame","_set_spin","_set_zoom","_set_pitch","_set_mode","_set_nrays","_set_remit","_step_anim","_get_rp","_get_rergo","_get_risco","_get_rph","_get_omH","_get_width","_get_height","_get_pixel_buffer"]' -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' -s ALLOW_MEMORY_GROWTH=1 -lm
+
+
+Windows / emsdk.py diretto:
 
 cd C:\Users\rober\OneDrive\Desktop\Simulazioni\WIP\curvatura_spazio-tempo
 set TEMP=C:\Users\rober\OneDrive\Desktop\Simulazioni\emscripten_tmp\kerr
 set TMP=C:\Users\rober\OneDrive\Desktop\Simulazioni\emscripten_tmp\kerr
 set EMCC_TEMP_DIR=C:\Users\rober\OneDrive\Desktop\Simulazioni\emscripten_tmp\kerr
-py -3 -E C:\Users\rober\emsdk\upstream\emscripten\emcc.py kerr.c -o kerr.js -O3 -msimd128 -s WASM=1 -s EXPORTED_FUNCTIONS="[\"_main\",\"_render_frame\",\"_set_spin\",\"_set_zoom\",\"_set_pitch\",\"_set_mode\",\"_set_nrays\",\"_set_remit\",\"_step_anim\",\"_get_rp\",\"_get_rergo\",\"_get_risco\",\"_get_rph\",\"_get_omH\",\"_get_width\",\"_get_height\",\"_get_pixel_buffer\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\"]" -s ALLOW_MEMORY_GROWTH=1 -lm
+py -3 -E C:\Users\rober\emsdk\upstream\emscripten\emcc.py kerr.c -o kerr.js -O3 -msimd128 -s WASM=1 -s EXPORTED_FUNCTIONS="[\"_main\",\"_render_frame\",\"_set_spin\",\"_set_zoom\",\"_set_pitch\",\"_set_mode\",\"_set_nrays\",\"_set_remit\",\"_step_anim\",\"_get_rp\",\"_get_rergo\",\"_get_risco\",\"_get_rph\",\"_get_omH\",\"_get_width\",\"_get_height\",\"_get_pixel_buffer\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\",\"HEAPU8\"]" -s ALLOW_MEMORY_GROWTH=1 -lm
 
 
+Windows / emsdk gia attivato:
 
+cd C:\Users\rober\OneDrive\Desktop\Simulazioni\WIP\curvatura_spazio-tempo
+emcc kerr.c -o kerr.js -O3 -msimd128 -s WASM=1 -s EXPORTED_FUNCTIONS="[\"_main\",\"_render_frame\",\"_set_spin\",\"_set_zoom\",\"_set_pitch\",\"_set_mode\",\"_set_nrays\",\"_set_remit\",\"_step_anim\",\"_get_rp\",\"_get_rergo\",\"_get_risco\",\"_get_rph\",\"_get_omH\",\"_get_width\",\"_get_height\",\"_get_pixel_buffer\"]" -s EXPORTED_RUNTIME_METHODS="[\"ccall\",\"cwrap\",\"HEAPU8\"]" -s ALLOW_MEMORY_GROWTH=1 -lm

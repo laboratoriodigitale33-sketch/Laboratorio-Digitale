@@ -8,6 +8,8 @@
  *   1) niente pseudo-orbite elastiche attorno alla stella di neutroni
  *   2) ejecta da supernova più rarefatti e dissipativi
  *   3) remnant compatto ancorato al vero centro del collasso
+ *   4) griglia spaziale e campionamento locale per aumentare N senza costo globale N^2
+ *   5) sistema di riferimento ricentrato sul core dopo la formazione del nucleo
  */
 
 #include <math.h>
@@ -19,9 +21,20 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-#define N_MAX      1000
+#define N_MAX      5000
 #define CANVAS_W   760.0f
 #define CANVAS_H   760.0f
+#define REF_N       400.0f
+
+#define CELL_SIZE   40.0f
+#define GRID_W      64
+#define GRID_H      64
+#define GRID_CELLS  (GRID_W * GRID_H)
+#define GRID_MIN_X  (-CANVAS_W)
+#define GRID_MIN_Y  (-CANVAS_H)
+#define EXACT_LOCAL_N 700
+#define MAX_LOCAL_INTERACTIONS 12
+#define MONOPOLE_GRAVITY_N 3200
 
 #define VISC_ALPHA  1.0f
 #define VISC_BETA   2.0f
@@ -67,8 +80,152 @@ static int   core_seeded = 0;
 static float collapse_cx = 0.0f;
 static float collapse_cy = 0.0f;
 
+static int   cell_head[GRID_CELLS];
+static int   cell_next[N_MAX];
+static int   cell_count[GRID_CELLS];
+static int   active_cells[GRID_CELLS];
+static int   active_cell_count = 0;
+static float cell_mass[GRID_CELLS];
+static float cell_cx[GRID_CELLS];
+static float cell_cy[GRID_CELLS];
+static float cell_rho[GRID_CELLS];
+static float cell_p[GRID_CELLS];
+static float cell_vx[GRID_CELLS];
+static float cell_vy[GRID_CELLS];
+static float grid_mass = 0.0f;
+static float grid_cx = 0.0f;
+static float grid_cy = 0.0f;
+
 static inline float clampf(float x, float a, float b) {
     return (x < a) ? a : ((x > b) ? b : x);
+}
+
+static inline int clampi(int x, int a, int b) {
+    return (x < a) ? a : ((x > b) ? b : x);
+}
+
+static inline int cell_ix(float x) {
+    int ix = (int)floorf((x - GRID_MIN_X) / CELL_SIZE);
+    return clampi(ix, 0, GRID_W - 1);
+}
+
+static inline int cell_iy(float y) {
+    int iy = (int)floorf((y - GRID_MIN_Y) / CELL_SIZE);
+    return clampi(iy, 0, GRID_H - 1);
+}
+
+static inline int cell_id_from_xy(int ix, int iy) {
+    return iy * GRID_W + ix;
+}
+
+static int local_candidate_count(int ix0, int iy0) {
+    int total = 0;
+    for (int oy = -1; oy <= 1; oy++) {
+        int iy = iy0 + oy;
+        if (iy < 0 || iy >= GRID_H) continue;
+
+        for (int ox = -1; ox <= 1; ox++) {
+            int ix = ix0 + ox;
+            if (ix < 0 || ix >= GRID_W) continue;
+            total += cell_count[cell_id_from_xy(ix, iy)];
+        }
+    }
+    return total;
+}
+
+static inline int local_sample_step(int total) {
+    if (N <= EXACT_LOCAL_N) return 1;
+    if (total <= MAX_LOCAL_INTERACTIONS) return 1;
+    return (total + MAX_LOCAL_INTERACTIONS - 1) / MAX_LOCAL_INTERACTIONS;
+}
+
+static inline int take_local_sample(int seq, int i, int step) {
+    return step <= 1 || (((seq + i) % step) == 0);
+}
+
+static inline int use_cell_aggregate(int c) {
+    return N > EXACT_LOCAL_N && cell_count[c] > MAX_LOCAL_INTERACTIONS;
+}
+
+static void build_spatial_grid(void) {
+    for (int c = 0; c < GRID_CELLS; c++) {
+        cell_head[c] = -1;
+        cell_count[c] = 0;
+        cell_mass[c] = 0.0f;
+        cell_cx[c] = 0.0f;
+        cell_cy[c] = 0.0f;
+    }
+
+    active_cell_count = 0;
+    grid_mass = 0.0f;
+    grid_cx = 0.0f;
+    grid_cy = 0.0f;
+
+    for (int i = 0; i < N; i++) {
+        if (!alive[i]) {
+            cell_next[i] = -1;
+            continue;
+        }
+
+        int c = cell_id_from_xy(cell_ix(px[i]), cell_iy(py[i]));
+        if (cell_count[c] == 0) {
+            active_cells[active_cell_count++] = c;
+        }
+
+        cell_next[i] = cell_head[c];
+        cell_head[c] = i;
+        cell_count[c]++;
+        cell_mass[c] += g_mass;
+        cell_cx[c] += g_mass * px[i];
+        cell_cy[c] += g_mass * py[i];
+        grid_mass += g_mass;
+        grid_cx += g_mass * px[i];
+        grid_cy += g_mass * py[i];
+    }
+
+    for (int k = 0; k < active_cell_count; k++) {
+        int c = active_cells[k];
+        if (cell_mass[c] > 0.0f) {
+            cell_cx[c] /= cell_mass[c];
+            cell_cy[c] /= cell_mass[c];
+        }
+    }
+
+    if (grid_mass > 0.0f) {
+        grid_cx /= grid_mass;
+        grid_cy /= grid_mass;
+    }
+}
+
+static void update_cell_thermo_stats(void) {
+    for (int k = 0; k < active_cell_count; k++) {
+        int c = active_cells[k];
+        cell_rho[c] = 0.0f;
+        cell_p[c] = 0.0f;
+        cell_vx[c] = 0.0f;
+        cell_vy[c] = 0.0f;
+    }
+
+    for (int i = 0; i < N; i++) {
+        if (!alive[i]) continue;
+
+        int c = cell_id_from_xy(cell_ix(px[i]), cell_iy(py[i]));
+        cell_rho[c] += rho[i];
+        cell_p[c] += p[i];
+        cell_vx[c] += vx[i];
+        cell_vy[c] += vy[i];
+    }
+
+    for (int k = 0; k < active_cell_count; k++) {
+        int c = active_cells[k];
+        if (cell_count[c] > 0) {
+            float inv = 1.0f / (float)cell_count[c];
+            cell_rho[c] *= inv;
+            cell_p[c] *= inv;
+            cell_vx[c] *= inv;
+            cell_vy[c] *= inv;
+        }
+    }
 }
 
 static inline float effective_softening(void) {
@@ -176,22 +333,89 @@ static void core_center(float *cx, float *cy) {
     }
 }
 
+static void recenter_reference_frame(void) {
+    if (diag_n_alive <= 0) return;
+
+    float fx, fy;
+    if (ns_active) {
+        fx = ns_x;
+        fy = ns_y;
+    } else if (phase >= 1) {
+        core_center(&fx, &fy);
+    } else {
+        center_of_mass(&fx, &fy);
+    }
+
+    float dx = fx - CANVAS_W * 0.5f;
+    float dy = fy - CANVAS_H * 0.5f;
+    if (fabsf(dx) < 1e-4f && fabsf(dy) < 1e-4f) return;
+
+    for (int i = 0; i < N; i++) {
+        if (!alive[i]) continue;
+        px[i] -= dx;
+        py[i] -= dy;
+    }
+
+    collapse_cx -= dx;
+    collapse_cy -= dy;
+    if (ns_active) {
+        ns_x -= dx;
+        ns_y -= dy;
+    }
+}
+
 static void update_density_pressure(void) {
     float h2   = 2.0f * g_hsmooth;
     float h2sq = h2 * h2;
+
+    build_spatial_grid();
 
     for (int i = 0; i < N; i++) {
         if (!alive[i]) continue;
 
         rho[i] = 0.01f;
 
-        for (int j = 0; j < N; j++) {
-            if (!alive[j]) continue;
-            float dx = px[i] - px[j];
-            float dy = py[i] - py[j];
-            float r2 = dx*dx + dy*dy;
-            if (r2 < h2sq) {
-                rho[i] += g_mass * kernel(sqrtf(r2));
+        int ix0 = cell_ix(px[i]);
+        int iy0 = cell_iy(py[i]);
+        int local_total = local_candidate_count(ix0, iy0);
+        int sample_step = local_sample_step(local_total);
+        float sample_mass = g_mass * (float)sample_step;
+        int seq = 0;
+
+        for (int oy = -1; oy <= 1; oy++) {
+            int iy = iy0 + oy;
+            if (iy < 0 || iy >= GRID_H) continue;
+
+            for (int ox = -1; ox <= 1; ox++) {
+                int ix = ix0 + ox;
+                if (ix < 0 || ix >= GRID_W) continue;
+
+                int c = cell_id_from_xy(ix, iy);
+                if (use_cell_aggregate(c)) {
+                    float dx = px[i] - cell_cx[c];
+                    float dy = py[i] - cell_cy[c];
+                    float r2 = dx*dx + dy*dy;
+                    if (r2 < h2sq) {
+                        rho[i] += cell_mass[c] * kernel(sqrtf(r2));
+                    }
+                    continue;
+                }
+
+                for (int j = cell_head[c]; j != -1; j = cell_next[j]) {
+                    int is_self = (j == i);
+                    if (!is_self && !take_local_sample(seq, i, sample_step)) {
+                        seq++;
+                        continue;
+                    }
+                    seq++;
+
+                    float dx = px[i] - px[j];
+                    float dy = py[i] - py[j];
+                    float r2 = dx*dx + dy*dy;
+                    if (r2 < h2sq) {
+                        rho[i] += (is_self ? g_mass : sample_mass) * kernel(sqrtf(r2));
+                    }
+                }
             }
         }
 
@@ -202,6 +426,70 @@ static void update_density_pressure(void) {
 
         if (rho[i] < 1e-4f) rho[i] = 1e-4f;
         if (p[i] < 0.0f) p[i] = 0.0f;
+    }
+
+    update_cell_thermo_stats();
+}
+
+static void add_cell_aggregate_force(int i, int c, int self_cell, float soft2, float h2) {
+    float mass = cell_mass[c];
+    if (mass <= 0.0f) return;
+
+    float cx = cell_cx[c];
+    float cy = cell_cy[c];
+
+    if (c == self_cell) {
+        if (mass <= g_mass) return;
+        float reduced_mass = mass - g_mass;
+        cx = (mass * cx - g_mass * px[i]) / reduced_mass;
+        cy = (mass * cy - g_mass * py[i]) / reduced_mass;
+        mass = reduced_mass;
+    }
+
+    float rx = cx - px[i];
+    float ry = cy - py[i];
+    float r2 = rx*rx + ry*ry;
+    float dist = sqrtf(r2 + 1e-12f);
+
+    float inv_dist = 1.0f / sqrtf(r2 + soft2);
+    float invr3 = inv_dist * inv_dist * inv_dist;
+    float ag = g_G * mass * invr3;
+
+    ax[i] += ag * rx;
+    ay[i] += ag * ry;
+
+    if (dist < h2) {
+        float gx, gy;
+        kernel_grad(-rx, -ry, dist, &gx, &gy);
+
+        float rhoi = fmaxf(rho[i], 1e-4f);
+        float rhoj = fmaxf(cell_rho[c], 1e-4f);
+
+        float pi2 = p[i] / (rhoi * rhoi);
+        float pj2 = cell_p[c] / (rhoj * rhoj);
+
+        float dvx = vx[i] - cell_vx[c];
+        float dvy = vy[i] - cell_vy[c];
+        float vij_rij = dvx * (-rx) + dvy * (-ry);
+
+        float Pi_ij = 0.0f;
+        if (vij_rij < 0.0f) {
+            float csi = sqrtf(fmaxf(g_gamma * p[i] / rhoi, 1e-6f));
+            float csj = sqrtf(fmaxf(g_gamma * cell_p[c] / rhoj, 1e-6f));
+            float csij = 0.5f * (csi + csj);
+            float rhoij = 0.5f * (rhoi + rhoj);
+            float muij = g_hsmooth * vij_rij / (r2 + VISC_EPS * g_hsmooth * g_hsmooth);
+            Pi_ij = (-VISC_ALPHA * csij * muij + VISC_BETA * muij * muij) / rhoij;
+            if (Pi_ij < 0.0f) Pi_ij = 0.0f;
+        }
+
+        float coeff = mass * (pi2 + pj2 + Pi_ij);
+        ax[i] -= coeff * gx;
+        ay[i] -= coeff * gy;
+
+        float vij_gradW = dvx * gx + dvy * gy;
+        float e_coeff = 0.5f * mass * (pi2 + pj2 + Pi_ij) * vij_gradW;
+        du_dt[i] += e_coeff;
     }
 }
 
@@ -218,58 +506,138 @@ static void update_forces_and_energy_rhs(void) {
     for (int i = 0; i < N; i++) {
         if (!alive[i]) continue;
 
-        for (int j = i + 1; j < N; j++) {
-            if (!alive[j]) continue;
+        int ix0 = cell_ix(px[i]);
+        int iy0 = cell_iy(py[i]);
+        int self_cell = cell_id_from_xy(ix0, iy0);
+        int local_total = local_candidate_count(ix0, iy0);
+        int sample_step = local_sample_step(local_total);
+        float sample_mass = g_mass * (float)sample_step;
+        int seq = 0;
 
-            float rx = px[j] - px[i];
-            float ry = py[j] - py[i];
-            float r2 = rx*rx + ry*ry;
-            float dist = sqrtf(r2 + 1e-12f);
+        for (int oy = -1; oy <= 1; oy++) {
+            int iy = iy0 + oy;
+            if (iy < 0 || iy >= GRID_H) continue;
 
-            float inv_dist = 1.0f / sqrtf(r2 + soft2);
-            float invr3 = inv_dist * inv_dist * inv_dist;
-            float ag = g_G * g_mass * invr3;
+            for (int ox = -1; ox <= 1; ox++) {
+                int ix = ix0 + ox;
+                if (ix < 0 || ix >= GRID_W) continue;
 
-            ax[i] += ag * rx;
-            ay[i] += ag * ry;
-            ax[j] -= ag * rx;
-            ay[j] -= ag * ry;
-
-            if (dist < h2) {
-                float gx, gy;
-                kernel_grad(-rx, -ry, dist, &gx, &gy);
-
-                float rhoi = fmaxf(rho[i], 1e-4f);
-                float rhoj = fmaxf(rho[j], 1e-4f);
-
-                float pi2 = p[i] / (rhoi * rhoi);
-                float pj2 = p[j] / (rhoj * rhoj);
-
-                float dvx = vx[i] - vx[j];
-                float dvy = vy[i] - vy[j];
-                float vij_rij = dvx * (-rx) + dvy * (-ry);
-
-                float Pi_ij = 0.0f;
-                if (vij_rij < 0.0f) {
-                    float csi = sqrtf(fmaxf(g_gamma * p[i] / rhoi, 1e-6f));
-                    float csj = sqrtf(fmaxf(g_gamma * p[j] / rhoj, 1e-6f));
-                    float csij = 0.5f * (csi + csj);
-                    float rhoij = 0.5f * (rhoi + rhoj);
-                    float muij = g_hsmooth * vij_rij / (r2 + VISC_EPS * g_hsmooth * g_hsmooth);
-                    Pi_ij = (-VISC_ALPHA * csij * muij + VISC_BETA * muij * muij) / rhoij;
-                    if (Pi_ij < 0.0f) Pi_ij = 0.0f;
+                int c = cell_id_from_xy(ix, iy);
+                if (use_cell_aggregate(c)) {
+                    add_cell_aggregate_force(i, c, self_cell, soft2, h2);
+                    continue;
                 }
 
-                float coeff = g_mass * (pi2 + pj2 + Pi_ij);
-                ax[i] -= coeff * gx;
-                ay[i] -= coeff * gy;
-                ax[j] += coeff * gx;
-                ay[j] += coeff * gy;
+                for (int j = cell_head[c]; j != -1; j = cell_next[j]) {
+                    if (j == i) {
+                        seq++;
+                        continue;
+                    }
+                    if (!take_local_sample(seq, i, sample_step)) {
+                        seq++;
+                        continue;
+                    }
+                    seq++;
 
-                float vij_gradW = dvx * gx + dvy * gy;
-                float e_coeff = 0.5f * g_mass * (pi2 + pj2 + Pi_ij) * vij_gradW;
-                du_dt[i] += e_coeff;
-                du_dt[j] += e_coeff;
+                    float rx = px[j] - px[i];
+                    float ry = py[j] - py[i];
+                    float r2 = rx*rx + ry*ry;
+                    float dist = sqrtf(r2 + 1e-12f);
+
+                    float inv_dist = 1.0f / sqrtf(r2 + soft2);
+                    float invr3 = inv_dist * inv_dist * inv_dist;
+                    float ag = g_G * sample_mass * invr3;
+
+                    ax[i] += ag * rx;
+                    ay[i] += ag * ry;
+
+                    if (dist < h2) {
+                        float gx, gy;
+                        kernel_grad(-rx, -ry, dist, &gx, &gy);
+
+                        float rhoi = fmaxf(rho[i], 1e-4f);
+                        float rhoj = fmaxf(rho[j], 1e-4f);
+
+                        float pi2 = p[i] / (rhoi * rhoi);
+                        float pj2 = p[j] / (rhoj * rhoj);
+
+                        float dvx = vx[i] - vx[j];
+                        float dvy = vy[i] - vy[j];
+                        float vij_rij = dvx * (-rx) + dvy * (-ry);
+
+                        float Pi_ij = 0.0f;
+                        if (vij_rij < 0.0f) {
+                            float csi = sqrtf(fmaxf(g_gamma * p[i] / rhoi, 1e-6f));
+                            float csj = sqrtf(fmaxf(g_gamma * p[j] / rhoj, 1e-6f));
+                            float csij = 0.5f * (csi + csj);
+                            float rhoij = 0.5f * (rhoi + rhoj);
+                            float muij = g_hsmooth * vij_rij / (r2 + VISC_EPS * g_hsmooth * g_hsmooth);
+                            Pi_ij = (-VISC_ALPHA * csij * muij + VISC_BETA * muij * muij) / rhoij;
+                            if (Pi_ij < 0.0f) Pi_ij = 0.0f;
+                        }
+
+                        float coeff = sample_mass * (pi2 + pj2 + Pi_ij);
+                        ax[i] -= coeff * gx;
+                        ay[i] -= coeff * gy;
+
+                        float vij_gradW = dvx * gx + dvy * gy;
+                        float e_coeff = 0.5f * sample_mass * (pi2 + pj2 + Pi_ij) * vij_gradW;
+                        du_dt[i] += e_coeff;
+                    }
+                }
+            }
+        }
+
+        if (N >= MONOPOLE_GRAVITY_N) {
+            float near_mass = 0.0f;
+            float near_xsum = 0.0f;
+            float near_ysum = 0.0f;
+
+            for (int oy = -1; oy <= 1; oy++) {
+                int iy = iy0 + oy;
+                if (iy < 0 || iy >= GRID_H) continue;
+
+                for (int ox = -1; ox <= 1; ox++) {
+                    int ix = ix0 + ox;
+                    if (ix < 0 || ix >= GRID_W) continue;
+
+                    int c = cell_id_from_xy(ix, iy);
+                    near_mass += cell_mass[c];
+                    near_xsum += cell_mass[c] * cell_cx[c];
+                    near_ysum += cell_mass[c] * cell_cy[c];
+                }
+            }
+
+            float far_mass = grid_mass - near_mass;
+            if (far_mass > 1e-6f) {
+                float far_cx = (grid_mass * grid_cx - near_xsum) / far_mass;
+                float far_cy = (grid_mass * grid_cy - near_ysum) / far_mass;
+                float rx = far_cx - px[i];
+                float ry = far_cy - py[i];
+                float r2 = rx*rx + ry*ry;
+                float inv_dist = 1.0f / sqrtf(r2 + soft2);
+                float invr3 = inv_dist * inv_dist * inv_dist;
+                float ag = g_G * far_mass * invr3;
+
+                ax[i] += ag * rx;
+                ay[i] += ag * ry;
+            }
+        } else {
+            for (int k = 0; k < active_cell_count; k++) {
+                int c = active_cells[k];
+                int cx = c % GRID_W;
+                int cy = c / GRID_W;
+                if (abs(cx - ix0) <= 1 && abs(cy - iy0) <= 1) continue;
+
+                float rx = cell_cx[c] - px[i];
+                float ry = cell_cy[c] - py[i];
+                float r2 = rx*rx + ry*ry;
+                float inv_dist = 1.0f / sqrtf(r2 + soft2);
+                float invr3 = inv_dist * inv_dist * inv_dist;
+                float ag = g_G * cell_mass[c] * invr3;
+
+                ax[i] += ag * rx;
+                ay[i] += ag * ry;
             }
         }
     }
@@ -297,6 +665,7 @@ void sim_set_params(float g_grav, float kpress, float cool, float soft) {
 EMSCRIPTEN_KEEPALIVE
 void sim_init(int n_req, float R, float omega0, float u0) {
     N         = (n_req > N_MAX) ? N_MAX : ((n_req < 1) ? 1 : n_req);
+    g_mass    = REF_N / fmaxf((float)N, 1.0f);
     sim_time  = 0.0f;
     phase     = 0;
     ns_active = 0;
@@ -521,6 +890,7 @@ void sim_step(int iterations) {
             recount_alive();
         }
 
+        recenter_reference_frame();
         sim_time += dt;
     }
 }
@@ -567,8 +937,15 @@ float* sim_get_diagnostics(void) {
 
 EMSCRIPTEN_KEEPALIVE
 float* sim_get_state(void) {
-    float cmx, cmy;
-    center_of_mass(&cmx, &cmy);
+    float focus_x, focus_y;
+    if (ns_active) {
+        focus_x = ns_x;
+        focus_y = ns_y;
+    } else if (phase >= 1) {
+        core_center(&focus_x, &focus_y);
+    } else {
+        center_of_mass(&focus_x, &focus_y);
+    }
 
     recount_alive();
 
@@ -577,8 +954,8 @@ float* sim_get_state(void) {
     state_buf[2] = ns_x;
     state_buf[3] = ns_y;
     state_buf[4] = ns_pulse;
-    state_buf[5] = cmx;
-    state_buf[6] = cmy;
+    state_buf[5] = focus_x;
+    state_buf[6] = focus_y;
     state_buf[7] = 0.0f;
 
     int out = 8;

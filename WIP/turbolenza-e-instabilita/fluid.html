@@ -242,13 +242,13 @@ button.on2 {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #ece8e0;
+  background: #071118;
 }
 
 #simCanvas {
   display: block; width: 100%; height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  image-rendering: auto;
+  filter: contrast(1.06) saturate(1.18);
 }
 
 #overCanvas {
@@ -511,6 +511,10 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
         <div class="ctrl-row"><span>Viscosità ν</span><span class="v" id="vvisc">8×10⁻⁴</span></div>
         <input type="range" id="slVisc" min="0.0001" max="0.006" step="0.0001" value="0.0008">
       </div>
+      <div class="ctrl">
+        <div class="ctrl-row"><span>Velocità simulazione</span><span class="v" id="vspeed">1.0×</span></div>
+        <input type="range" id="slSpeed" min="0.25" max="6" step="0.25" value="1">
+      </div>
     </div>
 
     <!-- Visualizzazione -->
@@ -680,9 +684,13 @@ let scene   = 0;
 let vel     = 0.15;
 let visc    = 0.0008;
 let obstR   = 12;
+let lastNonKhVel = vel;
+let lastNonKhVisc = visc;
 
 let lastTs  = 0, fps = 0;
 let stepsPerFrame = 2;
+let stepBudget = 0;
+let simSpeed = 1.0;
 
 // Puntatori (offset in HEAPF32/HEAPU8)
 let pUx, pUy, pVort, pPres, pDye, pWall;
@@ -718,7 +726,22 @@ function getPtrs() {
 // ═══════════════════════════════════════════════════════════
 // SCENARI
 // ═══════════════════════════════════════════════════════════
+function setFlowParams(newVel, newVisc) {
+  vel = newVel;
+  visc = newVisc;
+  document.getElementById('slVel').value = vel;
+  document.getElementById('slVisc').value = visc;
+  document.getElementById('vv').textContent = vel.toFixed(2);
+  document.getElementById('vvisc').textContent = visc.toExponential(1);
+  if (M) M._set_params(vel, visc);
+}
+
 function loadScene(id) {
+  const prevScene = scene;
+  if (prevScene !== 5) {
+    lastNonKhVel = vel;
+    lastNonKhVisc = visc;
+  }
   scene = id;
   // Deseleziona tutti i bottoni scenario
   for (let i = 0; i < 6; i++) {
@@ -727,6 +750,14 @@ function loadScene(id) {
   }
 
   if (!M) return;
+
+  if (id === 5) {
+    setFlowParams(0.18, 0.00035);
+    setVis('dye');
+  } else if (prevScene === 5) {
+    setFlowParams(lastNonKhVel, lastNonKhVisc);
+    if (vis === 'dye') setVis('vorticity');
+  }
 
   if (id === 5) {
     // Kelvin-Helmholtz: nessun ostacolo, init campo speciale
@@ -742,44 +773,54 @@ function loadScene(id) {
   }
   getPtrs();
   step_n = 0;
+  stepBudget = 0;
 }
 
 // ═══════════════════════════════════════════════════════════
 // COLORMAP
 // ═══════════════════════════════════════════════════════════
-// Identica alla prima versione JS che funzionava
+function clamp01(x) {
+  return Math.max(0, Math.min(1, x));
+}
+
+function mixColor(a, b, t) {
+  const u = clamp01(t);
+  return [
+    (a[0] + (b[0] - a[0]) * u)|0,
+    (a[1] + (b[1] - a[1]) * u)|0,
+    (a[2] + (b[2] - a[2]) * u)|0,
+  ];
+}
+
 function colorVort(v, maxV) {
-  const t = Math.max(-1, Math.min(1, v / maxV));
-  let r, g, b;
-  if (t > 0) {
-    r = (t * t * 60)|0;
-    g = (t * 130)|0;
-    b = Math.min(255, t * 255)|0;
-    if (t > 0.5) {
-      r = Math.min(255, r + ((t-0.5)*2*100)|0);
-      g = Math.min(255, g + ((t-0.5)*2*60 )|0);
-    }
-  } else {
-    const s = -t;
-    r = Math.min(255, s * 255)|0;
-    g = (s * s * 80)|0;
-    b = (s * s * 20)|0;
-    if (s > 0.5) g = Math.min(255, g + ((s-0.5)*2*80)|0);
-  }
-  return [r, g, b];
+  const t = Math.max(-1, Math.min(1, v / Math.max(maxV, 1e-6)));
+  const s = Math.pow(Math.abs(t), 0.62);
+  const base = [6, 13, 18];
+  const mid  = t >= 0 ? [22, 118, 178] : [194, 58, 45];
+  const hi   = t >= 0 ? [168, 232, 255] : [255, 177, 94];
+  return s < 0.72 ? mixColor(base, mid, s / 0.72) : mixColor(mid, hi, (s - 0.72) / 0.28);
 }
 
 function colorVel(v, maxV) {
-  const t = Math.min(1, v / Math.max(maxV*0.8, 1e-4));
-  const r = Math.min(255, t < 0.5 ? t*2*200 : 200+(t-0.5)*2*55)|0;
-  const g = Math.min(255, t < 0.25 ? 0 : (t-0.25)/0.75*230)|0;
-  const b = Math.min(255, t < 0.15 ? t/0.15*160 : Math.max(0,160-(t-0.15)/0.85*160))|0;
-  return [r, g, b];
+  const t = Math.pow(Math.min(1, v / Math.max(maxV*0.82, 1e-4)), 0.7);
+  if (t < 0.55) return mixColor([5, 12, 18], [20, 135, 122], t / 0.55);
+  return mixColor([20, 135, 122], [255, 211, 105], (t - 0.55) / 0.45);
 }
 
 function colorPres(v, maxV) {
   const t = Math.max(-1, Math.min(1, v / Math.max(maxV*0.6, 1e-4)));
-  return [t>0?(t*200)|0:0, 0, t<0?((-t)*200)|0:0];
+  const s = Math.pow(Math.abs(t), 0.72);
+  return t >= 0 ? mixColor([9, 13, 21], [236, 92, 68], s) : mixColor([9, 13, 21], [72, 161, 230], s);
+}
+
+function colorDye(d) {
+  const t = clamp01(d);
+  let [r,g,b] = mixColor([7, 18, 26], [246, 214, 136], t);
+  const edge = clamp01(1 - Math.abs(t - 0.5) / 0.14);
+  r = Math.min(255, r + edge * 78)|0;
+  g = Math.min(255, g + edge * 96)|0;
+  b = Math.min(255, b + edge * 118)|0;
+  return [r,g,b];
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -840,22 +881,28 @@ function render() {
       const k  = i + j*NX;
       const pi = k * 4;
       if (U[pWall+k]) {
-        pixData[pi]=120; pixData[pi+1]=115; pixData[pi+2]=105; pixData[pi+3]=255;
+        pixData[pi]=45; pixData[pi+1]=49; pixData[pi+2]=50; pixData[pi+3]=255;
         continue;
       }
       let r, g, b;
       if (vis === 'vorticity') {
-        [r,g,b] = colorVort(F[pVort+k], maxV * 0.5);
-        const s = F[pDye+k] * 25;
-        r=Math.min(255,r+s|0); g=Math.min(255,g+s|0); b=Math.min(255,b+s|0);
+        [r,g,b] = colorVort(F[pVort+k], maxV * 0.42);
+        if (scene === 5) {
+          const edge = clamp01(1 - Math.abs(clamp01(F[pDye+k]) - 0.5) / 0.12);
+          r = Math.min(255, r + edge * 70)|0;
+          g = Math.min(255, g + edge * 84)|0;
+          b = Math.min(255, b + edge * 92)|0;
+        } else {
+          const s = Math.min(55, F[pDye+k] * 42);
+          r=Math.min(255,r+s|0); g=Math.min(255,g+s|0); b=Math.min(255,b+s|0);
+        }
       } else if (vis === 'velocity') {
         const spd = Math.sqrt(F[pUx+k]*F[pUx+k]+F[pUy+k]*F[pUy+k]);
         [r,g,b] = colorVel(spd, maxVel);
       } else if (vis === 'pressure') {
         [r,g,b] = colorPres(F[pPres+k], maxP);
       } else {
-        const d = Math.min(1, F[pDye+k]);
-        r=(220-d*160)|0; g=(215-d*80)|0; b=(200+d*30)|0;
+        [r,g,b] = colorDye(F[pDye+k]);
       }
       pixData[pi]=r; pixData[pi+1]=g; pixData[pi+2]=b; pixData[pi+3]=255;
     }
@@ -882,6 +929,53 @@ function updateHUD() {
   lb.style.background = color + '11';
 }
 
+function drawArrow(ctx, x, y, dx, dy) {
+  ctx.moveTo(x - dx * 0.32, y - dy * 0.32);
+  ctx.lineTo(x + dx * 0.68, y + dy * 0.68);
+  const a = Math.atan2(dy, dx);
+  const hx = x + dx * 0.68;
+  const hy = y + dy * 0.68;
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(hx - Math.cos(a - 0.55) * 4, hy - Math.sin(a - 0.55) * 4);
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(hx - Math.cos(a + 0.55) * 4, hy - Math.sin(a + 0.55) * 4);
+}
+
+function drawOverlay() {
+  if (!M || !oCtx || !oCanvas.width || !oCanvas.height) return;
+  const w = oCanvas.width;
+  const h = oCanvas.height;
+  const F = M.HEAPF32;
+  const U = M.HEAPU8;
+
+  oCtx.clearRect(0, 0, w, h);
+
+
+  const stride = w < 720 ? 42 : 34;
+  oCtx.save();
+  oCtx.lineWidth = 1;
+  oCtx.strokeStyle = 'rgba(238, 248, 255, 0.34)';
+  oCtx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  oCtx.shadowBlur = 3;
+  oCtx.beginPath();
+  for (let y = stride * 0.65; y < h - stride * 0.35; y += stride) {
+    for (let x = stride * 0.65; x < w - stride * 0.35; x += stride) {
+      const i = Math.max(1, Math.min(NX-2, (x / w * NX)|0));
+      const j = Math.max(1, Math.min(NY-2, (y / h * NY)|0));
+      const k = i + j*NX;
+      if (U[pWall+k]) continue;
+      const ux = F[pUx+k];
+      const uy = F[pUy+k];
+      const spd = Math.sqrt(ux*ux + uy*uy);
+      if (spd < 0.002) continue;
+      const len = Math.min(stride * 0.42, Math.max(4, spd * 72));
+      drawArrow(oCtx, x, y, ux / spd * len, uy / spd * len);
+    }
+  }
+  oCtx.stroke();
+  oCtx.restore();
+}
+
 // ═══════════════════════════════════════════════════════════
 // LOOP
 // ═══════════════════════════════════════════════════════════
@@ -894,13 +988,17 @@ function loop(ts) {
   document.getElementById('stepTxt').textContent = 'step ' + step_n;
 
   if (!paused && M) {
-    stepsPerFrame = fps < 38 ? 1 : (fps > 72 ? 3 : 2);
+    const baseSteps = scene === 5 ? 0.34 : (fps < 38 ? 1 : (fps > 72 ? 3 : 2));
+    stepBudget += baseSteps * simSpeed;
+    stepsPerFrame = Math.min(18, Math.floor(stepBudget));
+    stepBudget -= stepsPerFrame;
     for (let s = 0; s < stepsPerFrame; s++) M._step();
     // ricarica dye all'inlet (scenari con flusso da sx)
-    if (scene !== 5) M._refresh_inlet_dye(20);
+    if (scene !== 5) M._refresh_inlet_dye(12);
     step_n += stepsPerFrame;
   }
   render();
+  drawOverlay();
   updateHUD();
 }
 
@@ -908,6 +1006,7 @@ function loop(ts) {
 // MOUSE
 // ═══════════════════════════════════════════════════════════
 const oCanvas = document.getElementById('overCanvas');
+const oCtx = oCanvas.getContext('2d');
 let mDown = false, mX = 0, mY = 0;
 
 function simXY(e) {
@@ -942,6 +1041,12 @@ document.getElementById('slVisc').oninput = function() {
   const e = visc.toExponential(1);
   document.getElementById('vvisc').textContent = e;
   if (M) M._set_params(vel, visc);
+};
+
+document.getElementById('slSpeed').oninput = function() {
+  simSpeed = parseFloat(this.value);
+  stepBudget = 0;
+  document.getElementById('vspeed').textContent = simSpeed.toFixed(2).replace(/\.00$/, '.0') + '×';
 };
 
 function setVis(v) {

@@ -36,6 +36,7 @@ unsigned char _wall[N];       /* maschera solido (1=ostacolo)   */
 static float inlet_vel = 0.15f;
 static float viscosity  = 0.0008f;
 static float dt         = 1.0f;
+static int kelvin_mode  = 0;
 
 /* ── Indice con clamp ───────────────────────────────────────── */
 static inline int IX(int x, int y) {
@@ -57,6 +58,23 @@ static inline int IX(int x, int y) {
 static void apply_bc(float *ux, float *uy) {
     int i, j;
 
+    if (kelvin_mode) {
+        /* Shear layer: evita che l'inlet uniforme cancelli il controflusso. */
+        for (j = 1; j < NY - 1; j++) {
+            ux[IX(0, j)]    = ux[IX(NX-2, j)];
+            uy[IX(0, j)]    = uy[IX(NX-2, j)];
+            ux[IX(NX-1, j)] = ux[IX(1, j)];
+            uy[IX(NX-1, j)] = uy[IX(1, j)];
+        }
+        for (i = 0; i < NX; i++) {
+            ux[IX(i, 0)]    = ux[IX(i, 1)];
+            uy[IX(i, 0)]    = 0.0f;
+            ux[IX(i, NY-1)] = ux[IX(i, NY-2)];
+            uy[IX(i, NY-1)] = 0.0f;
+        }
+        return;
+    }
+
     /* Inlet */
     for (j = 1; j < NY - 1; j++) {
         ux[IX(0, j)] = inlet_vel;
@@ -75,6 +93,20 @@ static void apply_bc(float *ux, float *uy) {
     /* Ostacoli: no-slip */
     for (i = 0; i < N; i++) {
         if (_wall[i]) { ux[i] = 0.0f; uy[i] = 0.0f; }
+    }
+}
+
+static void apply_dye_bc(float *dye) {
+    int i, j;
+    if (kelvin_mode) {
+        for (j = 1; j < NY - 1; j++) {
+            dye[IX(0, j)]    = dye[IX(NX-2, j)];
+            dye[IX(NX-1, j)] = dye[IX(1, j)];
+        }
+        for (i = 0; i < NX; i++) {
+            dye[IX(i, 0)]    = dye[IX(i, 1)];
+            dye[IX(i, NY-1)] = dye[IX(i, NY-2)];
+        }
     }
 }
 
@@ -116,14 +148,20 @@ static void advect(float *dst, const float *src,
             float xi = (float)i - dt_ * ufx[IX(i,j)];
             float yi = (float)j - dt_ * ufy[IX(i,j)];
 
-            /* clamp entro il dominio */
-            if (xi < 0.5f)        xi = 0.5f;
-            if (xi > NX - 1.5f)   xi = NX - 1.5f;
+            if (kelvin_mode) {
+                float span = (float)(NX - 2);
+                while (xi < 1.0f)      xi += span;
+                while (xi > NX - 2.0f) xi -= span;
+            } else {
+                if (xi < 0.5f)        xi = 0.5f;
+                if (xi > NX - 1.5f)   xi = NX - 1.5f;
+            }
             if (yi < 0.5f)        yi = 0.5f;
             if (yi > NY - 1.5f)   yi = NY - 1.5f;
 
             int i0 = (int)xi, i1 = i0 + 1;
             int j0 = (int)yi, j1 = j0 + 1;
+            if (kelvin_mode && i1 >= NX - 1) i1 = 1;
             float sx = xi - i0, sy = yi - j0;
 
             dst[IX(i,j)] =
@@ -208,9 +246,10 @@ void step(void) {
 
     /* decay + ricarica inlet */
     for (k = 0; k < N; k++) {
-        _dye0[k] *= 0.998f;
+        _dye0[k] *= kelvin_mode ? 0.9995f : 0.998f;
         if (_wall[k]) _dye0[k] = 0.0f;
     }
+    apply_dye_bc(_dye0);
 
     /* swap dye */
     memcpy(_dye, _dye0, N * sizeof(float));
@@ -300,7 +339,7 @@ void reset_fields(void) {
 
     /* Dye a strisce all'inlet */
     for (j = 1; j < NY-1; j++)
-        _dye[IX(0,j)] = ((j / 20) % 2 == 0) ? 1.0f : 0.0f;
+        _dye[IX(0,j)] = ((j / 12) % 2 == 0) ? 1.0f : 0.0f;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -320,6 +359,7 @@ static void add_walls(void) {
 void build_obstacle(int scenario, int param) {
     int i, j;
     memset(_wall, 0, N);
+    kelvin_mode = (scenario == 5);
 
     int cx = NX * 28 / 100;
     int cy = NY / 2;
@@ -395,27 +435,36 @@ void init_kelvin_helmholtz(void) {
     int i, j;
     memset(_ux,   0, N * sizeof(float));
     memset(_uy,   0, N * sizeof(float));
+    memset(_ux0,  0, N * sizeof(float));
+    memset(_uy0,  0, N * sizeof(float));
     memset(_pres, 0, N * sizeof(float));
     memset(_dye,  0, N * sizeof(float));
+    memset(_dye0, 0, N * sizeof(float));
+    memset(_vort, 0, N * sizeof(float));
 
-    float v0 = inlet_vel * 0.8f;
+    float v0 = inlet_vel * 0.84f;
     float pi2 = 6.28318f;
 
     for (j = 0; j < NY; j++) {
-        /* Profilo smussato dello shear layer */
-        float yc  = (float)(j - NY/2) / (NY * 0.04f);
-        float sgn = tanhf(yc);     /* da -1 a +1 attraverso l'interfaccia */
-
         for (i = 0; i < NX; i++) {
+            float x = (float)i / (float)NX;
+            float mode = sinf(pi2 * 6.0f * x);
+            float harmonic = sinf(pi2 * 12.0f * x + 0.35f);
+            float fine = sinf(pi2 * 18.0f * x + 1.10f);
+            float iface = NY * 0.50f + 5.6f * mode + 0.75f * harmonic;
+            float yc = ((float)j - iface) / (NY * 0.031f);
+            float sgn = tanhf(yc);
+            float band = expf(-0.48f * yc * yc);
+
             if (_wall[IX(i,j)]) continue;
-            /* Perturbazione sinusoidale per seedare il modo instabile */
-            float pert = 0.03f * v0 * sinf(pi2 * 4.0f * i / NX);
-            _ux[IX(i,j)] = v0 * sgn;
+            /* Dominante pulita a sei onde: roll-up KH leggibili invece di creste spezzate. */
+            float pert = v0 * band * (0.105f * mode + 0.018f * harmonic + 0.006f * fine);
+            _ux[IX(i,j)] = -v0 * sgn;
             _uy[IX(i,j)] = pert;
-            /* Dye: sopra bianco, sotto nero */
-            _dye[IX(i,j)] = (j < NY/2) ? 1.0f : 0.0f;
+            _dye[IX(i,j)] = 0.5f - 0.5f * tanhf(yc * 1.28f);
         }
     }
+    apply_dye_bc(_dye);
 }
 
 /* Ricarica il dye all'inlet per scenari con flusso da sinistra */

@@ -149,14 +149,6 @@ details.form summary:hover{color:var(--acc);}
         <button class="bs" onclick="pauseSim()">⏸ Pausa</button>
         <button class="bd" onclick="resetSim()">↺ Reset</button>
       </div>
-      <div class="sr" style="margin-top:8px">
-        <label>Velocità particelle <span id="spd-val">3</span></label>
-        <input type="range" id="spd-sl" min="1" max="10" step="1" value="3" oninput="updateSpeed(this.value)">
-      </div>
-      <div class="sr">
-        <label>N. particelle <span id="np-val">20</span></label>
-        <input type="range" id="np-sl" min="5" max="60" step="5" value="20" oninput="updateNP(this.value)">
-      </div>
       <label style="font-size:.71rem;display:flex;align-items:center;gap:5px;cursor:pointer;margin-top:4px">
         <input type="checkbox" id="show-g" onchange="toggleGraphs(this.checked)"> Grafici V(t)/I(t)
       </label>
@@ -234,7 +226,7 @@ const S={
   components:[],running:false,paused:false,
   simTime:0,visPhase:0,visFreq:0.4,simSpeed:3,numParticles:20,
   particles:[],graphV:[],graphI:[],showGraphs:false,
-  vc:{},il:{},ilN:{},heat:{},lastSol:null,compId:0,
+  vc:{},il:{},ilN:{},heat:{},lastSol:null,maxFlowI:0,compId:0,
 };
 
 // ══════ GEOMETRY ══════
@@ -282,6 +274,133 @@ function dps(px,py,s){
   if(l2<1)return Math.hypot(px-s.x1,py-s.y1);
   const t=Math.max(0,Math.min(1,((px-s.x1)*dx+(py-s.y1)*dy)/l2));
   return Math.hypot(px-s.x1-t*dx,py-s.y1-t*dy);
+}
+
+function topNode(i){return`t${i}`;}
+function botNode(i){return`b${i}`;}
+function allNodes(){
+  const nodes=[];
+  for(let i=0;i<=S.meshCount;i++){nodes.push(topNode(i),botNode(i));}
+  return nodes;
+}
+function segNodes(s){
+  if(!s)return null;
+  const m=s.mi,N=S.meshCount;
+  if(s.id==='0-3')return[topNode(0),botNode(0)];
+  if(s.si===0)return[topNode(m),topNode(m+1)];
+  if(s.si===2)return[botNode(m),botNode(m+1)];
+  if(s.si===1)return[topNode(N),botNode(N)];
+  if(s.si===3)return[topNode(m),botNode(m)];
+  return null;
+}
+function makeUF(nodes){
+  const p={};nodes.forEach(n=>p[n]=n);
+  const find=n=>{while(p[n]!==n){p[n]=p[p[n]];n=p[n];}return n;};
+  const union=(a,b)=>{a=find(a);b=find(b);if(a!==b)p[b]=a;};
+  return{find,union};
+}
+function realEquivalentNetwork(kind){
+  const uf=makeUF(allNodes());
+  for(const s of segs){
+    if(s.type==='gen')continue;
+    const ns=segNodes(s);if(!ns)continue;
+    const c=s.compId?getComp(s.compId):null;
+    if(!c||c.type!==kind)uf.union(ns[0],ns[1]);
+  }
+  const a=uf.find(topNode(0)),b=uf.find(botNode(0)),edges=[];
+  for(const s of segs){
+    if(s.type==='gen'||!s.compId)continue;
+    const c=getComp(s.compId);if(!c||c.type!==kind)continue;
+    const ns=segNodes(s);if(!ns)continue;
+    const n1=uf.find(ns[0]),n2=uf.find(ns[1]);
+    if(n1!==n2)edges.push({a:n1,b:n2,value:c.value});
+  }
+  return{a,b,edges};
+}
+function acNetwork(omega){
+  const uf=makeUF(allNodes());
+  for(const s of segs){
+    if(s.type==='gen'||s.compId)continue;
+    const ns=segNodes(s);if(ns)uf.union(ns[0],ns[1]);
+  }
+  const a=uf.find(topNode(0)),b=uf.find(botNode(0)),edges=[];
+  for(const s of segs){
+    if(s.type==='gen'||!s.compId)continue;
+    const c=getComp(s.compId);if(!c)continue;
+    const ns=segNodes(s);if(!ns)continue;
+    const n1=uf.find(ns[0]),n2=uf.find(ns[1]);
+    if(n1!==n2)edges.push({a:n1,b:n2,y:Cdiv(C(1),Zimp(c,omega))});
+  }
+  return{a,b,edges};
+}
+function reachable(edges,start){
+  const adj={};
+  for(const e of edges){(adj[e.a]||(adj[e.a]=[])).push(e.b);(adj[e.b]||(adj[e.b]=[])).push(e.a);}
+  const seen=new Set([start]),q=[start];
+  while(q.length){const n=q.shift();for(const nb of adj[n]||[])if(!seen.has(nb)){seen.add(nb);q.push(nb);}}
+  return seen;
+}
+function solveYReal(net,toY){
+  if(net.a===net.b)return Infinity;
+  const edges=net.edges.map(e=>({a:e.a,b:e.b,y:toY(e.value)})).filter(e=>isFinite(e.y)&&e.y>0);
+  if(!edges.length)return 0;
+  const active=reachable(edges,net.a);
+  if(!active.has(net.b))return 0;
+  const use=edges.filter(e=>active.has(e.a)&&active.has(e.b));
+  const unk=[...active].filter(n=>n!==net.a&&n!==net.b);
+  const idx=new Map(unk.map((n,i)=>[n,i]));
+  const A=Array.from({length:unk.length},()=>Array(unk.length).fill(0)),rhs=Array(unk.length).fill(0);
+  const kv=n=>n===net.a?1:n===net.b?0:null;
+  for(const e of use){
+    const ka=kv(e.a),kb=kv(e.b),ia=idx.get(e.a),ib=idx.get(e.b);
+    if(ia!==undefined){A[ia][ia]+=e.y;if(ib!==undefined)A[ia][ib]-=e.y;else rhs[ia]+=e.y*kb;}
+    if(ib!==undefined){A[ib][ib]+=e.y;if(ia!==undefined)A[ib][ia]-=e.y;else rhs[ib]+=e.y*ka;}
+  }
+  const sol=unk.length?gaussR(A,rhs,unk.length):[];
+  const V=n=>n===net.a?1:n===net.b?0:sol[idx.get(n)]||0;
+  let I=0;
+  for(const e of use){
+    if(e.a===net.a)I+=e.y*(1-V(e.b));
+    else if(e.b===net.a)I+=e.y*(1-V(e.a));
+  }
+  return Math.max(0,I);
+}
+function solveYC(net){
+  if(net.a===net.b)return null;
+  const edges=net.edges.filter(e=>Cabs(e.y)>1e-30);
+  if(!edges.length)return C(0);
+  const active=reachable(edges,net.a);
+  if(!active.has(net.b))return C(0);
+  const use=edges.filter(e=>active.has(e.a)&&active.has(e.b));
+  const unk=[...active].filter(n=>n!==net.a&&n!==net.b);
+  const idx=new Map(unk.map((n,i)=>[n,i]));
+  const A=Array.from({length:unk.length},()=>Array.from({length:unk.length},()=>C(0)));
+  const rhs=Array.from({length:unk.length},()=>C(0));
+  const kv=n=>n===net.a?C(1):n===net.b?C(0):null;
+  for(const e of use){
+    const ka=kv(e.a),kb=kv(e.b),ia=idx.get(e.a),ib=idx.get(e.b);
+    if(ia!==undefined){A[ia][ia]=Cadd(A[ia][ia],e.y);if(ib!==undefined)A[ia][ib]=Csub(A[ia][ib],e.y);else rhs[ia]=Cadd(rhs[ia],Cmul(e.y,kb));}
+    if(ib!==undefined){A[ib][ib]=Cadd(A[ib][ib],e.y);if(ia!==undefined)A[ib][ia]=Csub(A[ib][ia],e.y);else rhs[ib]=Cadd(rhs[ib],Cmul(e.y,ka));}
+  }
+  const sol=unk.length?gaussC(A,rhs,unk.length):[];
+  const V=n=>n===net.a?C(1):n===net.b?C(0):(sol[idx.get(n)]||C(0));
+  let I=C(0);
+  for(const e of use){
+    if(e.a===net.a)I=Cadd(I,Cmul(e.y,Csub(C(1),V(e.b))));
+    else if(e.b===net.a)I=Cadd(I,Cmul(e.y,Csub(C(1),V(e.a))));
+  }
+  return I;
+}
+function equivOf(kind){
+  const y=solveYReal(realEquivalentNetwork(kind),v=>kind==='C'?v:1/v);
+  if(y===Infinity)return kind==='C'?Infinity:0;
+  if(y<=1e-30)return 0;
+  return kind==='C'?y:1/y;
+}
+function equivalentZAC(omega){
+  const y=solveYC(acNetwork(omega));
+  if(y===null)return C(0);
+  return Cabs(y)>1e-30?Cdiv(C(1),y):C(Infinity);
 }
 
 // Segment contains point (px,py)? — for generator hide check
@@ -399,22 +518,31 @@ function drawC(s,mx,my,ang,len){
 function drawEfield(s,mx,my,ang){
   const comp=getComp(s.compId);if(!comp)return;
   const charge=Math.min(Math.abs(comp._chargeNorm||0),1);if(charge<0.02)return;
+  const pol=(comp._V||0)>=0?1:-1;
   ctx.save();ctx.translate(mx,my);ctx.rotate(ang);
   const gap=10,pl=26;
   const nDots=Math.round(2+charge*7);
   for(let i=0;i<nDots;i++){
     const yy=-pl*.44+pl*.88*i/(Math.max(nDots-1,1));
-    ctx.fillStyle=`rgba(192,74,26,${.35+charge*.65})`;ctx.beginPath();ctx.arc(-gap/2-5,yy,2.8,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 6px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+',-(gap/2)-5,yy);
-    ctx.fillStyle=`rgba(26,74,138,${.35+charge*.65})`;ctx.beginPath();ctx.arc(gap/2+5,yy,2.8,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillText('−',gap/2+5,yy);
+    const lPlus=pol>0;
+    ctx.fillStyle=lPlus?`rgba(192,74,26,${.35+charge*.65})`:`rgba(26,74,138,${.35+charge*.65})`;
+    ctx.beginPath();ctx.arc(-gap/2-5,yy,2.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 6px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lPlus?'+':'−',-(gap/2)-5,yy);
+    ctx.fillStyle=lPlus?`rgba(26,74,138,${.35+charge*.65})`:`rgba(192,74,26,${.35+charge*.65})`;
+    ctx.beginPath();ctx.arc(gap/2+5,yy,2.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillText(lPlus?'−':'+',gap/2+5,yy);
   }
   const nA=Math.round(1+charge*4);
-  for(let i=0;i<nA;i++){const yy=-pl*.36+pl*.72*i/(Math.max(nA-1,1));arrowCtx(ctx,-gap/2+1,yy,gap/2-1,yy,`rgba(255,190,35,${.38+charge*.58})`,1.3);}
+  for(let i=0;i<nA;i++){
+    const yy=-pl*.36+pl*.72*i/(Math.max(nA-1,1));
+    if(pol>0)arrowCtx(ctx,-gap/2+1,yy,gap/2-1,yy,`rgba(255,190,35,${.38+charge*.58})`,1.3);
+    else arrowCtx(ctx,gap/2-1,yy,-gap/2+1,yy,`rgba(255,190,35,${.38+charge*.58})`,1.3);
+  }
   const grd=ctx.createLinearGradient(-gap/2,0,gap/2,0);
-  grd.addColorStop(0,`rgba(192,74,26,${charge*.22})`);grd.addColorStop(.5,`rgba(255,215,65,${charge*.18})`);grd.addColorStop(1,`rgba(26,74,138,${charge*.22})`);
+  if(pol>0){grd.addColorStop(0,`rgba(192,74,26,${charge*.22})`);grd.addColorStop(.5,`rgba(255,215,65,${charge*.18})`);grd.addColorStop(1,`rgba(26,74,138,${charge*.22})`);}
+  else{grd.addColorStop(0,`rgba(26,74,138,${charge*.22})`);grd.addColorStop(.5,`rgba(255,215,65,${charge*.18})`);grd.addColorStop(1,`rgba(192,74,26,${charge*.22})`);}
   ctx.fillStyle=grd;ctx.fillRect(-gap/2,-pl/2,gap,pl);
-  if(Math.abs(comp._V||0)>0.001){ctx.fillStyle=`rgba(26,74,138,${.6+charge*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`V=${fmtN(Math.abs(comp._V))}V`,0,pl/2+13);}
+  if(Math.abs(comp._V||0)>0.001){ctx.fillStyle=`rgba(26,74,138,${.6+charge*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`V=${fmtN(comp._V)}V`,0,pl/2+13);}
   ctx.restore();
 }
 
@@ -437,7 +565,8 @@ function drawL(s,mx,my,ang,len){
 function drawBfield(s,mx,my,ang){
   const comp=getComp(s.compId);if(!comp)return;
   // In DC: campo cresce con la corrente (S.ilN). In CA: campo oscilla con la corrente istantanea
-  const flux=Math.min(Math.abs(S.ilN[comp.id]||0),1);if(flux<0.02)return;
+  const signedFlux=S.ilN[comp.id]||0,flux=Math.min(Math.abs(signedFlux),1);if(flux<0.02)return;
+  const out=signedFlux>=0;
   ctx.save();ctx.translate(mx,my);ctx.rotate(ang);
   const g=ctx.createRadialGradient(0,-20,3,0,-20,34+flux*28);
   g.addColorStop(0,`rgba(30,140,55,${flux*.42})`);g.addColorStop(1,'rgba(30,140,55,0)');
@@ -446,9 +575,10 @@ function drawBfield(s,mx,my,ang){
   for(let i=0;i<nD;i++){
     const xo=-spread+i*spread*2/(Math.max(nD-1,1)),yo=-22-flux*7,al=.42+flux*.58;
     ctx.strokeStyle=`rgba(30,120,50,${al})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(xo,yo,6,0,Math.PI*2);ctx.stroke();
-    ctx.fillStyle=`rgba(30,200,70,${al})`;ctx.beginPath();ctx.arc(xo,yo,2.2,0,Math.PI*2);ctx.fill();
+    if(out){ctx.fillStyle=`rgba(30,200,70,${al})`;ctx.beginPath();ctx.arc(xo,yo,2.2,0,Math.PI*2);ctx.fill();}
+    else{ctx.beginPath();ctx.moveTo(xo-3.2,yo-3.2);ctx.lineTo(xo+3.2,yo+3.2);ctx.moveTo(xo+3.2,yo-3.2);ctx.lineTo(xo-3.2,yo+3.2);ctx.stroke();}
   }
-  if(Math.abs(comp._I||0)>1e-9){ctx.fillStyle=`rgba(20,100,35,${.6+flux*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`I=${fmtN(Math.abs(comp._I))}A`,0,14);}
+  if(Math.abs(comp._I||0)>1e-9){ctx.fillStyle=`rgba(20,100,35,${.6+flux*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`I=${fmtN(comp._I)}A`,0,14);}
   ctx.restore();
 }
 
@@ -467,7 +597,7 @@ function buildAllPaths(){
   for(let m=N-1;m>=0;m--){const seg=segs.find(s=>s.id===`${m}-2`);if(seg)outer.push({s:seg,rev:true});}
   if(outer.length)paths.push(outer);
   // Internal branches: for each shared divider, add small loop through it
-  // These carry branch current I_mesh[m] - I_mesh[m-1]
+  // These carry branch current I_mesh[m-1] - I_mesh[m] along the vertical divider.
   for(let m=1;m<N;m++){
     const sh=segs.find(s=>s.id===`${m}-3`&&s.shared);
     if(!sh)continue;
@@ -493,8 +623,11 @@ function buildAllPaths(){
 
 function initParticles(){
   S.particles=[];
-  const n=S.numParticles;
-  for(let i=0;i<n;i++)S.particles.push({t:i/n,pathIdx:0});
+  const n=S.numParticles,paths=buildAllPaths(),pc=Math.max(paths.length,1),per=Math.ceil(n/pc);
+  for(let i=0;i<n;i++){
+    const pathIdx=i%pc,rank=Math.floor(i/pc);
+    S.particles.push({t:((rank+.35*(pathIdx/pc))/per)%1,pathIdx});
+  }
 }
 
 function pathTotalLen(path){
@@ -513,10 +646,9 @@ function ptPos(t,path){
     const pStart=partial?partial[0]:0,pEnd=partial?partial[1]:1;
     const segContrib=sl*(pEnd-pStart);
     if(d<=segContrib){
-      const f=pStart+(d/segContrib)*(pEnd-pStart);
-      return rev
-        ?{x:s.x2+(s.x1-s.x2)*(1-f+pStart),y:s.y2+(s.y1-s.y2)*(1-f+pStart)}
-        :{x:s.x1+(s.x2-s.x1)*f,y:s.y1+(s.y2-s.y1)*f};
+      const local=d/segContrib;
+      const f=rev?pEnd-local*(pEnd-pStart):pStart+local*(pEnd-pStart);
+      return{x:s.x1+(s.x2-s.x1)*f,y:s.y1+(s.y2-s.y1)*f};
     }
     d-=segContrib;
   }
@@ -527,17 +659,13 @@ function drawParticles(){
   if(!S.running||S.paused)return;
   const paths=buildAllPaths();
   if(!paths.length)return;
-  // Capacitor blocking factor (DC only)
-  let capBlock=0;
-  if(S.mode==='DC'){for(const c of S.components){if(c.type==='C')capBlock=Math.max(capBlock,Math.min(1,Math.abs(c._chargeNorm||0)));}}
-  const flowFactor=1-capBlock;
+  const flowFactor=S.mode==='DC'?currentFlowFactor():1;
   if(flowFactor<0.01)return;
   // In CA: particles oscillate — direction determined by sign of current
   // We use a signed speed: positive = forward, negative = backward
   let signedFlow=1;
   if(S.mode==='AC'){
-    const I0r=S.lastSol&&S.lastSol.Im?S.lastSol.Im[0]:null;
-    if(I0r!==null){const Ival=typeof I0r==='object'?Cabs(I0r)*Math.cos(S.visPhase+Carg(I0r)):I0r;signedFlow=Ival>=0?1:-1;}
+    signedFlow=sourceCurrentInstant(S.lastSol)>=0?1:-1;
   }
   for(const p of S.particles){
     const path=paths[p.pathIdx%paths.length];
@@ -545,7 +673,7 @@ function drawParticles(){
     // Hide particles that are on the generator segment
     const pos=ptPos(p.t,path);if(!pos)continue;
     if(isOnGen(pos.x,pos.y))continue; // nasconde particelle sul generatore
-    const t2=(p.t-0.007+1)%1,tail=ptPos(t2,path);
+    const t2=(p.t-0.007*signedFlow+1)%1,tail=ptPos(t2,path);
     const alpha=flowFactor*0.9;
     if(tail&&!isOnGen(tail.x,tail.y)){ctx.save();ctx.strokeStyle=`rgba(210,90,25,${flowFactor*.26})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(pos.x,pos.y);ctx.stroke();ctx.restore();}
     ctx.save();ctx.beginPath();ctx.arc(pos.x,pos.y,4.5,0,Math.PI*2);ctx.fillStyle=`rgba(228,92,42,${alpha})`;ctx.fill();ctx.strokeStyle=`rgba(255,210,175,${flowFactor*.68})`;ctx.lineWidth=1;ctx.stroke();ctx.restore();
@@ -565,12 +693,12 @@ function drawLabels(){
 // ══════ SOLVER KVL ══════
 function getMeshSegs(m){
   const N=S.meshCount,res=[];
-  const top=segs.find(s=>s.id===`${m}-0`);if(top)res.push({id:top.id,shared:false});
-  if(m===N-1){const r=segs.find(s=>s.id===`${m}-1`);if(r)res.push({id:r.id,shared:false});}
-  const bot=segs.find(s=>s.id===`${m}-2`);if(bot)res.push({id:bot.id,shared:false});
-  if(m===0){const g=segs.find(s=>s.id==='0-3');if(g)res.push({id:g.id,shared:false});}
-  if(m>0){const sh=segs.find(s=>s.id===`${m}-3`&&s.shared);if(sh)res.push({id:sh.id,shared:true,nb:m-1});}
-  if(m<N-1){const sh=segs.find(s=>s.id===`${m+1}-3`&&s.shared);if(sh)res.push({id:sh.id,shared:true,nb:m+1});}
+  const top=segs.find(s=>s.id===`${m}-0`);if(top)res.push({id:top.id,shared:false,dir:1});
+  if(m===N-1){const r=segs.find(s=>s.id===`${m}-1`);if(r)res.push({id:r.id,shared:false,dir:1});}
+  const bot=segs.find(s=>s.id===`${m}-2`);if(bot)res.push({id:bot.id,shared:false,dir:-1});
+  if(m===0){const g=segs.find(s=>s.id==='0-3');if(g)res.push({id:g.id,shared:false,dir:-1});}
+  if(m>0){const sh=segs.find(s=>s.id===`${m}-3`&&s.shared);if(sh)res.push({id:sh.id,shared:true,nb:m-1,dir:-1});}
+  if(m<N-1){const sh=segs.find(s=>s.id===`${m+1}-3`&&s.shared);if(sh)res.push({id:sh.id,shared:true,nb:m+1,dir:1});}
   return res;
 }
 
@@ -605,29 +733,48 @@ function buildZmat(efR, efVaux, N){
   const Zm=Array.from({length:N},()=>Array(N).fill(0));
   const Vv=Array(N).fill(0);Vv[0]+=S.fem;
   for(let m=0;m<N;m++){
-    for(const{id,shared,nb}of getMeshSegs(m)){
-      const r=efR(id),va=efVaux(id);
+    for(const{id,shared,nb,dir}of getMeshSegs(m)){
+      const r=efR(id),va=efVaux(id,dir);
       Zm[m][m]+=r;Vv[m]+=va;
-      if(shared&&nb>=0&&nb<N){Zm[m][nb]-=r;Vv[nb]-=va;}
+      if(shared&&nb>=0&&nb<N)Zm[m][nb]-=r;
     }
     if(Zm[m][m]<1e-9)Zm[m][m]=1e-9;
   }
   return{Zm,Vv};
 }
 
+function branchCurrentFromMeshes(s,Im,N){
+  if(s.type==='gen')return-(Im[0]||0);
+  if(s.shared){
+    const left=s.mi-1>=0?(Im[s.mi-1]||0):0;
+    const right=s.mi<N?(Im[s.mi]||0):0;
+    return left-right;
+  }
+  const cur=s.mi<N?(Im[s.mi]||0):0;
+  return s.si===2?-cur:cur;
+}
+
+function branchCurrentPhasor(s,Im,N){
+  if(s.type==='gen')return Cmul(C(-1),Im[0]||C(0));
+  if(s.shared){
+    const left=s.mi-1>=0?(Im[s.mi-1]||C(0)):C(0);
+    const right=s.mi<N?(Im[s.mi]||C(0)):C(0);
+    return Csub(left,right);
+  }
+  const cur=s.mi<N?(Im[s.mi]||C(0)):C(0);
+  return s.si===2?Cmul(C(-1),cur):cur;
+}
+
 function computeBranchI(Im,N){
   const bI={};
-  for(const s of segs){
-    const m=s.mi;
-    bI[s.id]=s.shared?(m<N?Im[m]:0)-(m-1>=0?Im[m-1]:0):(m<N?Im[m]:0);
-  }
+  for(const s of segs)bI[s.id]=branchCurrentFromMeshes(s,Im,N);
   return bI;
 }
 
 function stepDC(dt){
   const N=S.meshCount;
   function efR(sid){const s=segs.find(x=>x.id===sid);if(!s||s.type==='gen')return 1e-6;if(!s.compId)return 0;const c=getComp(s.compId);if(!c)return 0;if(c.type==='R')return c.value;if(c.type==='C')return dt/c.value;if(c.type==='L')return c.value/dt;return 0;}
-  function efV(sid){const s=segs.find(x=>x.id===sid);if(!s||!s.compId)return 0;const c=getComp(s.compId);if(!c)return 0;if(c.type==='C')return-(S.vc[c.id]||0);if(c.type==='L')return(c.value/dt)*(S.il[c.id]||0);return 0;}
+  function efV(sid,dir){const s=segs.find(x=>x.id===sid);if(!s||!s.compId)return 0;const c=getComp(s.compId);if(!c)return 0;if(c.type==='C')return-dir*(S.vc[c.id]||0);if(c.type==='L')return dir*(c.value/dt)*(S.il[c.id]||0);return 0;}
   const{Zm,Vv}=buildZmat(efR,efV,N);
   const Im=gaussR(Zm,Vv,N);
   const bI=computeBranchI(Im,N);
@@ -672,9 +819,7 @@ function stepAC(visPhase){
   const bI={};
   const Rmax=Math.max(...S.components.filter(c=>c.type==='R').map(c=>c.value),.01);
   for(const s of segs){
-    const m=s.mi;let Iph;
-    if(s.shared){const Im=m<N?If[m]:C(0),Il=m-1>=0?If[m-1]:C(0);Iph=Csub(Im,Il);}
-    else Iph=m<N?If[m]:C(0);
+    const Iph=branchCurrentPhasor(s,If,N);
     const Ib=Cabs(Iph)*Math.cos(visPhase+Carg(Iph));bI[s.id]=Ib;
     if(s.compId){
       const c=getComp(s.compId);if(!c)continue;c._I=Ib;
@@ -710,16 +855,17 @@ function stepPhysics(dt){
   S.visPhase+=dt*S.simSpeed*S.visFreq*2*Math.PI;
   const sol=S.mode==='DC'?stepDC(simDt):stepAC(S.visPhase);
   S.lastSol=sol;
+  S.maxFlowI=Math.max(S.maxFlowI||0,sourceCurrentMagnitude(sol));
   // Muovi particelle — in CA oscillano avanti/indietro con il segno della corrente
   const spd=0.00022*S.simSpeed;
   if(S.mode==='DC'){
-    // DC: tutti in avanti, rallentano con cap carico
-    let capBlock=0;for(const c of S.components){if(c.type==='C')capBlock=Math.max(capBlock,Math.min(1,Math.abs(c._chargeNorm||0)));}
-    const ff=1-capBlock;
+    // DC: il flusso segue la corrente reale del generatore.
+    const ff=currentFlowFactor();
     for(const p of S.particles){p.t=(p.t+spd*ff+1)%1;}
   } else {
-    // CA: velocità proporzionale al seno della visPhase → oscilla avanti e indietro
-    const oscillation=Math.sin(S.visPhase);
+    // CA: velocità con segno e fase della corrente del generatore.
+    const maxI=Math.max(S.maxFlowI||0,1e-12);
+    const oscillation=Math.max(-1,Math.min(1,sourceCurrentInstant(sol)/maxI));
     for(const p of S.particles){p.t=(p.t+spd*oscillation+1)%1;}
   }
   // Graphs
@@ -732,35 +878,24 @@ function stepPhysics(dt){
   updateMeters(sol);
 }
 
+function sourceCurrentMagnitude(sol){
+  if(!sol||!sol.Im||sol.Im[0]===undefined)return 0;
+  const I=sol.Im[0];
+  return I&&typeof I==='object'?Cabs(I):Math.abs(I||0);
+}
+function sourceCurrentInstant(sol){
+  if(!sol||!sol.Im||sol.Im[0]===undefined)return 0;
+  const I=sol.Im[0];
+  return I&&typeof I==='object'?Cabs(I)*Math.cos(S.visPhase+Carg(I)):I||0;
+}
+function currentFlowFactor(){
+  const maxI=Math.max(S.maxFlowI||0,sourceCurrentMagnitude(S.lastSol),1e-12);
+  return Math.max(0,Math.min(1,sourceCurrentMagnitude(S.lastSol)/maxI));
+}
+
 // ══════ METERS & EQUIV ══════
-// Calcola R_eq usando il solver KVL con tutte le R, e C_eq e L_eq analiticamente
 function computeEquiv(){
-  const N=S.meshCount;
-  // R_eq: usa il solver con solo resistenze (C→aperto in DC, L→cortocircuito in DC)
-  const Zm=Array.from({length:N},()=>Array(N).fill(0));
-  for(let m=0;m<N;m++){
-    for(const{id,shared,nb}of getMeshSegs(m)){
-      const s=segs.find(x=>x.id===id);if(!s||s.type==='gen')continue;
-      let r=0;
-      if(s.compId){const c=getComp(s.compId);if(c&&c.type==='R')r=c.value;}
-      Zm[m][m]+=r;if(shared&&nb>=0&&nb<N)Zm[m][nb]-=r;
-    }
-    if(Zm[m][m]<1e-9)Zm[m][m]=1e-9;
-  }
-  const bR=Array(N).fill(0);bR[0]=S.fem;
-  const IR=gaussR(Zm,bR,N);
-  const Req=Math.abs(IR[0])>1e-12?S.fem/IR[0]:Infinity;
-  // C_eq e L_eq: per ogni maglia in serie, poi maglie in parallelo (semplificato)
-  // Per una topologia a maglie adiacenti: componenti sulla stessa maglia sono in serie
-  // maglie diverse: le R equivalenti ci dicono la struttura
-  let Cinv=0,Cn=0,Ltot=0;
-  for(const s of segs){
-    if(!s.compId||s.mi!==0)continue; // solo maglia 0 per ora
-    const c=getComp(s.compId);if(!c)continue;
-    if(c.type==='L')Ltot+=c.value;
-    if(c.type==='C'){Cinv+=1/c.value;Cn++;}
-  }
-  return{Req:isFinite(Req)?Req:0,Ceq:Cn>0?1/Cinv:0,Leq:Ltot};
+  return{Req:equivOf('R'),Ceq:equivOf('C'),Leq:equivOf('L')};
 }
 
 function updEqMeters(){
@@ -768,7 +903,7 @@ function updEqMeters(){
   document.getElementById('mr-req').textContent=fmtN(Req)+' Ω';
   document.getElementById('mr-ceq').textContent=Ceq>0?fmtN(Ceq)+' F':'— F';
   document.getElementById('mr-leq').textContent=Leq>0?fmtN(Leq)+' H':'— H';
-  if(S.mode==='AC'){const XL=Leq>0?omega*Leq:0,XC=Ceq>0?1/(omega*Ceq):0;document.getElementById('mr-zeq').textContent=fmtN(Math.sqrt(Req*Req+(XL-XC)*(XL-XC)))+' Ω';}
+  if(S.mode==='AC')document.getElementById('mr-zeq').textContent=fmtN(Cabs(equivalentZAC(omega)))+' Ω';
   else document.getElementById('mr-zeq').textContent='— Ω';
   if(Leq>0&&Ceq>0)document.getElementById('mr-om').textContent=fmtN(1/Math.sqrt(Leq*Ceq))+' rad/s';
   else document.getElementById('mr-om').textContent='— rad/s';
@@ -881,21 +1016,19 @@ function fmtVal(v,t){if(t==='R')return v>=1000?`${(v/1000).toFixed(1)}kΩ`:`${v}
 
 // ══════ CONTROLS ══════
 function setMode(m){S.mode=m;document.getElementById('btn-dc').classList.toggle('active',m==='DC');document.getElementById('btn-ac').classList.toggle('active',m==='AC');document.getElementById('ac-ctrl').style.display=m==='AC'?'block':'none';document.getElementById('hdr-mode').textContent=m;resetSim();}
-function updateFEM(v){S.fem=parseInt(v);document.getElementById('fem-val').textContent=v+' V';}
-function updateFreq(v){S.freq=parseInt(v);document.getElementById('freq-val').textContent=v+' Hz';}
+function updateFEM(v){S.fem=parseInt(v);document.getElementById('fem-val').textContent=v+' V';updEqMeters();}
+function updateFreq(v){S.freq=parseInt(v);document.getElementById('freq-val').textContent=v+' Hz';updEqMeters();}
 function updateVisFreq(v){S.visFreq=parseFloat(v);document.getElementById('vfreq-val').textContent=parseFloat(v).toFixed(2)+' Hz';}
 function updateMesh(v){S.meshCount=parseInt(v);document.getElementById('mesh-val').textContent=v;if(S.running)resetSim();buildGeo();initParticles();}
-function updateSpeed(v){S.simSpeed=parseInt(v);document.getElementById('spd-val').textContent=v;}
-function updateNP(v){S.numParticles=parseInt(v);document.getElementById('np-val').textContent=v;initParticles();}
 function selComp(t){
   S.selType=S.selType===t?null:t;
   ['R','C','L','W'].forEach(x=>document.getElementById('cpbtn-'+x).classList.toggle('active',S.selType===x));
   document.getElementById('hint').style.display=S.selType?'block':'none';
   if(!S.selType){if(canvas)canvas.style.cursor='default';hovSeg=null;}
 }
-function startSim(){if(S.running&&!S.paused)return;if(!S.running){S.simTime=0;S.visPhase=0;S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});initParticles();}S.running=true;S.paused=false;document.getElementById('st').textContent=`In corso — ${S.mode} — ε=${S.fem}V`;}
+function startSim(){if(S.running&&!S.paused)return;if(!S.running){S.simTime=0;S.visPhase=0;S.maxFlowI=0;S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});initParticles();}S.running=true;S.paused=false;document.getElementById('st').textContent=`In corso — ${S.mode} — ε=${S.fem}V`;}
 function pauseSim(){if(!S.running)return;S.paused=!S.paused;document.getElementById('st').textContent=S.paused?'In pausa':`In corso — ${S.mode}`;}
-function resetSim(){S.running=false;S.paused=false;S.simTime=0;S.visPhase=0;S.particles=[];S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});document.getElementById('st').textContent='Resettato';document.getElementById('live').innerHTML='';updEqMeters();}
+function resetSim(){S.running=false;S.paused=false;S.simTime=0;S.visPhase=0;S.maxFlowI=0;S.particles=[];S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});document.getElementById('st').textContent='Resettato';document.getElementById('live').innerHTML='';updEqMeters();}
 function toggleGraphs(v){S.showGraphs=v;document.getElementById('ga').classList.toggle('vis',v);sizeCv();buildGeo();}
 
 // ══════ LOOP ══════

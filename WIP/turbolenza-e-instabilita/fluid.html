@@ -643,7 +643,7 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
   <p>Un brusco allargamento della sezione forza la separazione del flusso dalla parete. Si forma una "bolla" di ricircolazione la cui lunghezza adimensionale $x_r/H$ cresce con $Re$. A valori sufficientemente alti la bolla stessa diventa instabile e il flusso nella zona di riattacco diventa turbolento: è un classico problema di validazione dei solver NS.</p>
 
   <h2>3. Il metodo numerico: Stable Fluids + LBM</h2>
-  <p>La simulazione combina due schemi numerici: gli scenari con inlet e ostacoli usano un reticolo di Boltzmann D2Q9, più adatto a far emergere naturalmente scie e distacchi vorticosi; Kelvin–Helmholtz usa invece il metodo <em>Stable Fluids</em> (Stam, 1999), comodo per un dominio periodico con due strati di velocità opposta.</p>
+  <p>La simulazione combina due schemi numerici: cilindri, griglia e gradino usano un reticolo di Boltzmann D2Q9, più adatto a far emergere naturalmente scie e distacchi vorticosi; fessura e Kelvin–Helmholtz usano invece il metodo <em>Stable Fluids</em> (Stam, 1999), più robusto per getti confinati e domini periodici.</p>
   <p>Nel ramo Stable Fluids, ogni step è diviso in tre sotto-problemi via <em>operator splitting</em>:</p>
 
   <div class="method">
@@ -693,7 +693,7 @@ let visc    = 0.0065;
 let obstR   = 16;
 let lastNonKhVel = vel;
 let lastNonKhVisc = visc;
-const lbmPresets = {
+const scenePresets = {
   0: { vel: 0.09,  visc: 0.0065 },
   1: { vel: 0.09,  visc: 0.0065 },
   2: { vel: 0.075, visc: 0.0075 },
@@ -771,8 +771,8 @@ function loadScene(id) {
   if (id === 5) {
     setFlowParams(0.18, 0.00035);
     setVis('dye');
-  } else if (lbmPresets[id]) {
-    setFlowParams(lbmPresets[id].vel, lbmPresets[id].visc);
+  } else if (scenePresets[id]) {
+    setFlowParams(scenePresets[id].vel, scenePresets[id].visc);
     if (vis === 'dye') setVis('vorticity');
   } else if (prevScene === 5) {
     setFlowParams(lastNonKhVel, lastNonKhVisc);

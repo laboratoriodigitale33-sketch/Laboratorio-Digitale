@@ -66,7 +66,8 @@ static inline float lbm_feq(int q, float rho, float ux, float uy) {
 }
 
 static int uses_lbm_solver(void) {
-    return current_scenario >= 0 && current_scenario <= 4;
+    return current_scenario == 0 || current_scenario == 1 ||
+           current_scenario == 3 || current_scenario == 4;
 }
 
 /* ═══════════════════════════════════════════════════════════════

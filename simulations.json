@@ -3,92 +3,73 @@
     {
       "name": "Fondamenti",
       "order": 1,
-      "color": "#8ab4f0",
-      "description": "Il linguaggio con cui la fisica descrive il mondo."
+      "description": "Branca introduttiva della fisica che raccoglie i concetti di base necessari per comprendere i fenomeni fisici, come grandezze, misure, vettori, unità di misura e strumenti matematici essenziali."
     },
     {
       "name": "Meccanica",
       "order": 10,
-      "color": "#5bd4c4",
-      "description": "Dalla caduta di una mela alle orbite dei pianeti, la meccanica descrive come e perché i corpi si muovono."
+      "description": "Branca della fisica che studia il moto dei corpi e le cause che lo producono, come forze, energia e quantità di moto."
     },
     {
       "name": "Gravitazione",
       "order": 20,
-      "color": "#a78bfa",
-      "description": "La forza che domina su grandi scale: governa la caduta di un sasso, la forma delle galassie e il destino dell'universo."
+      "description": "Studio dell’interazione gravitazionale tra masse e delle leggi che governano il moto dei corpi celesti."
     },
     {
       "name": "Fluidodinamica",
       "order": 30,
-      "color": "#5bc8f0",
-      "description": "Aria, acqua, plasma stellare: i fluidi sono ovunque, e il loro comportamento emerge da poche equazioni sorprendentemente difficili da risolvere."
+      "description": "Studio del moto dei fluidi e delle leggi che governano flusso, pressione ed energia nei mezzi continui."
     },
     {
       "name": "Termodinamica",
       "order": 40,
-      "color": "#f08c5b",
-      "description": "Perché il calore non scorre mai spontaneamente dal freddo al caldo? La termodinamica risponde con quattro principi che delimitano ciò che è fisicamente possibile — e ciò che non lo è mai."
+      "description": "Branca della fisica che studia il calore, la temperatura, l’energia e le trasformazioni tra diverse forme energetiche nei sistemi macroscopici."
     },
     {
       "name": "Onde",
       "order": 50,
-      "color": "#f0c060",
-      "description": "Capire le onde significa capire come l'informazione e l'energia si propagano nel mondo."
+      "description": "Studio dei fenomeni ondulatori e della propagazione delle perturbazioni nello spazio e nei mezzi materiali."
     },
     {
       "name": "Ottica",
       "order": 60,
-      "color": "#f0e060",
-      "description": "La luce viaggia in linea retta, si piega, si divide nei colori, interferisce con se stessa. L'ottica esplora i comportamenti della radiazione elettromagnetica visibile."
+      "description": "Branca della fisica che studia la luce, la sua propagazione e l’interazione con i materiali."
     },
     {
       "name": "Elettromagnetismo",
       "order": 70,
-      "color": "#f07070",
-      "description": "Elettricità e magnetismo sembravano fenomeni separati fino a quando Maxwell non scrisse quattro equazioni che li unificarono. Da lì nacque la fisica moderna."
+      "description": "Studio dei campi elettrici e magnetici e delle interazioni tra cariche elettriche."
     },
     {
       "name": "Relatività",
       "order": 80,
-      "color": "#c084fc",
-      "description": "Il tempo scorre più lento vicino a una massa. Due eventi simultanei per un osservatore non lo sono per un altro in moto. La relatività descrrive alcuni tra i fenomeni meno intuitivi e più spettacolari."
+      "description": "Branca della fisica che studia la struttura dello spazio-tempo e il moto dei corpi in condizioni di alte velocità o in presenza di campi gravitazionali intensi."
     },
     {
       "name": "Meccanica Quantistica",
       "order": 90,
-      "color": "#7dd3fc",
-      "description": "Su scala atomica i fenomeni sono intrinsecamente probabilistici e un elettrone può attraversare due fenditure allo stesso tempo. La meccanica quantistica è controintuitiva per costruzione — e tuttavia è la teoria fisica più precisa mai verificata."
+      "description": "Branca della fisica che studia il comportamento della materia e della radiazione su scala microscopica."
     },
     {
       "name": "Astrofisica",
       "order": 100,
-      "color": "#e879f9",
-      "description": "Stelle che collassano in punti di densità infinita, galassie che si allontanano più veloce della luce, forme di energia e materia a noi sconosciute che rappresentano la maggioranza di cio che esiste nell'universo. Questa è l'astrofisica."
+      "description": "Branca della fisica che studia i fenomeni e le leggi che governano l’Universo, dalle stelle e galassie fino agli oggetti più compatti e agli eventi più energetici."
     },
     {
-      "name": "Fisica Nucleare",
+      "name": "Fisicaa nucleare",
       "order": 110,
-      "color": "#fb923c",
-      "description": "Nel nucleo di ogni atomo sono compresse forze enormi tenute in equilibrio instabile. Capire come si formano, decadono e reagiscono i nuclei ha prodotto le applicazioni più potenti che la fisica abbia mai generato."
+      "description": "Branca della fisica che studia la struttura del nucleo atomico, le sue trasformazioni, le reazioni nucleari e l’interazione tra radiazione e materia."
     },
     {
       "name": "Fisica delle Particelle",
       "order": 120,
-      "color": "#fb923c",
-      "description": "Nel nucleo di ogni atomo sono compresse forze enormi tenute in equilibrio instabile. Capire come si formano, decadono e reagiscono i nuclei ha prodotto le applicazioni più potenti che la fisica abbia mai generato."
-    },
-    {
-      "name": "Matematica per la Fisica",
-      "order": 9999,
-      "color": "#4F6F73",
-      "description": "Gli strumenti matematici spesso utilizzati nello studio della fisica."
+      "color": "#f472b6",
+      "description": "Branca della fisica che studia le particelle elementari, le interazioni fondamentali e i processi descritti dal Modello Standard, includendo teoria quantistica dei campi, diagrammi di Feynman, interazioni elettrodeboli e cromodinamica quantistica."
     },
     {
       "name": "WIP",
-      "order": 999999,
-      "color": "#6b7280",
-      "description": "Simulazioni in costruzione. Potrebbero contenere imprecisioni o comportamenti inattesi."
+      "description": "Simulazioni in sviluppo o in fase di test.",
+      "order": 999999
     }
   ],
   "simulations": [
@@ -201,6 +182,22 @@
       "isWip": false
     },
     {
+      "title": "Elettrostatica",
+      "description": "Visualizzazione del campo elettrico generato da cariche puntiformi e studio delle forze elettrostatiche.",
+      "category": "Elettromagnetismo",
+      "icon": "⚡",
+      "order": 10,
+      "tags": [
+        "cariche elettriche",
+        "campo elettrico",
+        "forza elettrica",
+        "legge di Coulomb"
+      ],
+      "level": "intermedio",
+      "file": "elettro-magnetismo/elettrostatica.html",
+      "isWip": false
+    },
+    {
       "title": "Magnetismo",
       "description": "Esplora il campo magnetico generato da correnti, la forza di Lorentz su particelle cariche, il dipolo magnetico e il moto elicoidale in un campo uniforme.",
       "category": "Elettromagnetismo",
@@ -227,6 +224,25 @@
       ],
       "level": "intermedio",
       "file": "elettro-magnetismo/magnetismo.html",
+      "isWip": false
+    },
+    {
+      "title": "Grandezze e unità di misura",
+      "description": "Convertitore esteso tra grandezze fisiche e unità metriche con spiegazioni su unità fondamentali, derivate, prefissi SI e unità specialistiche come barn e jansky.",
+      "category": "Fondamenti",
+      "icon": "📏",
+      "order": 0,
+      "tags": [
+        "grandezze fisiche",
+        "unità di misura",
+        "SI",
+        "prefissi metrici",
+        "conversioni",
+        "barn",
+        "jansky"
+      ],
+      "level": "base",
+      "file": "fondamenti/grandezze-fondamentali.html",
       "isWip": false
     },
     {
@@ -621,19 +637,19 @@
     },
     {
       "title": "Curvatura dello spazio-tempo",
-      "description": "Simulazione della metrica di Kerr attorno a un buco nero rotante, con visualizzazione di geodetiche nulle, lente gravitazionale, redshift gravitazionale e dilatazione temporale.",
+      "description": "Simulazione della metrica di Kerr con griglia dinamica, geodetiche nulle, lente gravitazionale e redshift.",
       "category": "WIP",
-      "icon": "⚫",
+      "icon": "BH",
       "order": 1,
       "tags": [
         "buco nero rotante",
         "metrica di Kerr",
-        "relatività generale",
+        "relativita generale",
         "geodetiche nulle",
         "frame dragging"
       ],
       "level": "avanzato",
-      "file": "WIP/curvatura_spazio-tempo/shell.html",
+      "file": "WIP/curvatura_spazio-tempo/kerr.html",
       "isWip": true
     },
     {
@@ -860,6 +876,33 @@
       ],
       "level": "avanzato",
       "file": "WIP/collasso_stellare/collasso-stellare.html",
+      "isWip": true
+    },
+    {
+      "title": "Diagrammi di Feynman",
+      "description": "Libreria interattiva di diagrammi di Feynman per processi QED (Quantum Electrodynamics), QCD (Quantum Chromodynamics) e interazione elettrodebole, con visualizzazione di vertici, propagatori, ampiezze di scattering e contributi perturbativi alla matrice S.",
+      "category": "WIP",
+      "icon": "⚛️",
+      "order": 10,
+      "tags": [
+        "diagrammi di Feynman",
+        "fisica delle particelle",
+        "teoria quantistica dei campi",
+        "QFT",
+        "Quantum Field Theory",
+        "QED",
+        "Quantum Electrodynamics",
+        "QCD",
+        "Quantum Chromodynamics",
+        "interazione elettrodebole",
+        "matrice S",
+        "propagatori",
+        "scattering",
+        "ampiezza di transizione",
+        "rinormalizzazione"
+      ],
+      "level": "avanzato",
+      "file": "WIP/feynman_diagrams.html",
       "isWip": true
     },
     {

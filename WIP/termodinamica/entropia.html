@@ -175,7 +175,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
       </div>
     </div>
 
-    <!-- S(t) plot — hidden in micro mode -->
+    <!-- S(t) plot -->
     <div class="panel" id="s-plot-panel">
       <div class="sim-label">Entropia S(t) — evoluzione temporale</div>
       <canvas id="sCanvas" width="640" height="160"></canvas>
@@ -192,7 +192,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
       <div class="sim-label">Griglia microstati — distribuzione particelle (64 celle)</div>
       <div class="micro-grid" id="micro-grid"></div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--ink-muted);margin-top:7px;" id="micro-caption">
-        Celle occupate = microstato corrente &nbsp;|&nbsp; $\Omega$ = numero di configurazioni possibili
+        Celle occupate = macro-distribuzione corrente &nbsp;|&nbsp; $S/k_B = -N\sum_i p_i\ln p_i$
       </div>
     </div>
   </div>
@@ -299,11 +299,10 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
       <h3 style="font-family:'EB Garamond',serif;font-size:1.05rem;font-weight:500;margin-bottom:8px;">🎲 Microstati</h3>
       <p style="font-size:.855rem;line-height:1.72;color:var(--ink-soft);">
         Modello discreto: $N$ particelle saltano casualmente tra 64 celle di una griglia.
-        L'entropia è calcolata direttamente da $S = k_B \ln\Omega$, dove $\Omega$ è il numero di
-        configurazioni compatibili con la distribuzione osservata. Il sistema parte con tutte le
-        particelle concentrate in un angolo (bassa $\Omega$, bassa $S$) e diffonde spontaneamente
-        verso la distribuzione uniforme (massima $\Omega$, massima $S$). Il grafico mostra
-        $\ln\Omega(t)$ salire verso il valore teorico $\ln\binom{64}{N}$.
+        L'entropia è calcolata dalla distribuzione coarse-grained delle occupazioni,
+        $S/k_B \simeq -N\sum_i p_i\ln p_i$. Il sistema parte con le particelle concentrate in poche
+        celle e diffonde spontaneamente verso una distribuzione più uniforme. Il grafico mostra
+        l'entropia spaziale salire verso il massimo compatibile con il numero finito di particelle.
       </p>
     </div>
   </div>
@@ -464,7 +463,7 @@ const modeDescs = {
   expansion: 'Espansione libera nel vuoto: Q=0, W=0, ΔU=0 — ma ΔS > 0. Premi "Apri parete" per avviare.',
   mixing:    'Miscelamento di due gas: rimuovi il setto per mescolare. ΔS_mix = −Nk[x·ln x + (1−x)·ln(1−x)].',
   maxwell:   'Distribuzione di Maxwell-Boltzmann: istogramma live vs curva teorica f(v)∝v·exp(−mv²/2kT).',
-  micro:     'Modello a griglia: N particelle in 64 celle. S = k·ln Ω, Ω = C(64,N). Osserva l\'entropia salire.',
+  micro:     'Modello a griglia: N particelle in 64 celle. S/k = -NΣpᵢlnpᵢ. Osserva l\'entropia spaziale salire.',
 };
 
 function setMode(m) {
@@ -477,7 +476,7 @@ function setMode(m) {
     document.getElementById('tab-'+id).classList.toggle('active', id===m);
   });
 
-  document.getElementById('s-plot-panel').style.display  = m==='micro' ? 'none' : 'block';
+  document.getElementById('s-plot-panel').style.display  = 'block';
   document.getElementById('mb-panel').style.display      = m==='maxwell' ? 'block' : 'none';
   document.getElementById('micro-panel').style.display   = m==='micro' ? 'block' : 'none';
   document.getElementById('mode-desc').textContent = modeDescs[m];
@@ -545,7 +544,7 @@ function buildCtrlPanel() {
         <input type="range" id="sl-ms" min="1" max="5" step="1" value="3"
           oninput="const ls=['Lenta','Lenta','Normale','Veloce','Max'];document.getElementById('lbl-ms').textContent=ls[parseInt(this.value)-1];microStepRate=parseInt(this.value)">
       </div>
-      <div class="proc-desc">Ogni particella occupa una delle 64 celle. Ω = C(64,N) è il numero di configurazioni. S = k_B·ln Ω. Il sistema tende spontaneamente verso il macrostato più probabile (N/64 particelle per cella).</div>`;
+      <div class="proc-desc">Ogni particella occupa una delle 64 celle e più particelle possono stare nella stessa cella. L'entropia è stimata dalla distribuzione coarse-grained delle occupazioni: S/k_B = -NΣpᵢlnpᵢ.</div>`;
     leg.innerHTML='';
   }
 }
@@ -562,12 +561,12 @@ function spawnParticles(N, xMin, xMax, type='A', T=1.0) {
     do {
       p={x:xMin+m+Math.random()*(xMax-xMin-2*m),
          y:m+Math.random()*(BH-2*m),
-         vx:(Math.random()-.5)*4, vy:(Math.random()-.5)*4, type};
+         vx:0, vy:0, type};
       tries++;
     } while(tries<80 && particles.some(q=>d2(p,q)<(2*R_part+1)**2));
     particles.push(p);
   }
-  rescaleGroup(type, T);
+  thermalizeGroup(type, T);
 }
 
 function d2(a,b){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;}
@@ -580,6 +579,34 @@ function rescaleGroup(type, T) {
   if(Tcur<1e-9) return;
   const f=Math.sqrt(T/Tcur);
   for(let p of gr){p.vx*=f;p.vy*=f;}
+  removeGroupDrift(type);
+}
+
+function thermalizeGroup(type, T) {
+  const gr = particles.filter(p=>p.type===type||type===null);
+  const sigma = Math.sqrt(Math.max(T, 1e-9));
+  for (let p of gr) {
+    p.vx = gaussianRandom() * sigma;
+    p.vy = gaussianRandom() * sigma;
+  }
+  removeGroupDrift(type);
+  rescaleGroup(type, T);
+}
+
+function gaussianRandom() {
+  let u=0, v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function removeGroupDrift(type) {
+  const gr = particles.filter(p=>p.type===type||type===null);
+  if(!gr.length) return;
+  let mx=0,my=0;
+  for(let p of gr){mx+=p.vx;my+=p.vy;}
+  mx/=gr.length;my/=gr.length;
+  for(let p of gr){p.vx-=mx;p.vy-=my;}
 }
 
 function stepParticles(dt) {
@@ -642,14 +669,9 @@ function computeEntropy() {
   if(!N||!T) return 0;
 
   if(mode==='expansion') {
-    // S = N*k*ln(V) + N*k*ln(T) + const  →  ΔS = N*k*ln(V/V0)
-    // Approximate: count fraction of particles in right half
+    if(!wallOpen) return 0;
     const nRight = particles.filter(p=>p.x>wallX).length;
-    const fRight = nRight/N;
-    if(fRight<=0||fRight>=1) return S_initial + N*Math.log(BW/wallX);
-    // Positional entropy contribution
-    const S_pos = -N*(fRight*Math.log(fRight)+(1-fRight)*Math.log(1-fRight));
-    return S_initial + S_pos*0.5 + N*Math.log(T/1+1)*0.1;
+    return binaryEntropy(nRight, N);
   } else if(mode==='mixing') {
     const nA = particles.filter(p=>p.type==='A').length;
     const nB = particles.filter(p=>p.type==='B').length;
@@ -668,25 +690,31 @@ function computeEntropy() {
       if(xA>0) S_mix-=tot*(xA*Math.log(xA));
       if(xB>0) S_mix-=tot*(xB*Math.log(xB));
     }
-    return S_mix/strips;
+    return S_mix;
   } else if(mode==='maxwell') {
-    // Gibbs entropy: S = -k * N * <ln f(v)>  (approximate via T)
-    return N*(Math.log(T)+1);
+    // Velocity-space entropy for the 2D Maxwellian, up to an additive constant.
+    return Math.max(0, N*(1 + Math.log(2*Math.PI*T)));
   }
   return 0;
 }
 
 function computeSmax() {
   const N = particles.length;
-  if(mode==='expansion') return S_initial + N*Math.log(2);
+  if(mode==='expansion') return N*Math.log(2);
   if(mode==='mixing') {
     const nA=particles.filter(p=>p.type==='A').length;
     const nB=particles.filter(p=>p.type==='B').length;
     const Ntot=nA+nB;
-    return -Ntot*(0.5*Math.log(0.5)+0.5*Math.log(0.5));
+    return binaryEntropy(nA, Ntot);
   }
-  if(mode==='maxwell') return particles.length*(Math.log(getT())+1)+particles.length*0.3;
+  if(mode==='maxwell') return Math.max(1, computeEntropy());
   return 1;
+}
+
+function binaryEntropy(n, N) {
+  if(!N || n<=0 || n>=N) return 0;
+  const x=n/N, y=1-x;
+  return -N*(x*Math.log(x)+y*Math.log(y));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -736,14 +764,26 @@ function logCombination(n,k) {
 }
 
 function microEntropy() {
-  // Ω = C(64, N) if uniform; actual: use occupancy
-  // More precise: multinomial  Ω = N! / prod(n_i!)
-  // ln Ω = ln N! - sum ln n_i!
-  let lnOmega = logFactorial(microN);
+  let S = 0;
   for(let c=0;c<64;c++){
-    if(microOccupancy[c]>0) lnOmega -= logFactorial(microOccupancy[c]);
+    const n = microOccupancy[c];
+    if(n>0) {
+      const p = n / microN;
+      S -= microN * p * Math.log(p);
+    }
   }
-  return Math.max(0, lnOmega);
+  return Math.max(0, S);
+}
+
+function microEntropyMax() {
+  if(microN <= 0) return 1;
+  const cells = microCells;
+  const q = Math.floor(microN / cells);
+  const r = microN % cells;
+  let S = 0;
+  if(q > 0) S -= (cells-r) * q * Math.log(q / microN);
+  if(q+1 > 0 && r > 0) S -= r * (q+1) * Math.log((q+1) / microN);
+  return Math.max(1, S);
 }
 
 const _lf = [0];
@@ -817,10 +857,10 @@ function drawGas() {
 
     // Label
     const S=microEntropy();
-    const lnOmax=logCombination(64,microN);
+    const lnOmax=microEntropyMax();
     gasCtx.fillStyle='rgba(245,240,232,0.9)';
     gasCtx.font='12px IBM Plex Mono';
-    gasCtx.fillText(`S/k = ln Ω = ${S.toFixed(2)}   |   S_max/k = ${lnOmax.toFixed(2)}`, 12, BH-12);
+    gasCtx.fillText(`S/k = ${S.toFixed(2)}   |   S_max/k = ${lnOmax.toFixed(2)}`, 12, BH-12);
     return;
   }
 
@@ -1002,14 +1042,14 @@ function drawMicroS() {
   // reuse sHistory for micro
   const pad={l:46,r:16,t:12,b:30};
   const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
-  const Smax_theory=logCombination(64,microN)||1;
+  const Smax_theory=microEntropyMax();
   const Sdisplay=Smax_theory*1.1;
   function ty(s){return pad.t+ph-(s/Sdisplay)*ph;}
   sCtx.strokeStyle='#ddd';sCtx.lineWidth=0.7;
   for(let i=0;i<=4;i++){const y=pad.t+i/4*ph;sCtx.beginPath();sCtx.moveTo(pad.l,y);sCtx.lineTo(pad.l+pw,y);sCtx.stroke();sCtx.fillStyle='#888';sCtx.font='9px IBM Plex Mono';sCtx.fillText((Sdisplay*(1-i/4)).toFixed(1),2,y+3);}
   sCtx.strokeStyle='rgba(42,122,79,0.5)';sCtx.lineWidth=1;sCtx.setLineDash([4,3]);
   sCtx.beginPath();sCtx.moveTo(pad.l,ty(Smax_theory));sCtx.lineTo(pad.l+pw,ty(Smax_theory));sCtx.stroke();
-  sCtx.setLineDash([]);sCtx.fillStyle='#2a7a4f';sCtx.font='9px IBM Plex Mono';sCtx.fillText('S_max=ln C(64,'+microN+')',pad.l+pw-120,ty(Smax_theory)-3);
+  sCtx.setLineDash([]);sCtx.fillStyle='#2a7a4f';sCtx.font='9px IBM Plex Mono';sCtx.fillText('S_max coarse',pad.l+pw-86,ty(Smax_theory)-3);
   if(microS_history.length>1){
     sCtx.strokeStyle='#2a5c8b';sCtx.lineWidth=2;sCtx.beginPath();
     microS_history.forEach((s,i)=>{const x=pad.l+(i/Math.max(microS_history.length-1,1))*pw;const y=ty(s);i===0?sCtx.moveTo(x,y):sCtx.lineTo(x,y);});
@@ -1026,7 +1066,7 @@ function updateDisplays() {
   let S, Sm, T, Omega;
   if(mode==='micro'){
     S=microEntropy();
-    Sm=logCombination(64,microN);
+    Sm=microEntropyMax();
     T=0; Omega=Math.round(Math.exp(Math.min(S,50)));
     document.getElementById('dS').textContent=S.toFixed(3);
     document.getElementById('dT').textContent='—';
@@ -1129,12 +1169,12 @@ function spawnLeft(N, T) {
   for(let i=0;i<N;i++){
     let p, tries=0;
     do{
-      p={x:m+Math.random()*(wallX-2*m-3), y:m+Math.random()*(BH-2*m), vx:(Math.random()-.5)*4, vy:(Math.random()-.5)*4, type:'A'};
+      p={x:m+Math.random()*(wallX-2*m-3), y:m+Math.random()*(BH-2*m), vx:0, vy:0, type:'A'};
       tries++;
     }while(tries<80&&particles.some(q=>d2(p,q)<(2*R_part+1)**2));
     particles.push(p);
   }
-  rescaleGroup('A', T);
+  thermalizeGroup('A', T);
 }
 
 function openWall() {

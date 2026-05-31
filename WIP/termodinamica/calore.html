@@ -236,6 +236,17 @@ canvas { display: block; border: 1.5px solid var(--border); border-radius: 3px; 
 .data-row .dl { color: var(--ink-muted); }
 .data-row .dv { font-weight: 500; color: var(--ink); font-size: 0.88rem; }
 .data-row .dv.hot { color: var(--hot); }
+.phase-note {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--warm);
+  background: var(--cream);
+  border-radius: 0 3px 3px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
 
 /* Mini particle canvas */
 .particle-canvas-wrap {
@@ -646,9 +657,14 @@ input[type=range] { width: 100%; accent-color: var(--hot); height: 4px; cursor: 
                 <span class="dv hot" id="Tf-A">20.0 °C</span>
               </div>
               <div class="data-row">
+                <span class="dl">Fase</span>
+                <span class="dv" id="phase-A">liquido</span>
+              </div>
+              <div class="data-row">
                 <span class="dl">Q = mcΔT</span>
                 <span class="dv" id="Q-A">0 J</span>
               </div>
+              <div class="phase-note" id="phase-note-A">Nessun cambiamento di fase nel tratto selezionato.</div>
             </div>
           </div>
           <div class="sim-label">Particelle (vibrazione termica)</div>
@@ -681,9 +697,14 @@ input[type=range] { width: 100%; accent-color: var(--hot); height: 4px; cursor: 
                 <span class="dv hot" id="Tf-B">20.0 °C</span>
               </div>
               <div class="data-row">
+                <span class="dl">Fase</span>
+                <span class="dv" id="phase-B">solido</span>
+              </div>
+              <div class="data-row">
                 <span class="dl">Q = mcΔT</span>
                 <span class="dv" id="Q-B">0 J</span>
               </div>
+              <div class="phase-note" id="phase-note-B">Nessun cambiamento di fase nel tratto selezionato.</div>
             </div>
           </div>
           <div class="sim-label">Particelle (vibrazione termica)</div>
@@ -847,8 +868,9 @@ input[type=range] { width: 100%; accent-color: var(--hot); height: 4px; cursor: 
          (durante un cambiamento di stato), e lo stesso Q produce $\Delta T$ diversi in corpi diversi.</p>
       <div class="formula-block">$$Q = mc\,\Delta T$$</div>
       <p>Dove $m$ è la massa del corpo in kg, $c$ è il <strong>calore specifico</strong> in J/(kg·K)
-         e $\Delta T$ la variazione di temperatura in K (o °C). Questa formula vale a pressione costante
-         (processo isobaro), lontano da cambiamenti di stato.</p>
+         e $\Delta T$ la variazione di temperatura in K (o °C). Questa relazione vale dentro una singola fase.
+         Quando si raggiunge fusione o ebollizione, una parte del calore diventa calore latente e la temperatura
+         resta quasi costante finché la transizione non è completata.</p>
     </div>
 
     <div class="ec c2">
@@ -903,7 +925,8 @@ input[type=range] { width: 100%; accent-color: var(--hot); height: 4px; cursor: 
     <div class="ec c1">
       <h3>Il collegamento micro-macro</h3>
       <p>Il calore $Q$ ceduto a un gas si traduce, molecola per molecola, in un aumento di $\langle v^2 \rangle$.
-         Dalla definizione di temperatura come $T = m\langle v^2\rangle / (f k_B)$, cedere calore
+         Nella finestra del gas la dinamica è un analogo bidimensionale: $T = m\langle v^2\rangle /(2 k_B)$.
+         In un gas reale tridimensionale il fattore sarebbe 3. Cedere calore
          significa letteralmente <em>accelerare le molecole</em>. La legge macroscopica $Q = mc\Delta T$
          emerge dalla media statistica su un numero enorme di molecole ($N \sim 10^{23}$) di
          questa relazione microscopica elementare.</p>
@@ -923,12 +946,52 @@ input[type=range] { width: 100%; accent-color: var(--hot); height: 4px; cursor: 
 //  MATERIALI
 // ════════════════════════════════════════════
 const MATERIALS = {
-  acqua:    { name:'Acqua',     c:4186, color:'#3a7abf', T0:20 },
-  alluminio:{ name:'Alluminio', c:900,  color:'#90a8b8', T0:20 },
-  ferro:    { name:'Ferro',     c:450,  color:'#7a7a8a', T0:20 },
-  rame:     { name:'Rame',      c:385,  color:'#c07030', T0:20 },
-  oro:      { name:'Oro',       c:129,  color:'#c8a030', T0:20 },
-  vetro:    { name:'Vetro',     c:840,  color:'#70a890', T0:20 },
+  acqua: {
+    name:'Acqua', c:4186, color:'#3a7abf', T0:20, phase0:'liquido',
+    cp:{ solido:2100, liquido:4186, gas:2010 },
+    transitions:[
+      { from:'liquido', to:'gas', T:100, L:2256000, label:'ebollizione' }
+    ]
+  },
+  alluminio: {
+    name:'Alluminio', c:900, color:'#90a8b8', T0:20, phase0:'solido',
+    cp:{ solido:900, liquido:1170 },
+    transitions:[
+      { from:'solido', to:'liquido', T:660.3, L:397000, label:'fusione' },
+      { from:'liquido', to:'gas', T:2470, L:10900000, label:'ebollizione' }
+    ]
+  },
+  ferro: {
+    name:'Ferro', c:450, color:'#7a7a8a', T0:20, phase0:'solido',
+    cp:{ solido:450, liquido:820 },
+    transitions:[
+      { from:'solido', to:'liquido', T:1538, L:247000, label:'fusione' },
+      { from:'liquido', to:'gas', T:2862, L:6090000, label:'ebollizione' }
+    ]
+  },
+  rame: {
+    name:'Rame', c:385, color:'#c07030', T0:20, phase0:'solido',
+    cp:{ solido:385, liquido:520 },
+    transitions:[
+      { from:'solido', to:'liquido', T:1084.6, L:205000, label:'fusione' },
+      { from:'liquido', to:'gas', T:2562, L:4730000, label:'ebollizione' }
+    ]
+  },
+  oro: {
+    name:'Oro', c:129, color:'#c8a030', T0:20, phase0:'solido',
+    cp:{ solido:129, liquido:150 },
+    transitions:[
+      { from:'solido', to:'liquido', T:1064.2, L:63700, label:'fusione' },
+      { from:'liquido', to:'gas', T:2856, L:1645000, label:'ebollizione' }
+    ]
+  },
+  vetro: {
+    name:'Vetro', c:840, color:'#70a890', T0:20, phase0:'solido',
+    cp:{ solido:840 },
+    transitions:[
+      { from:'solido', to:'rammollito', T:700, L:0, label:'rammollimento' }
+    ]
+  },
 };
 
 let matA = 'acqua';
@@ -1133,15 +1196,76 @@ function updateCalorim() {
     const key = side==='A' ? matA : matB;
     const mat = MATERIALS[key];
     const Q_J = Q_kJ * 1000;
-    const dT = Q_J / (mass * mat.c);
-    const Tf = mat.T0 + dT;
+    const state = heatMaterial(mat, Q_J, mass);
+    const dT = state.T - mat.T0;
+    const Tf = state.T;
 
     document.getElementById(`DT-${side}`).textContent = (dT >= 0 ? '+' : '') + dT.toFixed(2) + ' °C';
     document.getElementById(`Tf-${side}`).textContent = Tf.toFixed(2) + ' °C';
+    document.getElementById(`phase-${side}`).textContent = state.phase;
+    document.getElementById(`phase-note-${side}`).textContent = state.note;
     document.getElementById(`Q-${side}`).textContent = Q_J >= 1000
       ? (Q_J/1000).toFixed(1)+' kJ'
       : Q_J.toFixed(0)+' J';
   });
+}
+
+function heatMaterial(mat, Q_J, massKg) {
+  let remaining = Math.max(0, Q_J / massKg); // J/kg
+  let T = mat.T0;
+  let phase = mat.phase0 || 'solido';
+  let latentUsed = 0;
+  let activeTransition = null;
+
+  for (let tr of mat.transitions || []) {
+    const cp = mat.cp[phase] || mat.c;
+    if (phase !== tr.from || T >= tr.T) continue;
+
+    const sensible = Math.max(0, (tr.T - T) * cp);
+    if (remaining < sensible) {
+      T += remaining / cp;
+      remaining = 0;
+      break;
+    }
+
+    T = tr.T;
+    remaining -= sensible;
+
+    if (tr.L > 0) {
+      if (remaining < tr.L) {
+        latentUsed = remaining;
+        activeTransition = tr;
+        remaining = 0;
+        break;
+      }
+      remaining -= tr.L;
+    }
+
+    phase = tr.to;
+  }
+
+  if (remaining > 0) {
+    const cp = mat.cp[phase] || mat.c;
+    T += remaining / cp;
+  }
+
+  let label = phase;
+  let note = 'Nessun cambiamento di fase nel tratto selezionato.';
+  if (activeTransition) {
+    const pct = Math.max(0, Math.min(100, latentUsed / activeTransition.L * 100));
+    label = activeTransition.label;
+    note = `${activeTransition.label}: la temperatura resta a ${activeTransition.T.toFixed(0)} °C mentre il calore latente completa la transizione (${pct.toFixed(0)}%).`;
+  } else {
+    const crossed = (mat.transitions || []).filter(tr => T >= tr.T);
+    if (crossed.length) {
+      const last = crossed[crossed.length - 1];
+      note = last.L > 0
+        ? `La sostanza ha superato ${last.label} a ${last.T.toFixed(0)} °C: il modello include il relativo calore latente.`
+        : `La sostanza ha superato la soglia di ${last.label} attorno a ${last.T.toFixed(0)} °C.`;
+    }
+  }
+
+  return { T, phase: label, note };
 }
 
 // ════════════════════════════════════════════
@@ -1159,14 +1283,14 @@ function initGas() {
       p = {
         x: m + Math.random()*(W-2*m),
         y: m + Math.random()*(H-2*m),
-        vx: (Math.random()-.5)*4,
-        vy: (Math.random()-.5)*4,
+        vx: 0,
+        vy: 0,
       };
       tries++;
     } while (tries < 80 && gasParticles.some(q => d2(p,q) < (2*R_GAS+1)**2));
     gasParticles.push(p);
   }
-  rescaleGasT(gasT);
+  thermalizeGas(gasT);
   vrmsHistory = [];
   tHistory = [];
 }
@@ -1179,13 +1303,12 @@ function respawnGas(N) {
   for (let i = 0; i < N; i++) {
     let p, tries = 0;
     do {
-      p = { x: m+Math.random()*(W-2*m), y: m+Math.random()*(H-2*m),
-            vx:(Math.random()-.5)*4, vy:(Math.random()-.5)*4 };
+      p = { x: m+Math.random()*(W-2*m), y: m+Math.random()*(H-2*m), vx:0, vy:0 };
       tries++;
     } while(tries < 80 && gasParticles.some(q=>d2(p,q)<(2*R_GAS+1)**2));
     gasParticles.push(p);
   }
-  rescaleGasT(gasT);
+  thermalizeGas(gasT);
 }
 
 function resetGas() {
@@ -1211,6 +1334,32 @@ function rescaleGasT(T) {
   if (cur < 1e-9) return;
   const f = Math.sqrt(T / cur);
   for (let p of gasParticles) { p.vx *= f; p.vy *= f; }
+  removeGasDrift();
+}
+
+function thermalizeGas(T) {
+  const sigma = Math.sqrt(Math.max(T, 1e-9));
+  for (let p of gasParticles) {
+    p.vx = gaussianRandom() * sigma;
+    p.vy = gaussianRandom() * sigma;
+  }
+  removeGasDrift();
+  rescaleGasT(T);
+}
+
+function gaussianRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function removeGasDrift() {
+  if (!gasParticles.length) return;
+  let mx = 0, my = 0;
+  for (let p of gasParticles) { mx += p.vx; my += p.vy; }
+  mx /= gasParticles.length; my /= gasParticles.length;
+  for (let p of gasParticles) { p.vx -= mx; p.vy -= my; }
 }
 
 function gasGetT() {
@@ -1473,7 +1622,9 @@ function updateQtPlot() {
   const pad = {l:52,r:20,t:16,b:36};
   const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
   const Qmax = 500; // kJ
-  const dTmax = 200; // °C max display
+  const maxStateA = heatMaterial(MATERIALS[matA], Qmax*1000, mass);
+  const maxStateB = heatMaterial(MATERIALS[matB], Qmax*1000, mass);
+  const dTmax = Math.max(20, Math.ceil(Math.max(maxStateA.T - MATERIALS[matA].T0, maxStateB.T - MATERIALS[matB].T0, 1) / 50) * 50);
 
   function tx(q) { return pad.l + (q/Qmax)*pw; }
   function ty(dt) { return pad.t + ph - Math.min(dt/dTmax,1)*ph; }
@@ -1500,14 +1651,14 @@ function updateQtPlot() {
     ctx.strokeStyle = mat.color; ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let q=0; q<=Qmax; q+=2) {
-      const dT = (q*1000)/(mass*mat.c);
+      const dT = heatMaterial(mat, q*1000, mass).T - mat.T0;
       const x=tx(q), y=ty(dT);
       q===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
     }
     ctx.stroke();
 
     // Current Q marker
-    const dT_cur = (Q_kJ*1000)/(mass*mat.c);
+    const dT_cur = heatMaterial(mat, Q_kJ*1000, mass).T - mat.T0;
     ctx.beginPath();
     ctx.arc(tx(Q_kJ), ty(dT_cur), 5, 0, Math.PI*2);
     ctx.fillStyle = mat.color; ctx.fill();
@@ -1631,8 +1782,8 @@ function mainLoop(ts) {
   const matObjA = MATERIALS[matA];
   const matObjB = MATERIALS[matB];
   const Q_J = Q_kJ * 1000;
-  const TA = matObjA.T0 + Q_J/(mass*matObjA.c);
-  const TB = matObjB.T0 + Q_J/(mass*matObjB.c);
+  const TA = heatMaterial(matObjA, Q_J, mass).T;
+  const TB = heatMaterial(matObjB, Q_J, mass).T;
 
   stepSolid(solidA, TA, matObjA.color);
   stepSolid(solidB, TB, matObjB.color);

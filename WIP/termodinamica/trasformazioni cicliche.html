@@ -153,7 +153,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
 .ec.otto h3::before{background:#2a5c8b;}
 .ec.diesel h3::before{background:#2a7a4f;}
 .ec.fridge h3::before{background:#5550c0;}
-.ec.free h3::before{background:var(--gold);}
 .ec p{font-size:.85rem;line-height:1.72;color:var(--ink-soft);margin-bottom:8px;}
 .formula-block{background:var(--cream);border-left:3px solid var(--border);border-radius:2px;padding:8px 12px;margin:8px 0;font-size:.88rem;}
 
@@ -177,8 +176,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
 
 <!-- MODE TABS -->
 <div class="mode-tabs">
-  <button class="mode-tab active" onclick="setMode('free')" id="tab-free">🔧 Libera</button>
-  <button class="mode-tab" onclick="setMode('carnot')" id="tab-carnot">◈ Carnot</button>
+  <button class="mode-tab active" onclick="setMode('carnot')" id="tab-carnot">◈ Carnot</button>
   <button class="mode-tab" onclick="setMode('otto')" id="tab-otto">⚙ Otto</button>
   <button class="mode-tab" onclick="setMode('diesel')" id="tab-diesel">🔩 Diesel</button>
   <button class="mode-tab" onclick="setMode('fridge')" id="tab-fridge">❄ Frigorifero</button>
@@ -190,16 +188,16 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
   <div class="left">
 
     <div class="panel">
-      <div class="sim-label" id="gas-label">Camera del gas — trascina il pistone (riga colorata)</div>
+      <div class="sim-label" id="gas-label">Camera del gas — pistone animato dal ciclo</div>
       <canvas id="gasCanvas" width="640" height="290"></canvas>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--ink-muted);margin-top:5px;text-align:center;" id="piston-hint">
-        ↕ Trascina il pistone per comprimere/espandere
+        Il pistone segue le trasformazioni del ciclo selezionato
       </div>
     </div>
 
     <div class="panel">
       <div class="sim-label">Diagramma PV — pressione vs volume</div>
-      <canvas id="pvCanvas" width="640" height="230"></canvas>
+      <canvas id="pvCanvas" width="640" height="280"></canvas>
       <div class="pv-legend" id="pv-legend">
         <div class="li"><div class="ld" style="background:var(--gold)"></div>Isoterma</div>
         <div class="li"><div class="ld" style="background:var(--accent2)"></div>Isobara</div>
@@ -238,8 +236,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
       <!-- injected by JS -->
     </div>
 
-    <!-- Cycle KPIs (hidden in free mode) -->
-    <div class="panel" id="cycle-kpi-panel" style="display:none;">
+    <div class="panel" id="cycle-kpi-panel">
       <div class="panel-title">Prestazioni del ciclo</div>
       <div class="cycle-kpi" id="cycle-kpis"></div>
       <div style="height:8px;"></div>
@@ -286,8 +283,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
     <div style="background:var(--panel-bg);border:1.5px solid var(--panel-border);border-radius:4px;padding:18px 20px;">
       <h3 style="font-family:'EB Garamond',serif;font-size:1.05rem;font-weight:500;margin-bottom:8px;">Come usare la simulazione</h3>
       <p style="font-size:.855rem;line-height:1.72;color:var(--ink-soft);">
-        Seleziona un ciclo dal <strong>menu in cima</strong>. Nella modalità <em>Libera</em> puoi trascinare
-        il pistone manualmente scegliendo il tipo di trasformazione. Negli altri cicli regola i parametri
+        Seleziona un ciclo dal <strong>menu in cima</strong>. Regola i parametri
         (temperature dei serbatoi, rapporto di compressione, rapporto di cutoff) con gli slider, poi premi
         <strong>"Avvia ciclo"</strong> per far partire l'animazione. Il pannello mostra le fasi attive con
         il loro colore corrispondente nel diagramma PV.
@@ -319,9 +315,10 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
   <div class="section-title">Fisica della simulazione</div>
   <div class="divider"></div>
   <p class="exp-intro">
-    Il gas ideale è simulato microscopicamente: ogni particella è un disco rigido che rimbalza elasticamente sulle pareti e sulle altre particelle.
-    La <strong>temperatura</strong> è misurata direttamente da $\langle v^2 \rangle$; la <strong>pressione</strong> dalla legge dei gas ideali $P = NkT/V$.
-    Le trasformazioni termodinamiche impongono vincoli macroscopici (via rescaling delle velocità) coerenti con la fisica di ogni processo.
+    Le particelle nel pistone sono una visualizzazione cinetica bidimensionale; le grandezze termodinamiche seguono invece
+    un gas ideale monoatomico con $\gamma = 5/3$. La <strong>temperatura</strong> è ricavata da $\langle v^2 \rangle$,
+    la <strong>pressione</strong> dalla legge $P = NkT/V$ e l'energia interna da $U = N C_V T$.
+    Le trasformazioni impongono vincoli macroscopici coerenti con il Primo Principio.
   </p>
 
   <div class="exp-grid">
@@ -363,16 +360,6 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
          Un COP $> 1$ non viola la termodinamica: stiamo semplicemente spostando calore, non creandolo. Per questo le pompe di calore sono più efficienti delle resistenze elettriche pure.</p>
     </div>
 
-    <div class="ec free">
-      <h3>Modalità libera</h3>
-      <p>Nella modalità libera puoi costruire manualmente qualsiasi trasformazione termodinamica trascinando il pistone e applicando calore con lo slider.
-         Scegli tra quattro vincoli: isoterma ($T=\text{cost}$), isobara ($P=\text{cost}$), isocora ($V=\text{cost}$) e adiabatica ($Q=0$).
-         Il diagramma PV registra la traccia effettiva del processo, permettendo di costruire cicli arbitrari e verificare il Primo Principio in ogni fase.</p>
-      <div class="formula-block">$$\Delta U = Q - W \qquad \text{(Primo Principio)}$$</div>
-      <p>I colori delle particelle codificano la velocità istantanea: blu = lenta/fredda, arancio/rossa = veloce/calda.
-         La distribuzione visibile si avvicina alla <em>distribuzione di Maxwell-Boltzmann</em>, che descrive la statistica delle velocità all'equilibrio termodinamico.</p>
-    </div>
-
   </div>
 </div>
 
@@ -380,7 +367,9 @@ input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointe
 // ═══════════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════════
-const GAMMA = 5/3;
+const GAMMA = 5/3;       // gas ideale monoatomico 3D
+const CV_IDEAL = 1 / (GAMMA - 1);
+const CP_IDEAL = GAMMA / (GAMMA - 1);
 const R_part = 4;   // particle visual radius
 
 // ═══════════════════════════════════════════════════════
@@ -393,13 +382,8 @@ let particles = [];
 let simSpeed = 1;
 let paused = false;
 
-// Free mode
-let freeProcess = 'isothermal';
-let T_ref, V_ref, P_ref;
-let W_acc=0, Q_acc=0, dU_acc=0;
-
 // Cycle mode
-let mode = 'free';          // 'free'|'carnot'|'otto'|'diesel'|'fridge'
+let mode = 'carnot';        // 'carnot'|'otto'|'diesel'|'fridge'
 let cyclePhase = 0;          // index in cycle steps
 let cycleRunning = false;
 let cycleT = 0;              // interpolation parameter 0→1 within phase
@@ -410,9 +394,11 @@ let cycleSteps = [];
 let cycleState = {};         // {TH, TC, r, rc, ...}
 
 let pvHistory = [];          // {v, p, color}
+let pvCursor = null;         // analytic PV point used for the plotted cursor
 
 // Accumulated per-cycle energy
 let cycleW=0, cycleQH=0, cycleQC=0;
+let cycleU0=0;
 
 // ═══════════════════════════════════════════════════════
 //  INIT
@@ -425,8 +411,7 @@ window.addEventListener('load', () => {
   BW = gasCanvas.width; BH = gasCanvas.height;
   pistonY = BH * 0.4;
 
-  setMode('free');
-  setupDrag();
+  setMode('carnot');
   requestAnimationFrame(loop);
 });
 
@@ -437,11 +422,12 @@ function setMode(m) {
   mode = m;
   cyclePhase = 0; cycleT = 0; cycleRunning = false;
   cycleW=0; cycleQH=0; cycleQC=0;
-  W_acc=0; Q_acc=0; dU_acc=0;
+  cycleU0=0;
   pvHistory = [];
+  pvCursor = null;
 
   // Update tabs
-  ['free','carnot','otto','diesel','fridge'].forEach(id=>{
+  ['carnot','otto','diesel','fridge'].forEach(id=>{
     document.getElementById('tab-'+id).classList.toggle('active', id===m);
   });
 
@@ -454,64 +440,42 @@ function buildRightPanel() {
   const el = document.getElementById('right-controls');
   const kpi = document.getElementById('cycle-kpi-panel');
 
-  if (mode==='free') {
-    kpi.style.display='none';
-    el.innerHTML = `
-      <div class="panel-title">Trasformazione attiva</div>
-      <div class="proc-buttons">
-        <button class="pb" id="pb-iso"  onclick="setFreeProc('isothermal')">🌡 Isoterma</button>
-        <button class="pb" id="pb-iba"  onclick="setFreeProc('isobaric')">⬌ Isobara</button>
-        <button class="pb" id="pb-ivo"  onclick="setFreeProc('isochoric')">⬍ Isocora</button>
-        <button class="pb" id="pb-adi"  onclick="setFreeProc('adiabatic')">🔒 Adiabatica</button>
-      </div>
-      <div class="proc-desc" id="proc-desc-txt">T = cost &nbsp;|&nbsp; ΔU=0 &nbsp;|&nbsp; Q=W &nbsp;|&nbsp; Curva PV iperbola</div>
-      <div style="margin-top:12px;">
-        <div class="sl-label" style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-muted);margin-bottom:3px;">
-          Aggiungi calore ΔQ &nbsp;<span id="lbl-heat" style="color:var(--ink);font-weight:500;">0</span>
-        </div>
-        <input type="range" id="sl-heat" min="-8" max="8" value="0" step="0.5"
-          oninput="document.getElementById('lbl-heat').textContent=this.value"
-          onchange="applyHeatFree(parseFloat(this.value));this.value=0;document.getElementById('lbl-heat').textContent=0">
-      </div>`;
-    setFreeProc('isothermal');
-  } else {
-    kpi.style.display='block';
-    let html = `<div class="panel-title">`;
-    const titles={carnot:'Ciclo di Carnot',otto:'Ciclo di Otto',diesel:'Ciclo Diesel',fridge:'Frigorifero (Carnot inv.)'};
-    html += titles[mode]+'</div>';
+  kpi.style.display='block';
+  let html = `<div class="panel-title">`;
+  const titles={carnot:'Ciclo di Carnot',otto:'Ciclo di Otto',diesel:'Ciclo Diesel',fridge:'Frigorifero (Carnot inv.)'};
+  html += titles[mode]+'</div>';
 
-    if (mode==='carnot'||mode==='fridge') {
-      html += `
-        <div class="slg"><div class="sl-label">T<sub>H</sub> — Sorgente calda <span id="lbl-TH">2.5</span></div>
-        <input type="range" id="sl-TH" min="1.5" max="5" step="0.1" value="2.5" oninput="document.getElementById('lbl-TH').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
-        <div class="slg"><div class="sl-label">T<sub>C</sub> — Sorgente fredda <span id="lbl-TC">1.0</span></div>
-        <input type="range" id="sl-TC" min="0.3" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('lbl-TC').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
-    } else if (mode==='otto') {
-      html += `
-        <div class="slg"><div class="sl-label">Rapporto di compressione r <span id="lbl-r">4</span></div>
-        <input type="range" id="sl-r" min="2" max="12" step="0.5" value="4" oninput="document.getElementById('lbl-r').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
-        <div class="slg"><div class="sl-label">T<sub>min</sub> — Temperatura base <span id="lbl-Tmin">1.0</span></div>
-        <input type="range" id="sl-Tmin" min="0.5" max="2" step="0.1" value="1.0" oninput="document.getElementById('lbl-Tmin').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
-    } else if (mode==='diesel') {
-      html += `
-        <div class="slg"><div class="sl-label">Rapporto di compressione r <span id="lbl-r">6</span></div>
-        <input type="range" id="sl-r" min="3" max="18" step="0.5" value="6" oninput="document.getElementById('lbl-r').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
-        <div class="slg"><div class="sl-label">Rapporto di cutoff r<sub>c</sub> <span id="lbl-rc">2.0</span></div>
-        <input type="range" id="sl-rc" min="1.2" max="4" step="0.1" value="2.0" oninput="document.getElementById('lbl-rc').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
-    }
-
+  if (mode==='carnot'||mode==='fridge') {
     html += `
-      <div class="slg" style="margin-top:8px;"><div class="sl-label">Velocità ciclo <span id="lbl-csp">Normale</span></div>
-      <input type="range" id="sl-csp" min="1" max="5" step="1" value="3"
-        oninput="cycleSpeed=0.001*Math.pow(2,parseInt(this.value)-1);const lbs=['Lenta','Lenta','Normale','Veloce','Max'];document.getElementById('lbl-csp').textContent=lbs[parseInt(this.value)-1]"></div>`;
-
-    html += `<div class="phase-bar" id="phase-bar"></div>`;
-    html += `<div class="btn-row"><button class="btn primary" onclick="startCycle()">▶ Avvia ciclo</button><button class="btn" onclick="stopCycle()">■ Stop</button></div>`;
-    el.innerHTML = html;
-
-    document.getElementById('piston-hint').textContent = 'Il pistone è animato automaticamente dal ciclo';
-    document.getElementById('gasCanvas').style.cursor = 'default';
+      <div class="slg"><div class="sl-label">T<sub>H</sub> — Sorgente calda <span id="lbl-TH">2.5</span></div>
+      <input type="range" id="sl-TH" min="1.5" max="5" step="0.1" value="2.5" oninput="document.getElementById('lbl-TH').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
+      <div class="slg"><div class="sl-label">T<sub>C</sub> — Sorgente fredda <span id="lbl-TC">1.0</span></div>
+      <input type="range" id="sl-TC" min="0.3" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('lbl-TC').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
+  } else if (mode==='otto') {
+    html += `
+      <div class="slg"><div class="sl-label">Rapporto di compressione r <span id="lbl-r">4</span></div>
+      <input type="range" id="sl-r" min="2" max="12" step="0.5" value="4" oninput="document.getElementById('lbl-r').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
+      <div class="slg"><div class="sl-label">T<sub>min</sub> — Temperatura base <span id="lbl-Tmin">1.0</span></div>
+      <input type="range" id="sl-Tmin" min="0.5" max="2" step="0.1" value="1.0" oninput="document.getElementById('lbl-Tmin').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
+  } else if (mode==='diesel') {
+    html += `
+      <div class="slg"><div class="sl-label">Rapporto di compressione r <span id="lbl-r">6</span></div>
+      <input type="range" id="sl-r" min="3" max="18" step="0.5" value="6" oninput="document.getElementById('lbl-r').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>
+      <div class="slg"><div class="sl-label">Rapporto di cutoff r<sub>c</sub> <span id="lbl-rc">2.0</span></div>
+      <input type="range" id="sl-rc" min="1.2" max="4" step="0.1" value="2.0" oninput="document.getElementById('lbl-rc').textContent=parseFloat(this.value).toFixed(1);buildCycleSteps()"></div>`;
   }
+
+  html += `
+    <div class="slg" style="margin-top:8px;"><div class="sl-label">Velocità ciclo <span id="lbl-csp">Normale</span></div>
+    <input type="range" id="sl-csp" min="1" max="5" step="1" value="3"
+      oninput="cycleSpeed=0.001*Math.pow(2,parseInt(this.value)-1);const lbs=['Lenta','Lenta','Normale','Veloce','Max'];document.getElementById('lbl-csp').textContent=lbs[parseInt(this.value)-1]"></div>`;
+
+  html += `<div class="phase-bar" id="phase-bar"></div>`;
+  html += `<div class="btn-row"><button class="btn primary" onclick="startCycle()">▶ Avvia ciclo</button><button class="btn" onclick="stopCycle()">■ Stop</button></div>`;
+  el.innerHTML = html;
+
+  document.getElementById('piston-hint').textContent = 'Il pistone è animato automaticamente dal ciclo';
+  document.getElementById('gasCanvas').style.cursor = 'default';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -525,28 +489,29 @@ function buildCycleSteps() {
   if (mode==='carnot'||mode==='fridge') {
     const TH = parseFloat(document.getElementById('sl-TH')?.value||2.5);
     const TC = parseFloat(document.getElementById('sl-TC')?.value||1.0);
-    const Vmax = BW*(BH*0.85 - BH*0.15);
-    const Vmin = BW*(BH*0.85 - BH*0.55);
-    // V1 big, V2 medium (after isoth. expansion at TH), V3=Vmax (after adiab), V4=Vmin (after isoth. comp)
-    const V1 = Vmin * 1.0;
-    const V2 = V1 * 2.2;
-    // After adiabatic expansion: TC = TH*(V2/V3)^(γ-1) → V3 = V2*(TH/TC)^(1/(γ-1))
-    const V3 = V2 * Math.pow(TH/TC, 1/(GAMMA-1));
-    const V4 = V1 * Math.pow(TH/TC, 1/(GAMMA-1));
+    const bounds = volumeBounds();
+    const Vhi = bounds.max * 0.90;
+    const Vlo = bounds.min * 1.15;
+    const adiabaticRatio = Math.pow(TH/TC, 1/(GAMMA-1));
+    const isoRatio = Math.max(1.15, Math.min(1.8, Vhi / (Vlo * adiabaticRatio)));
+    const V1 = Math.max(Vlo, Vhi / (adiabaticRatio * isoRatio));
+    const V2 = V1 * isoRatio;
+    const V3 = V2 * adiabaticRatio;
+    const V4 = V1 * adiabaticRatio;
 
     if (mode==='carnot') {
       cycleSteps = [
-        {label:'1→2 Isoterma calda', color:'#c4973a', type:'iso', V0:V1, V1:V2, T0:TH, T1:TH},
+        {label:'1→2 Isoterma calda', color:'#c4973a', type:'iso', reservoir:'hot', V0:V1, V1:V2, T0:TH, T1:TH},
         {label:'2→3 Adiabatica esp.', color:'#2a7a4f', type:'adi', V0:V2, V1:V3, T0:TH, T1:TC},
-        {label:'3→4 Isoterma fredda', color:'#3070c0', type:'iso', V0:V3, V1:V4, T0:TC, T1:TC},
+        {label:'3→4 Isoterma fredda', color:'#3070c0', type:'iso', reservoir:'cold', V0:V3, V1:V4, T0:TC, T1:TC},
         {label:'4→1 Adiabatica comp.', color:'#8b4a2a', type:'adi', V0:V4, V1:V1, T0:TC, T1:TH},
       ];
     } else {  // fridge — anticlockwise
       cycleSteps = [
-        {label:'1→4 Adiabatica comp.', color:'#8b4a2a', type:'adi', V0:V1, V1:V4, T0:TH, T1:TC},
-        {label:'4→3 Isoterma fredda', color:'#3070c0', type:'iso', V0:V4, V1:V3, T0:TC, T1:TC},
-        {label:'3→2 Adiabatica esp.', color:'#2a7a4f', type:'adi', V0:V3, V1:V2, T0:TC, T1:TH},
-        {label:'2→1 Isoterma calda', color:'#c4973a', type:'iso', V0:V2, V1:V1, T0:TH, T1:TH},
+        {label:'1→4 Adiabatica esp.', color:'#8b4a2a', type:'adi', V0:V1, V1:V4, T0:TH, T1:TC},
+        {label:'4→3 Isoterma fredda', color:'#3070c0', type:'iso', reservoir:'cold', V0:V4, V1:V3, T0:TC, T1:TC},
+        {label:'3→2 Adiabatica comp.', color:'#2a7a4f', type:'adi', V0:V3, V1:V2, T0:TC, T1:TH},
+        {label:'2→1 Isoterma calda', color:'#c4973a', type:'iso', reservoir:'hot', V0:V2, V1:V1, T0:TH, T1:TH},
       ];
     }
     cycleState = {TH, TC};
@@ -557,14 +522,13 @@ function buildCycleSteps() {
     const Vmax = BW*(BH*0.85 - BH*0.15);
     const Vmin = Vmax/r;
     const T2   = Tmin * Math.pow(r, GAMMA-1);
-    const QH   = 2.0;   // heat added at isochoric
-    const T3   = T2 + QH * 2 / particles.length;
+    const T3   = T2 * 2.4;
     const T4   = T3 / Math.pow(r, GAMMA-1);
     cycleSteps = [
       {label:'1→2 Comp. adiabatica', color:'#2a7a4f', type:'adi', V0:Vmax, V1:Vmin, T0:Tmin, T1:T2},
-      {label:'2→3 Isocora (Q_H)',    color:'#c4973a', type:'ivo', V0:Vmin, V1:Vmin, T0:T2,   T1:T3},
+      {label:'2→3 Isocora (Q_H)',    color:'#c4973a', type:'ivo', reservoir:'hot', V0:Vmin, V1:Vmin, T0:T2,   T1:T3},
       {label:'3→4 Esp. adiabatica',  color:'#5aaa7f', type:'adi', V0:Vmin, V1:Vmax, T0:T3,   T1:T4},
-      {label:'4→1 Isocora (Q_C)',    color:'#3070c0', type:'ivo', V0:Vmax, V1:Vmax, T0:T4,   T1:Tmin},
+      {label:'4→1 Isocora (Q_C)',    color:'#3070c0', type:'ivo', reservoir:'cold', V0:Vmax, V1:Vmax, T0:T4,   T1:Tmin},
     ];
     cycleState = {r, Tmin, T2, T3, T4};
 
@@ -580,9 +544,9 @@ function buildCycleSteps() {
     const T4   = T3 * Math.pow(V3/Vmax, GAMMA-1);
     cycleSteps = [
       {label:'1→2 Comp. adiabatica', color:'#2a7a4f', type:'adi', V0:Vmax, V1:Vmin, T0:Tmin, T1:T2},
-      {label:'2→3 Isobara (Q_H)',    color:'#c4973a', type:'iba', V0:Vmin, V1:V3,   T0:T2,   T1:T3},
+      {label:'2→3 Isobara (Q_H)',    color:'#c4973a', type:'iba', reservoir:'hot', V0:Vmin, V1:V3,   T0:T2,   T1:T3},
       {label:'3→4 Esp. adiabatica',  color:'#5aaa7f', type:'adi', V0:V3,   V1:Vmax, T0:T3,   T1:T4},
-      {label:'4→1 Isocora (Q_C)',    color:'#3070c0', type:'ivo', V0:Vmax, V1:Vmax, T0:T4,   T1:Tmin},
+      {label:'4→1 Isocora (Q_C)',    color:'#3070c0', type:'ivo', reservoir:'cold', V0:Vmax, V1:Vmax, T0:T4,   T1:Tmin},
     ];
     cycleState = {r, rc, Tmin, T2, T3, T4};
   }
@@ -658,11 +622,15 @@ function startCycle() {
   cyclePhase = 0;
   cycleT = 0;
   cycleW=0; cycleQH=0; cycleQC=0;
+  cycleU0=0;
   pvHistory=[];
   buildCycleSteps();
   // Set initial state
   const s = cycleSteps[0];
   setVolumeAndTemp(s.V0, s.T0);
+  pvCursor = {...getCyclePoint(s, 0), color:s.color};
+  pvHistory.push(pvCursor);
+  cycleU0 = getInternalEnergy();
 }
 
 function stopCycle() { cycleRunning = false; }
@@ -674,10 +642,15 @@ function advanceCycle() {
 
   if (cycleT >= 1) {
     cycleT = 0;
-    cyclePhase = (cyclePhase+1) % cycleSteps.length;
-    if (cyclePhase === 0) {
-      // completed one full cycle
-      cycleW=0; cycleQH=0; cycleQC=0;
+    cyclePhase = cyclePhase + 1;
+    if (cyclePhase >= cycleSteps.length) {
+      cyclePhase = 0;
+      cycleRunning = false;
+      const first = cycleSteps[0];
+      setVolumeAndTemp(first.V0, first.T0);
+      updatePhaseDots();
+      updateCycleKPIs();
+      return;
     }
     const ns = cycleSteps[cyclePhase];
     setVolumeAndTemp(ns.V0, ns.T0);
@@ -706,39 +679,46 @@ function advanceCycle() {
 
   T_new = Math.max(0.05, T_new);
 
-  // accumulate energy
-  const oldV = getVolume();
+  const oldPV = pvCursor || {v:getVolume(), p:getPressure()};
   const oldT = getTemperature();
-  const dV = V_new - oldV;
-  const P_cur = getPressure();
-  const dW_step = P_cur * dV;
+  const dV = V_new - oldPV.v;
+  const newP = particles.length * T_new / V_new;
+  const dW_step = 0.5 * (oldPV.p + newP) * dV;
+  const dU_step = particles.length * CV_IDEAL * (T_new - oldT);
+  const dQ_step = dU_step + dW_step;
   cycleW += dW_step;
 
-  if (s.type==='iso' && s.T0 > (cycleState.TC||0.5)) {
-    cycleQH += Math.abs(dW_step);
-  } else if (s.type==='iso' && s.T0 <= (cycleState.TC||0.5)) {
-    cycleQC += dW_step;
-  } else if (s.type==='ivo' && T_new > oldT) {
-    cycleQH += particles.length*(T_new-oldT);
-  } else if (s.type==='ivo' && T_new < oldT) {
-    cycleQC += particles.length*(T_new-oldT);
-  } else if (s.type==='iba' && T_new > oldT) {
-    cycleQH += particles.length*(T_new-oldT)*GAMMA/(GAMMA-1);
+  if (Math.abs(dQ_step) > 1e-9) {
+    if (s.reservoir === 'cold') cycleQC += dQ_step;
+    else cycleQH += dQ_step;
   }
 
   setVolumeAndTemp(V_new, T_new);
-  pvHistory.push({v:getVolume(), p:getPressure(), color:s.color});
+  pvCursor = {v:V_new, p:newP, color:s.color};
+  pvHistory.push(pvCursor);
   if (pvHistory.length > 2000) pvHistory.shift();
   updateCycleKPIs();
 }
 
 function setVolumeAndTemp(V_target, T_target) {
-  // move piston to achieve V_target
+  V_target = clampVolume(V_target);
   const newH = V_target / BW;
   pistonY = Math.max(BH*0.05, BH - newH);
   // clamp particles
   clampParticles();
   rescaleToTemp(Math.max(0.01, T_target));
+}
+
+function volumeBounds() {
+  return {
+    min: BW * (BH - BH*0.92),
+    max: BW * (BH - BH*0.05)
+  };
+}
+
+function clampVolume(V) {
+  const b = volumeBounds();
+  return Math.max(b.min, Math.min(b.max, V));
 }
 
 function smoothstep(t) { return t*t*(3-2*t); }
@@ -751,7 +731,6 @@ function resetParticles() {
   pistonY = BH * 0.4;
   particles = [];
   spawnParticles(N);
-  captureRef();
 }
 
 function spawnParticles(N) {
@@ -760,12 +739,13 @@ function spawnParticles(N) {
   for (let i=0; i<N; i++) {
     let p, tries=0;
     do {
-      p={x:m+Math.random()*(BW-2*m), y:pistonY+m+Math.random()*(gasH-2*m), vx:(Math.random()-.5)*4, vy:(Math.random()-.5)*4};
+      p={x:m+Math.random()*(BW-2*m), y:pistonY+m+Math.random()*(gasH-2*m), vx:0, vy:0};
       tries++;
     } while(tries<80 && particles.some(q=>d2(p,q)<(2*R_part+1)**2));
     particles.push(p);
   }
   rescaleToTemp(1.0);
+  thermalize(1.0);
 }
 
 function d2(a,b){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;}
@@ -815,116 +795,39 @@ function getTemperature() {
   return s/(2*particles.length);
 }
 function getPressure()    { return particles.length*getTemperature()/getVolume(); }
-function getInternalEnergy(){ return particles.length*getTemperature(); }
+function getInternalEnergy(){ return particles.length * CV_IDEAL * getTemperature(); }
 
 function rescaleToTemp(T) {
   const Tc=getTemperature();
   if (Tc<1e-9) return;
   const f=Math.sqrt(T/Tc);
   for (let p of particles){p.vx*=f;p.vy*=f;}
+  removeDrift();
 }
 
-function captureRef() {
-  T_ref=getTemperature(); V_ref=getVolume(); P_ref=getPressure();
-  W_acc=0;Q_acc=0;dU_acc=0;
-}
-
-// ═══════════════════════════════════════════════════════
-//  FREE MODE
-// ═══════════════════════════════════════════════════════
-const procDescs = {
-  isothermal:'T = cost &nbsp;|&nbsp; ΔU=0 &nbsp;|&nbsp; Q=W &nbsp;|&nbsp; Curva PV: iperbola',
-  isobaric:  'P = cost &nbsp;|&nbsp; V∝T &nbsp;|&nbsp; Q=ΔU+W &nbsp;|&nbsp; Curva PV: retta orizzontale',
-  isochoric: 'V = cost &nbsp;|&nbsp; W=0 &nbsp;|&nbsp; Q=ΔU &nbsp;|&nbsp; Curva PV: retta verticale',
-  adiabatic: 'Q = 0 &nbsp;|&nbsp; PV^γ=cost &nbsp;|&nbsp; W=−ΔU &nbsp;|&nbsp; Più ripida dell\'isoterma',
-};
-
-function setFreeProc(p) {
-  freeProcess = p;
-  captureRef();
-  W_acc=0;Q_acc=0;dU_acc=0;
-  const map={isothermal:'iso',isobaric:'iba',isochoric:'ivo',adiabatic:'adi'};
-  ['isothermal','isobaric','isochoric','adiabatic'].forEach(k=>{
-    const b=document.getElementById('pb-'+map[k]);
-    if(b) b.className='pb'+(k===p?' a-'+map[k]:'');
-  });
-  const dt=document.getElementById('proc-desc-txt');
-  if(dt) dt.innerHTML=procDescs[p];
-}
-
-// Drag piston (free mode only)
-let dragging=false, dragY0=0, pistonY0=0;
-function setupDrag() {
-  gasCanvas.addEventListener('mousedown',e=>{
-    if (mode!=='free') return;
-    const rect=gasCanvas.getBoundingClientRect();
-    const my=(e.clientY-rect.top)*(gasCanvas.height/rect.height);
-    if (Math.abs(my-pistonY)<16){dragging=true;dragY0=my;pistonY0=pistonY;captureRef();}
-  });
-  gasCanvas.addEventListener('mousemove',e=>{
-    if (!dragging) return;
-    const rect=gasCanvas.getBoundingClientRect();
-    const my=(e.clientY-rect.top)*(gasCanvas.height/rect.height);
-    movePistonFree(pistonY0+(my-dragY0));
-  });
-  gasCanvas.addEventListener('mouseup',()=>dragging=false);
-  gasCanvas.addEventListener('mouseleave',()=>dragging=false);
-  gasCanvas.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    if (mode!=='free') return;
-    const rect=gasCanvas.getBoundingClientRect();
-    const my=(e.touches[0].clientY-rect.top)*(gasCanvas.height/rect.height);
-    if (Math.abs(my-pistonY)<20){dragging=true;dragY0=my;pistonY0=pistonY;captureRef();}
-  },{passive:false});
-  gasCanvas.addEventListener('touchmove',e=>{
-    e.preventDefault();
-    if (!dragging) return;
-    const rect=gasCanvas.getBoundingClientRect();
-    const my=(e.touches[0].clientY-rect.top)*(gasCanvas.height/rect.height);
-    movePistonFree(pistonY0+(my-dragY0));
-  },{passive:false});
-  gasCanvas.addEventListener('touchend',()=>dragging=false);
-}
-
-function movePistonFree(newY) {
-  if (freeProcess==='isochoric') return;
-  const oldV=getVolume();
-  pistonY=Math.max(BH*0.05,Math.min(BH*0.92,newY));
-  clampParticles();
-  const newV=getVolume();
-  const dV=newV-oldV;
-
-  if (freeProcess==='isothermal') {
-    rescaleToTemp(T_ref);
-  } else if (freeProcess==='isobaric') {
-    rescaleToTemp(Math.max(0.01, T_ref*(newV/V_ref)));
-  } else if (freeProcess==='adiabatic') {
-    rescaleToTemp(Math.max(0.01, T_ref*Math.pow(V_ref/newV, GAMMA-1)));
+function thermalize(T) {
+  const sigma = Math.sqrt(Math.max(T, 1e-9));
+  for (let p of particles) {
+    p.vx = gaussianRandom() * sigma;
+    p.vy = gaussianRandom() * sigma;
   }
-
-  const dW=getPressure()*dV;
-  W_acc+=dW;
-  if (freeProcess==='isothermal'){Q_acc=W_acc;dU_acc=0;}
-  else if (freeProcess==='adiabatic'){Q_acc=0;dU_acc=-W_acc;}
-  else if (freeProcess==='isobaric'){dU_acc=getInternalEnergy()-particles.length*T_ref;Q_acc=dU_acc+W_acc;}
-
-  pvHistory.push({v:getVolume(),p:getPressure(),color:
-    {isothermal:'#c4973a',isobaric:'#2a5c8b',isochoric:'#8b3a2a',adiabatic:'#2a7a4f'}[freeProcess]});
-  if(pvHistory.length>1200) pvHistory.shift();
+  removeDrift();
+  rescaleToTemp(T);
 }
 
-function applyHeatFree(dq) {
-  if (!dq) return;
-  const T_old=getTemperature();
-  const N=particles.length;
-  const dT=dq*2/N;
-  const T_new=Math.max(0.05,T_old+dT);
-  rescaleToTemp(T_new);
-  Q_acc+=dq;
-  if(freeProcess==='isochoric'){dU_acc+=dq;W_acc=0;}
-  else{dU_acc=getInternalEnergy()-particles.length*T_ref;W_acc=Q_acc-dU_acc;}
-  captureRef();
-  pvHistory.push({v:getVolume(),p:getPressure(),color:'#c4973a'});
+function gaussianRandom() {
+  let u=0, v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function removeDrift() {
+  if(!particles.length) return;
+  let mx=0,my=0;
+  for(let p of particles){mx+=p.vx;my+=p.vy;}
+  mx/=particles.length;my/=particles.length;
+  for(let p of particles){p.vx-=mx;p.vy-=my;}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -965,9 +868,7 @@ function drawGas() {
   }
 
   // Piston
-  const pCol = mode==='free'
-    ? {isothermal:'#c4973a',isobaric:'#3a6ea8',isochoric:'#a04030',adiabatic:'#2e8a55'}[freeProcess]
-    : (cycleSteps[cyclePhase]?.color||'#c4973a');
+  const pCol = cycleSteps[cyclePhase]?.color || '#c4973a';
 
   gasCtx.fillStyle=pCol;
   gasCtx.fillRect(0,pistonY-5,BW,10);
@@ -986,7 +887,7 @@ function drawGas() {
   gasCtx.fillRect(BW-15,barTop+barH*(1-th),8,barH*th);
 
   // Phase label (cycle mode)
-  if (mode!=='free' && cycleSteps.length>0) {
+  if (cycleSteps.length>0) {
     const s=cycleSteps[cyclePhase];
     gasCtx.fillStyle='rgba(255,255,255,0.85)';
     gasCtx.font='500 11px IBM Plex Mono';
@@ -1004,6 +905,54 @@ function drawArrow(ctx,x,y) {
   ctx.stroke();
 }
 
+function getCyclePoint(step, t) {
+  const V = step.V0 + t * (step.V1 - step.V0);
+  let T = step.T0;
+  if (step.type === 'adi') T = step.T0 * Math.pow(step.V0 / V, GAMMA - 1);
+  else if (step.type === 'ivo') T = step.T0 + t * (step.T1 - step.T0);
+  else if (step.type === 'iba') T = step.T0 * (V / step.V0);
+  return { v: V, p: particles.length * T / V };
+}
+
+function getPVPoint() {
+  if (pvCursor) return pvCursor;
+  if (cycleSteps[cyclePhase]) return {...getCyclePoint(cycleSteps[cyclePhase], smoothstep(cycleT)), color:cycleSteps[cyclePhase].color};
+  return {v:getVolume(), p:getPressure(), color:'#555'};
+}
+
+function getPVScale() {
+  const pts = [];
+  for (const s of cycleSteps) {
+    for (let i=0; i<=48; i++) pts.push(getCyclePoint(s, i/48));
+  }
+  pts.push(...pvHistory);
+  pts.push(getPVPoint());
+
+  let vMin = Infinity, vMax = -Infinity, pMin = Infinity, pMax = -Infinity;
+  for (const pt of pts) {
+    if (!Number.isFinite(pt.v) || !Number.isFinite(pt.p)) continue;
+    vMin = Math.min(vMin, pt.v); vMax = Math.max(vMax, pt.v);
+    pMin = Math.min(pMin, pt.p); pMax = Math.max(pMax, pt.p);
+  }
+  if (!Number.isFinite(vMin) || vMin === vMax) {
+    const b = volumeBounds();
+    vMin = b.min; vMax = b.max;
+  }
+  if (!Number.isFinite(pMin) || pMin === pMax) {
+    const p = Math.max(getPressure(), 1e-6);
+    pMin = p * 0.8; pMax = p * 1.2;
+  }
+
+  const vPad = Math.max((vMax - vMin) * 0.12, BW * BH * 0.01);
+  const pPad = Math.max((pMax - pMin) * 0.18, pMax * 0.08, 1e-6);
+  return {
+    Vmin: Math.max(0, vMin - vPad),
+    Vmax: vMax + vPad,
+    Pmin: Math.max(0, pMin - pPad),
+    Pmax: pMax + pPad
+  };
+}
+
 // ——— PV DIAGRAM ———
 function drawPV() {
   const W=pvCanvas.width, H=pvCanvas.height;
@@ -1013,11 +962,11 @@ function drawPV() {
   const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
 
   const N=particles.length;
-  const Vmin=BW*BH*0.04, Vmax=BW*BH*0.92;
-  const Pmax=N*4/Vmin*1.3;
+  const scale = getPVScale();
+  const Vmin=scale.Vmin, Vmax=scale.Vmax, Pmin=scale.Pmin, Pmax=scale.Pmax;
 
   function tx(v){return pad.l+(v-Vmin)/(Vmax-Vmin)*pw;}
-  function ty(p){return pad.t+ph-(p)/(Pmax)*ph;}
+  function ty(p){return pad.t+ph-(p-Pmin)/(Pmax-Pmin)*ph;}
 
   // Background
   pvCtx.fillStyle='#f5f0e8';
@@ -1034,7 +983,7 @@ function drawPV() {
 
   // Reference isotherms (faint)
   const Tref=getTemperature();
-  for (let m of [0.3,0.6,1.0,1.7,2.8]) {
+  for (let m of [0.5,0.75,1.0,1.35,1.8]) {
     const Tiso=Tref*m;
     pvCtx.strokeStyle=`rgba(180,150,80,${m===1.0?0.28:0.10})`;
     pvCtx.lineWidth=1;
@@ -1047,12 +996,34 @@ function drawPV() {
     pvCtx.stroke();
   }
 
+  // Full-cycle guide, so compact cycles stay readable before the live trace completes.
+  if (cycleSteps.length) {
+    pvCtx.save();
+    pvCtx.globalAlpha = 0.35;
+    pvCtx.setLineDash([5,4]);
+    pvCtx.lineJoin = 'round';
+    pvCtx.lineCap = 'round';
+    for (const s of cycleSteps) {
+      pvCtx.strokeStyle = s.color;
+      pvCtx.lineWidth = 1.6;
+      pvCtx.beginPath();
+      for (let i=0; i<=80; i++) {
+        const pt = getCyclePoint(s, i/80);
+        const x = tx(pt.v), y = ty(pt.p);
+        i===0 ? pvCtx.moveTo(x,y) : pvCtx.lineTo(x,y);
+      }
+      pvCtx.stroke();
+    }
+    pvCtx.restore();
+  }
+
   // PV trace
   if (pvHistory.length>1){
     let sc=pvHistory[0].color,si=0;
     for (let i=1;i<=pvHistory.length;i++){
       if(i===pvHistory.length||pvHistory[i].color!==sc){
         pvCtx.strokeStyle=sc;pvCtx.lineWidth=2.5;
+        pvCtx.lineJoin='round'; pvCtx.lineCap='round';
         pvCtx.beginPath();
         for(let j=si;j<i;j++){
           const pt=pvHistory[j];
@@ -1066,7 +1037,7 @@ function drawPV() {
   }
 
   // Cycle: close the path and shade area
-  if (mode!=='free' && pvHistory.length>10 && cyclePhase===0 && cycleT<0.1) {
+  if (pvHistory.length>10 && cyclePhase===0 && cycleT<0.1) {
     pvCtx.fillStyle='rgba(100,130,80,0.07)';
     pvCtx.beginPath();
     pvHistory.forEach((pt,i)=>{
@@ -1077,7 +1048,8 @@ function drawPV() {
   }
 
   // Current point
-  pvCtx.beginPath();pvCtx.arc(tx(getVolume()),ty(getPressure()),6,0,Math.PI*2);
+  const curPV = getPVPoint();
+  pvCtx.beginPath();pvCtx.arc(tx(curPV.v),ty(curPV.p),6,0,Math.PI*2);
   pvCtx.fillStyle='#222';pvCtx.fill();
   pvCtx.strokeStyle='#fff';pvCtx.lineWidth=1.5;pvCtx.stroke();
 
@@ -1092,7 +1064,7 @@ function drawPV() {
   pvCtx.fillText('V',pad.l+pw/2-4,pad.t+ph+28);
 
   // Arrow direction for cycles
-  if (mode!=='free' && pvHistory.length>30){
+  if (pvHistory.length>30){
     const mid=Math.floor(pvHistory.length/2);
     const pa=pvHistory[mid],pb=pvHistory[mid+1]||pvHistory[mid];
     const ax=tx(pa.v),ay=ty(pa.p),bx=tx(pb.v),by=ty(pb.p);
@@ -1114,8 +1086,7 @@ function updateDisplays() {
   document.getElementById('dV').textContent=(V/1e4).toFixed(2)+'×10⁴';
   document.getElementById('dU').textContent=U.toFixed(2);
 
-  let W=W_acc, Q=Q_acc, dU=dU_acc;
-  if (mode!=='free'){W=cycleW;Q=cycleQH+cycleQC;dU=0;}
+  const W=cycleW, Q=cycleQH+cycleQC, dU=getInternalEnergy()-cycleU0;
 
   const fmt=v=>(v>=0?'+':'')+v.toFixed(2);
   const cls=v=>v>0.01?'tcv pos':v<-0.01?'tcv neg':'tcv neu';
@@ -1137,7 +1108,7 @@ function loop() {
   const steps=Math.max(1, Math.floor(simSpeed));
   for (let s=0;s<steps;s++) stepParticles(0.5);
 
-  if (mode!=='free' && cycleRunning) advanceCycle();
+  if (cycleRunning) advanceCycle();
 
   drawGas();
   drawPV();
@@ -1149,24 +1120,24 @@ function loop() {
 // ═══════════════════════════════════════════════════════
 function resetAll() {
   pvHistory=[];
+  pvCursor=null;
   cycleW=0;cycleQH=0;cycleQC=0;
+  cycleU0=0;
   cyclePhase=0;cycleT=0;cycleRunning=false;
-  W_acc=0;Q_acc=0;dU_acc=0;
   pistonY=BH*0.4;
   particles=[];
   const N=parseInt(document.getElementById('sl-N').value);
   spawnParticles(N);
-  captureRef();
-  if(mode!=='free') buildCycleSteps();
+  buildCycleSteps();
 }
 
 function onChangeN(val) {
   pistonY=BH*0.4;
   particles=[];
   spawnParticles(parseInt(val));
-  captureRef();
   pvHistory=[];
-  if(mode!=='free') buildCycleSteps();
+  pvCursor=null;
+  buildCycleSteps();
 }
 
 function togglePause(){

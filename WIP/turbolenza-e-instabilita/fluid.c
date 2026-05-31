@@ -31,12 +31,21 @@ float _pres[N], _div[N];      /* pressione e divergenza         */
 float _dye[N],  _dye0[N];     /* tracciante passivo             */
 float _vort[N];               /* vorticità ω = duy/dx - dux/dy */
 unsigned char _wall[N];       /* maschera solido (1=ostacolo)   */
+float _lbm[9 * N], _lbm0[9 * N], _rho[N];
 
 /* ── Parametri (modificabili a runtime) ─────────────────────── */
 static float inlet_vel = 0.15f;
 static float viscosity  = 0.0008f;
 static float dt         = 1.0f;
 static int kelvin_mode  = 0;
+static int current_scenario = 0;
+
+static const int   lbm_cx[9]  = {0, 1, 0,-1, 0, 1,-1,-1, 1};
+static const int   lbm_cy[9]  = {0, 0, 1, 0,-1, 1, 1,-1,-1};
+static const int   lbm_opp[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
+static const float lbm_w[9]   = {4.0f/9.0f, 1.0f/9.0f, 1.0f/9.0f, 1.0f/9.0f, 1.0f/9.0f,
+                                 1.0f/36.0f, 1.0f/36.0f, 1.0f/36.0f, 1.0f/36.0f};
+static float randf(void);
 
 /* ── Indice con clamp ───────────────────────────────────────── */
 static inline int IX(int x, int y) {
@@ -45,6 +54,16 @@ static inline int IX(int x, int y) {
     if (y < 0)    y = 0;
     if (y >= NY)  y = NY - 1;
     return x + y * NX;
+}
+
+static inline int LBM(int q, int k) {
+    return q * N + k;
+}
+
+static inline float lbm_feq(int q, float rho, float ux, float uy) {
+    float cu = 3.0f * ((float)lbm_cx[q] * ux + (float)lbm_cy[q] * uy);
+    float uu = 1.5f * (ux*ux + uy*uy);
+    return lbm_w[q] * rho * (1.0f + cu + 0.5f*cu*cu - uu);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -85,13 +104,24 @@ static void apply_bc(float *ux, float *uy) {
         ux[IX(NX-1, j)] = ux[IX(NX-2, j)];
         uy[IX(NX-1, j)] = uy[IX(NX-2, j)];
     }
-    /* Pareti orizzontali: no-slip */
-    for (i = 0; i < NX; i++) {
-        ux[IX(i, 0)]    = 0.0f;  uy[IX(i, 0)]    = 0.0f;
-        ux[IX(i, NY-1)] = 0.0f;  uy[IX(i, NY-1)] = 0.0f;
+    if (current_scenario == 0) {
+        /* Cilindro in flusso aperto: free-slip in alto/basso, no-slip solo sul cilindro. */
+        for (i = 0; i < NX; i++) {
+            ux[IX(i, 0)]    = ux[IX(i, 1)];
+            uy[IX(i, 0)]    = 0.0f;
+            ux[IX(i, NY-1)] = ux[IX(i, NY-2)];
+            uy[IX(i, NY-1)] = 0.0f;
+        }
+    } else {
+        for (i = 0; i < NX; i++) {
+            ux[IX(i, 0)]    = 0.0f;  uy[IX(i, 0)]    = 0.0f;
+            ux[IX(i, NY-1)] = 0.0f;  uy[IX(i, NY-1)] = 0.0f;
+        }
     }
     /* Ostacoli: no-slip */
     for (i = 0; i < N; i++) {
+        int y = i / NX;
+        if (current_scenario == 0 && (y == 0 || y == NY-1)) continue;
         if (_wall[i]) { ux[i] = 0.0f; uy[i] = 0.0f; }
     }
 }
@@ -108,6 +138,128 @@ static void apply_dye_bc(float *dye) {
             dye[IX(i, NY-1)] = dye[IX(i, NY-2)];
         }
     }
+}
+
+static void lbm_update_macros(void) {
+    int i, j, q;
+    for (j = 0; j < NY; j++) {
+        for (i = 0; i < NX; i++) {
+            int k = IX(i,j);
+            if (_wall[k]) {
+                _rho[k] = 1.0f;
+                _ux[k] = 0.0f;
+                _uy[k] = 0.0f;
+                _dye[k] = 0.0f;
+                continue;
+            }
+
+            float rho = 0.0f, ux = 0.0f, uy = 0.0f;
+            for (q = 0; q < 9; q++) {
+                float f = _lbm[LBM(q,k)];
+                rho += f;
+                ux  += f * (float)lbm_cx[q];
+                uy  += f * (float)lbm_cy[q];
+            }
+            if (rho < 1e-6f) rho = 1.0f;
+            ux /= rho;
+            uy /= rho;
+            _rho[k] = rho;
+            _ux[k] = ux;
+            _uy[k] = uy;
+            _dye[k] = sqrtf(ux*ux + uy*uy) * 8.0f;
+        }
+    }
+}
+
+static void lbm_init(void) {
+    int i, j, q;
+    memset(_pres, 0, N * sizeof(float));
+    memset(_dye0, 0, N * sizeof(float));
+    memset(_vort, 0, N * sizeof(float));
+
+    float u0 = inlet_vel;
+    if (u0 < 0.02f) u0 = 0.02f;
+    if (u0 > 0.09f) u0 = 0.09f;
+
+    for (j = 0; j < NY; j++) {
+        for (i = 0; i < NX; i++) {
+            int k = IX(i,j);
+            float ux = _wall[k] ? 0.0f : u0;
+            float uy = _wall[k] ? 0.0f : randf() * u0 * 0.050f;
+            _rho[k] = 1.0f;
+            for (q = 0; q < 9; q++) {
+                _lbm[LBM(q,k)] = lbm_feq(q, 1.0f, ux, uy);
+                _lbm0[LBM(q,k)] = _lbm[LBM(q,k)];
+            }
+        }
+    }
+    lbm_update_macros();
+}
+
+static void lbm_step(void) {
+    int i, j, q;
+    float u0 = inlet_vel;
+    if (u0 < 0.02f) u0 = 0.02f;
+    if (u0 > 0.09f) u0 = 0.09f;
+
+    float tau = 0.5f + 3.0f * viscosity;
+    if (tau < 0.515f) tau = 0.515f;
+    if (tau > 1.50f) tau = 1.50f;
+    float omega = 1.0f / tau;
+
+    memset(_lbm0, 0, 9 * N * sizeof(float));
+
+    for (j = 0; j < NY; j++) {
+        for (i = 0; i < NX; i++) {
+            int k = IX(i,j);
+            if (_wall[k]) continue;
+
+            float rho = 0.0f, ux = 0.0f, uy = 0.0f;
+            for (q = 0; q < 9; q++) {
+                float f = _lbm[LBM(q,k)];
+                rho += f;
+                ux  += f * (float)lbm_cx[q];
+                uy  += f * (float)lbm_cy[q];
+            }
+            if (rho < 1e-6f) rho = 1.0f;
+            ux /= rho;
+            uy /= rho;
+            if (i == 0) { rho = 1.0f; ux = u0; uy = 0.0f; }
+
+            for (q = 0; q < 9; q++) {
+                float post = _lbm[LBM(q,k)] - omega * (_lbm[LBM(q,k)] - lbm_feq(q, rho, ux, uy));
+                int nx = i + lbm_cx[q];
+                int ny = j + lbm_cy[q];
+
+                if (ny < 0) ny = NY - 1;
+                if (ny >= NY) ny = 0;
+                if (nx < 0) continue;
+                if (nx >= NX) continue;
+
+                int nk = IX(nx, ny);
+                if (_wall[nk]) {
+                    _lbm0[LBM(lbm_opp[q], k)] += post;
+                } else {
+                    _lbm0[LBM(q, nk)] += post;
+                }
+            }
+        }
+    }
+
+    for (j = 0; j < NY; j++) {
+        int kin = IX(0,j);
+        int kout = IX(NX-1,j);
+        int kprev = IX(NX-2,j);
+        if (!_wall[kin]) {
+            for (q = 0; q < 9; q++) _lbm0[LBM(q,kin)] = lbm_feq(q, 1.0f, u0, 0.0f);
+        }
+        if (!_wall[kout]) {
+            for (q = 0; q < 9; q++) _lbm0[LBM(q,kout)] = _lbm0[LBM(q,kprev)];
+        }
+    }
+
+    memcpy(_lbm, _lbm0, 9 * N * sizeof(float));
+    lbm_update_macros();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -227,6 +379,11 @@ static void project(void) {
 void step(void) {
     int k;
 
+    if (current_scenario == 0) {
+        lbm_step();
+        return;
+    }
+
     /* 1. Diffusione implicita velocità */
     diffuse(_ux0, _ux, viscosity, dt);
     diffuse(_uy0, _uy, viscosity, dt);
@@ -256,15 +413,17 @@ void step(void) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   VORTICITÀ   ω = ∂uy/∂x − ∂ux/∂y
+   VORTICITÀ   ω positiva = rotazione antioraria (coordinate matematiche)
 ═══════════════════════════════════════════════════════════════ */
 void compute_vorticity(void) {
     int i, j;
     for (j = 1; j < NY - 1; j++) {
         for (i = 1; i < NX - 1; i++) {
+            /* y del canvas cresce verso il basso: inverti il curl di schermo
+               per mostrare omega positiva come rotazione antioraria. */
             _vort[IX(i,j)] =
-                (_uy[IX(i+1,j)] - _uy[IX(i-1,j)]) * 0.5f -
-                (_ux[IX(i,j+1)] - _ux[IX(i,j-1)]) * 0.5f;
+                (_ux[IX(i,j+1)] - _ux[IX(i,j-1)]) * 0.5f -
+                (_uy[IX(i+1,j)] - _uy[IX(i-1,j)]) * 0.5f;
         }
     }
 }
@@ -325,17 +484,22 @@ void reset_fields(void) {
     memset(_dye,  0, N * sizeof(float));
     memset(_dye0, 0, N * sizeof(float));
 
+    if (current_scenario == 0) {
+        lbm_init();
+        return;
+    }
+
     /* Inizializza flusso uniforme nelle celle libere */
     for (j = 1; j < NY-1; j++)
         for (i = 1; i < NX-1; i++)
             if (!_wall[IX(i,j)])
                 _ux[IX(i,j)] = inlet_vel;
 
-    /* Piccola perturbazione verticale per stimolare instabilità */
+    /* Rumore iniziale minimo: rompe solo la simmetria numerica. */
     for (j = 1; j < NY-1; j++)
         for (i = 1; i < NX-1; i++)
             if (!_wall[IX(i,j)])
-                _uy[IX(i,j)] = randf() * inlet_vel * 0.04f;
+                _uy[IX(i,j)] = randf() * inlet_vel * 0.012f;
 
     /* Dye a strisce all'inlet */
     for (j = 1; j < NY-1; j++)
@@ -349,6 +513,7 @@ void reset_fields(void) {
 ═══════════════════════════════════════════════════════════════ */
 static void add_walls(void) {
     int i;
+    if (current_scenario == 0) return;
     for (i = 0; i < NX; i++) {
         _wall[IX(i, 0)]    = 1;
         _wall[IX(i, NY-1)] = 1;
@@ -359,6 +524,7 @@ static void add_walls(void) {
 void build_obstacle(int scenario, int param) {
     int i, j;
     memset(_wall, 0, N);
+    current_scenario = scenario;
     kelvin_mode = (scenario == 5);
 
     int cx = NX * 28 / 100;

@@ -246,14 +246,18 @@ button.on2 {
 }
 
 #simCanvas {
-  display: block; width: 100%; height: 100%;
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
   image-rendering: auto;
   filter: contrast(1.06) saturate(1.18);
 }
 
 #overCanvas {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
   cursor: crosshair;
 }
 
@@ -504,12 +508,12 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
     <div class="blk">
       <div class="blk-title">Parametri di flusso</div>
       <div class="ctrl">
-        <div class="ctrl-row"><span>Velocità u₀</span><span class="v" id="vv">0.15</span></div>
-        <input type="range" id="slVel" min="0.02" max="0.40" step="0.01" value="0.15">
+        <div class="ctrl-row"><span>Velocità u₀</span><span class="v" id="vv">0.09</span></div>
+        <input type="range" id="slVel" min="0.02" max="0.40" step="0.01" value="0.09">
       </div>
       <div class="ctrl">
-        <div class="ctrl-row"><span>Viscosità ν</span><span class="v" id="vvisc">8×10⁻⁴</span></div>
-        <input type="range" id="slVisc" min="0.0001" max="0.006" step="0.0001" value="0.0008">
+        <div class="ctrl-row"><span>Viscosità ν</span><span class="v" id="vvisc">5.0e-3</span></div>
+        <input type="range" id="slVisc" min="0.0001" max="0.03" step="0.0001" value="0.0050">
       </div>
       <div class="ctrl">
         <div class="ctrl-row"><span>Velocità simulazione</span><span class="v" id="vspeed">1.0×</span></div>
@@ -681,13 +685,15 @@ let vis     = 'vorticity';
 let paused  = false;
 let step_n  = 0;
 let scene   = 0;
-let vel     = 0.15;
-let visc    = 0.0008;
+let vel     = 0.09;
+let visc    = 0.0050;
 let obstR   = 12;
 let lastNonKhVel = vel;
 let lastNonKhVisc = visc;
+const karmanPreset = { vel: 0.09, visc: 0.0050 };
 
 let lastTs  = 0, fps = 0;
+let lastFrameWall = 0;
 let stepsPerFrame = 2;
 let stepBudget = 0;
 let simSpeed = 1.0;
@@ -754,6 +760,9 @@ function loadScene(id) {
   if (id === 5) {
     setFlowParams(0.18, 0.00035);
     setVis('dye');
+  } else if (id === 0) {
+    setFlowParams(karmanPreset.vel, karmanPreset.visc);
+    if (vis === 'dye') setVis('vorticity');
   } else if (prevScene === 5) {
     setFlowParams(lastNonKhVel, lastNonKhVisc);
     if (vis === 'dye') setVis('vorticity');
@@ -863,7 +872,9 @@ function render() {
     for (let k = 0; k < N; k++) {
       if (U[pWall+k]) continue;
       if (showVorticity) {
-        const av = Math.abs(F[pVort+k]);
+        const row = (k / NX)|0;
+        const edgeFade = scene === 5 ? 1 : clamp01((Math.min(row, NY-1-row) - 4) / 12);
+        const av = Math.abs(F[pVort+k] * edgeFade);
         if (av > maxV) maxV = av;
       } else if (vis === 'velocity') {
         const vel2 = F[pUx+k]*F[pUx+k] + F[pUy+k]*F[pUy+k];
@@ -886,7 +897,8 @@ function render() {
       }
       let r, g, b;
       if (vis === 'vorticity') {
-        [r,g,b] = colorVort(F[pVort+k], maxV * 0.42);
+        const edgeFade = scene === 5 ? 1 : clamp01((Math.min(j, NY-1-j) - 4) / 12);
+        [r,g,b] = colorVort(F[pVort+k] * edgeFade, maxV * 0.42);
         if (scene === 5) {
           const edge = clamp01(1 - Math.abs(clamp01(F[pDye+k]) - 0.5) / 0.12);
           r = Math.min(255, r + edge * 70)|0;
@@ -918,8 +930,8 @@ function updateHUD() {
 
   let color, label;
   if      (Re < 40)   { color='#2a7a50'; label='Laminare'; }
-  else if (Re < 150)  { color='#c07020'; label='Scia di Kármán'; }
-  else if (Re < 600)  { color='#b83232'; label='Turbolenza incipiente'; }
+  else if (Re < 700)  { color='#c07020'; label='Scia di Kármán'; }
+  else if (Re < 1400)  { color='#b83232'; label='Turbolenza incipiente'; }
   else                { color='#7a1818'; label='Turbolenza'; }
 
   reEl.style.color    = color;
@@ -979,8 +991,8 @@ function drawOverlay() {
 // ═══════════════════════════════════════════════════════════
 // LOOP
 // ═══════════════════════════════════════════════════════════
-function loop(ts) {
-  requestAnimationFrame(loop);
+function runFrame(ts) {
+  lastFrameWall = performance.now();
   const dt_ = (ts - lastTs) / 1000;
   lastTs = ts;
   fps = fps * 0.95 + (1 / Math.max(0.001, dt_)) * 0.05;
@@ -1000,6 +1012,11 @@ function loop(ts) {
   render();
   drawOverlay();
   updateHUD();
+}
+
+function loop(ts) {
+  requestAnimationFrame(loop);
+  runFrame(ts);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1085,8 +1102,16 @@ function showTheory() {
 // INIT
 // ═══════════════════════════════════════════════════════════
 function resizeOverlay() {
-  oCanvas.width  = oCanvas.offsetWidth;
-  oCanvas.height = oCanvas.offsetHeight;
+  const wrap = document.querySelector('.canvas-wrap').getBoundingClientRect();
+  const scale = Math.max(0.2, Math.min(wrap.width / NX, wrap.height / NY));
+  const cssW = Math.floor(NX * scale);
+  const cssH = Math.floor(NY * scale);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  oCanvas.style.width = cssW + 'px';
+  oCanvas.style.height = cssH + 'px';
+  oCanvas.width = cssW;
+  oCanvas.height = cssH;
 }
 
 async function init() {
@@ -1102,6 +1127,9 @@ async function init() {
     loadScene(0);
     ldEl.style.display = 'none';
     requestAnimationFrame(loop);
+    setInterval(() => {
+      if (M && performance.now() - lastFrameWall > 350) runFrame(performance.now());
+    }, 120);
   } catch(e) {
     ldEl.innerHTML = `<div style="font-family:var(--mono);font-size:0.65rem;color:#b83232;padding:20px;text-align:center">
       Errore: ${e.message}<br><br>

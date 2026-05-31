@@ -1,7 +1,6 @@
 /*
  * fluid.c — Solver Navier-Stokes 2D incomprimibile
- * Metodo: Stable Fluids (Stam 1999)
- * Fedele alla versione JS che funzionava.
+ * Metodi: LBM D2Q9 per scenari con ostacoli, Stable Fluids per Kelvin-Helmholtz.
  *
  * Compilare con Emscripten:
  *   emcc fluid.c -O3 -o fluid.js \
@@ -17,8 +16,8 @@
 #include <stdlib.h>
 
 /* ── Dimensioni griglia ─────────────────────────────────────── */
-#define NX 300
-#define NY 160
+#define NX 390
+#define NY 208
 #define N  (NX * NY)
 
 int _NX = NX;
@@ -66,12 +65,17 @@ static inline float lbm_feq(int q, float rho, float ux, float uy) {
     return lbm_w[q] * rho * (1.0f + cu + 0.5f*cu*cu - uu);
 }
 
+static int uses_lbm_solver(void) {
+    return current_scenario >= 0 && current_scenario <= 4;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CONDIZIONI AL CONTORNO
    Identiche alla versione JS che funzionava:
    - Inlet sinistro: velocità uniforme con profilo Poiseuille leggero
    - Outlet destro:  Neumann (copia dal vicino)
-   - Pareti sup/inf: no-slip
+   - Scenari aperti: free-slip in alto/basso
+   - Gradino:        canale no-slip
    - Ostacoli:       no-slip
 ═══════════════════════════════════════════════════════════════ */
 static void apply_bc(float *ux, float *uy) {
@@ -104,24 +108,23 @@ static void apply_bc(float *ux, float *uy) {
         ux[IX(NX-1, j)] = ux[IX(NX-2, j)];
         uy[IX(NX-1, j)] = uy[IX(NX-2, j)];
     }
-    if (current_scenario == 0) {
-        /* Cilindro in flusso aperto: free-slip in alto/basso, no-slip solo sul cilindro. */
+    if (current_scenario == 4) {
+        for (i = 0; i < NX; i++) {
+            ux[IX(i, 0)]    = 0.0f;  uy[IX(i, 0)]    = 0.0f;
+            ux[IX(i, NY-1)] = 0.0f;  uy[IX(i, NY-1)] = 0.0f;
+        }
+    } else {
         for (i = 0; i < NX; i++) {
             ux[IX(i, 0)]    = ux[IX(i, 1)];
             uy[IX(i, 0)]    = 0.0f;
             ux[IX(i, NY-1)] = ux[IX(i, NY-2)];
             uy[IX(i, NY-1)] = 0.0f;
         }
-    } else {
-        for (i = 0; i < NX; i++) {
-            ux[IX(i, 0)]    = 0.0f;  uy[IX(i, 0)]    = 0.0f;
-            ux[IX(i, NY-1)] = 0.0f;  uy[IX(i, NY-1)] = 0.0f;
-        }
     }
     /* Ostacoli: no-slip */
     for (i = 0; i < N; i++) {
         int y = i / NX;
-        if (current_scenario == 0 && (y == 0 || y == NY-1)) continue;
+        if (current_scenario != 4 && (y == 0 || y == NY-1)) continue;
         if (_wall[i]) { ux[i] = 0.0f; uy[i] = 0.0f; }
     }
 }
@@ -149,6 +152,7 @@ static void lbm_update_macros(void) {
                 _rho[k] = 1.0f;
                 _ux[k] = 0.0f;
                 _uy[k] = 0.0f;
+                _pres[k] = 0.0f;
                 _dye[k] = 0.0f;
                 continue;
             }
@@ -166,6 +170,7 @@ static void lbm_update_macros(void) {
             _rho[k] = rho;
             _ux[k] = ux;
             _uy[k] = uy;
+            _pres[k] = rho - 1.0f;
             _dye[k] = sqrtf(ux*ux + uy*uy) * 8.0f;
         }
     }
@@ -379,7 +384,7 @@ static void project(void) {
 void step(void) {
     int k;
 
-    if (current_scenario == 0) {
+    if (uses_lbm_solver()) {
         lbm_step();
         return;
     }
@@ -484,7 +489,7 @@ void reset_fields(void) {
     memset(_dye,  0, N * sizeof(float));
     memset(_dye0, 0, N * sizeof(float));
 
-    if (current_scenario == 0) {
+    if (uses_lbm_solver()) {
         lbm_init();
         return;
     }
@@ -513,7 +518,7 @@ void reset_fields(void) {
 ═══════════════════════════════════════════════════════════════ */
 static void add_walls(void) {
     int i;
-    if (current_scenario == 0) return;
+    if (current_scenario != 4) return;
     for (i = 0; i < NX; i++) {
         _wall[IX(i, 0)]    = 1;
         _wall[IX(i, NY-1)] = 1;
@@ -541,13 +546,16 @@ void build_obstacle(int scenario, int param) {
             }
         break;
 
-    case 1: /* Due cilindri sovrapposti */
+    case 1: /* Due cilindri accoppiati: gap jet + scie interagenti */
         for (j = 0; j < NY; j++)
             for (i = 0; i < NX; i++) {
-                int dx = i-cx;
-                int dy1 = j - (cy - r*2), dy2 = j - (cy + r*2);
-                int r2 = r * 4 / 5;
-                if (dx*dx+dy1*dy1 < r2*r2 || dx*dx+dy2*dy2 < r2*r2)
+                int r2 = r * 9 / 10;
+                int gap = r * 15 / 10;
+                int off = r2 + gap / 2;
+                int dx1 = i - (cx - r / 7);
+                int dx2 = i - (cx + r / 7);
+                int dy1 = j - (cy - off), dy2 = j - (cy + off);
+                if (dx1*dx1+dy1*dy1 < r2*r2 || dx2*dx2+dy2*dy2 < r2*r2)
                     _wall[IX(i,j)] = 1;
             }
         break;
@@ -565,19 +573,25 @@ void build_obstacle(int scenario, int param) {
         }
         break;
 
-    case 3: /* Griglia di ostacoli */
+    case 3: /* Griglia sfalsata di ostacoli: interazione fra scie */
         {
-            int r2   = r * 6 / 10;
-            int xs[] = {NX*28/100, NX*50/100, NX*72/100};
-            int ys[] = {NY/4, NY/2, NY*3/4};
+            int r2   = r * 48 / 100;
+            int xs[] = {NX*24/100, NX*40/100, NX*56/100, NX*72/100};
             int pi, yi;
-            for (j = 0; j < NY; j++)
-                for (i = 0; i < NX; i++)
-                    for (pi = 0; pi < 3; pi++)
-                        for (yi = 0; yi < 3; yi++) {
-                            int dx = i-xs[pi], dy = j-ys[yi];
-                            if (dx*dx+dy*dy < r2*r2) _wall[IX(i,j)] = 1;
+            if (r2 < 5) r2 = 5;
+            for (j = 0; j < NY; j++) {
+                for (i = 0; i < NX; i++) {
+                    for (pi = 0; pi < 4; pi++) {
+                        int rows = (pi % 2) ? 4 : 3;
+                        for (yi = 0; yi < rows; yi++) {
+                            int yperc = (pi % 2) ? 20 + yi * 20 : 30 + yi * 20;
+                            int dx = i - xs[pi];
+                            int dy = j - (NY * yperc / 100);
+                            if (dx*dx + dy*dy < r2*r2) _wall[IX(i,j)] = 1;
                         }
+                    }
+                }
+            }
         }
         break;
 

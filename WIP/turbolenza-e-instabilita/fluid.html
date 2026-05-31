@@ -469,7 +469,7 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
 
 <header>
   <h1>Fluidodinamica 2D — Navier–Stokes</h1>
-  <span class="sub">Stable Fluids · C/WebAssembly · 300×160</span>
+  <span class="sub">Stable Fluids + LBM · C/WebAssembly · 390×208</span>
   <nav class="nav">
     <a href="#" id="tabSim"    class="on"  onclick="showSim();    return false">Simulazione</a>
     <a href="#" id="tabTheory"             onclick="showTheory(); return false">Teoria</a>
@@ -496,9 +496,9 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
       <div class="blk-title">Scenario</div>
       <div class="btn-col">
         <button id="sc0" class="on"  onclick="loadScene(0)">Scia di Kármán (cilindro)</button>
-        <button id="sc1"             onclick="loadScene(1)">Due cilindri</button>
+        <button id="sc1"             onclick="loadScene(1)">Due cilindri accoppiati</button>
         <button id="sc2"             onclick="loadScene(2)">Fessura / Venturi</button>
-        <button id="sc3"             onclick="loadScene(3)">Griglia di ostacoli</button>
+        <button id="sc3"             onclick="loadScene(3)">Griglia sfalsata</button>
         <button id="sc4"             onclick="loadScene(4)">Gradino — ricircolazione</button>
         <button id="sc5"             onclick="loadScene(5)">Kelvin–Helmholtz</button>
       </div>
@@ -512,8 +512,8 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
         <input type="range" id="slVel" min="0.02" max="0.40" step="0.01" value="0.09">
       </div>
       <div class="ctrl">
-        <div class="ctrl-row"><span>Viscosità ν</span><span class="v" id="vvisc">5.0e-3</span></div>
-        <input type="range" id="slVisc" min="0.0001" max="0.03" step="0.0001" value="0.0050">
+        <div class="ctrl-row"><span>Viscosità ν</span><span class="v" id="vvisc">6.5e-3</span></div>
+        <input type="range" id="slVisc" min="0.0001" max="0.03" step="0.0001" value="0.0065">
       </div>
       <div class="ctrl">
         <div class="ctrl-row"><span>Velocità simulazione</span><span class="v" id="vspeed">1.0×</span></div>
@@ -642,8 +642,9 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
   <h3>Separazione al gradino (backward-facing step)</h3>
   <p>Un brusco allargamento della sezione forza la separazione del flusso dalla parete. Si forma una "bolla" di ricircolazione la cui lunghezza adimensionale $x_r/H$ cresce con $Re$. A valori sufficientemente alti la bolla stessa diventa instabile e il flusso nella zona di riattacco diventa turbolento: è un classico problema di validazione dei solver NS.</p>
 
-  <h2>3. Il metodo numerico: Stable Fluids</h2>
-  <p>La simulazione usa il metodo di <em>Stable Fluids</em> (Stam, 1999), progettato per essere incondizionatamente stabile: nessuna restrizione sul passo temporale. Ogni step è diviso in tre sotto-problemi via <em>operator splitting</em>:</p>
+  <h2>3. Il metodo numerico: Stable Fluids + LBM</h2>
+  <p>La simulazione combina due schemi numerici: gli scenari con inlet e ostacoli usano un reticolo di Boltzmann D2Q9, più adatto a far emergere naturalmente scie e distacchi vorticosi; Kelvin–Helmholtz usa invece il metodo <em>Stable Fluids</em> (Stam, 1999), comodo per un dominio periodico con due strati di velocità opposta.</p>
+  <p>Nel ramo Stable Fluids, ogni step è diviso in tre sotto-problemi via <em>operator splitting</em>:</p>
 
   <div class="method">
     <ol>
@@ -661,10 +662,10 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
   <p>La colormap bipolare (rosso per $\omega &lt; 0$, blu per $\omega &gt; 0$, nero per $\omega = 0$) rende immediatamente leggibili le strutture vorticose e la loro chiralità. Il tracciante passivo (dye) viene advettato dal campo di velocità senza influenzarlo, simulando l'iniezione di fumo o colorante in una galleria del vento.</p>
 
   <h3>Implementazione C / WebAssembly</h3>
-  <p>Tutta la fisica è implementata in C puro (<code>fluid.c</code>), compilato con Emscripten per target WebAssembly. Il guadagno rispetto a JavaScript puro è tipicamente 4–8× su questi kernel: il compilatore C con <code>-O3 -ffast-math</code> può vettorializzare i loop interni, mentre il JIT di V8 fatica con accessi a indici calcolati dinamicamente. I buffer Float32 risiedono nella memoria lineare WASM e vengono letti direttamente dal renderer canvas via <code>HEAPF32</code> senza copia.</p>
+  <p>Tutta la fisica è implementata in C puro (<code>fluid.c</code>), compilato con Emscripten per target WebAssembly. Il guadagno rispetto a JavaScript puro è tipicamente 4–8× su questi kernel: il compilatore C con <code>-O3</code> può ottimizzare i loop interni, mentre il JIT di V8 fatica con accessi a indici calcolati dinamicamente. I buffer Float32 risiedono nella memoria lineare WASM e vengono letti direttamente dal renderer canvas via <code>HEAPF32</code> senza copia.</p>
 
   <hr class="div">
-  <div class="foot">Simulazione didattica — Navier–Stokes 2D · Stable Fluids (Stam 1999) · C/WebAssembly</div>
+  <div class="foot">Simulazione didattica — Navier–Stokes 2D · Stable Fluids + LBM · C/WebAssembly</div>
 
 </section>
 
@@ -672,10 +673,12 @@ hr.div { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
 // ═══════════════════════════════════════════════════════════
 // CONFIGURAZIONE — modifica questi path se necessario
 // ═══════════════════════════════════════════════════════════
-const WASM_JS_PATH = 'fluid.js';   // file generato da Emscripten
+const cacheVersion = new URLSearchParams(window.location.search).get('v');
+const cacheSuffix = cacheVersion ? `?v=${encodeURIComponent(cacheVersion)}` : '';
+const WASM_JS_PATH = `fluid.js${cacheSuffix}`;   // file generato da Emscripten
 
 // Dimensioni griglia (devono corrispondere alle #define in fluid.c)
-const NX = 300, NY = 160, N = NX * NY;
+const NX = 390, NY = 208, N = NX * NY;
 
 // ═══════════════════════════════════════════════════════════
 // STATO
@@ -686,11 +689,17 @@ let paused  = false;
 let step_n  = 0;
 let scene   = 0;
 let vel     = 0.09;
-let visc    = 0.0050;
-let obstR   = 12;
+let visc    = 0.0065;
+let obstR   = 16;
 let lastNonKhVel = vel;
 let lastNonKhVisc = visc;
-const karmanPreset = { vel: 0.09, visc: 0.0050 };
+const lbmPresets = {
+  0: { vel: 0.09,  visc: 0.0065 },
+  1: { vel: 0.09,  visc: 0.0065 },
+  2: { vel: 0.075, visc: 0.0075 },
+  3: { vel: 0.075, visc: 0.0075 },
+  4: { vel: 0.065, visc: 0.0080 },
+};
 
 let lastTs  = 0, fps = 0;
 let lastFrameWall = 0;
@@ -712,7 +721,9 @@ async function loadModule() {
     script.onerror = () => reject(new Error('Impossibile caricare ' + WASM_JS_PATH));
     script.onload = async () => {
       try {
-        const mod = await FluidModule();
+        const mod = await FluidModule({
+          locateFile: path => path.endsWith('.wasm') ? `fluid.wasm${cacheSuffix}` : path
+        });
         resolve(mod);
       } catch(e) { reject(e); }
     };
@@ -760,8 +771,8 @@ function loadScene(id) {
   if (id === 5) {
     setFlowParams(0.18, 0.00035);
     setVis('dye');
-  } else if (id === 0) {
-    setFlowParams(karmanPreset.vel, karmanPreset.visc);
+  } else if (lbmPresets[id]) {
+    setFlowParams(lbmPresets[id].vel, lbmPresets[id].visc);
     if (vis === 'dye') setVis('vorticity');
   } else if (prevScene === 5) {
     setFlowParams(lastNonKhVel, lastNonKhVisc);
@@ -837,12 +848,15 @@ function colorDye(d) {
 // ═══════════════════════════════════════════════════════════
 const canvas = document.getElementById('simCanvas');
 const ctx    = canvas.getContext('2d');
+const fieldCanvas = document.createElement('canvas');
+const fieldCtx = fieldCanvas.getContext('2d');
 let imgData, pixData;
+let viewW = NX, viewH = NY, viewDpr = 1;
 
 function initCanvas() {
-  canvas.width  = NX;
-  canvas.height = NY;
-  imgData = ctx.createImageData(NX, NY);
+  fieldCanvas.width  = NX;
+  fieldCanvas.height = NY;
+  imgData = fieldCtx.createImageData(NX, NY);
   pixData = imgData.data;
   drawCbar();
 }
@@ -919,7 +933,11 @@ function render() {
       pixData[pi]=r; pixData[pi+1]=g; pixData[pi+2]=b; pixData[pi+3]=255;
     }
   }
-  ctx.putImageData(imgData, 0, 0);
+  fieldCtx.putImageData(imgData, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(fieldCanvas, 0, 0, canvas.width, canvas.height);
 }
 
 function updateHUD() {
@@ -954,9 +972,9 @@ function drawArrow(ctx, x, y, dx, dy) {
 }
 
 function drawOverlay() {
-  if (!M || !oCtx || !oCanvas.width || !oCanvas.height) return;
-  const w = oCanvas.width;
-  const h = oCanvas.height;
+  if (!M || !oCtx || !viewW || !viewH) return;
+  const w = viewW;
+  const h = viewH;
   const F = M.HEAPF32;
   const U = M.HEAPU8;
 
@@ -965,7 +983,7 @@ function drawOverlay() {
 
   const stride = w < 720 ? 42 : 34;
   oCtx.save();
-  oCtx.lineWidth = 1;
+  oCtx.lineWidth = 1.05;
   oCtx.strokeStyle = 'rgba(238, 248, 255, 0.34)';
   oCtx.shadowColor = 'rgba(0, 0, 0, 0.35)';
   oCtx.shadowBlur = 3;
@@ -1106,12 +1124,18 @@ function resizeOverlay() {
   const scale = Math.max(0.2, Math.min(wrap.width / NX, wrap.height / NY));
   const cssW = Math.floor(NX * scale);
   const cssH = Math.floor(NY * scale);
+  viewW = cssW;
+  viewH = cssH;
+  viewDpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
   canvas.style.width = cssW + 'px';
   canvas.style.height = cssH + 'px';
+  canvas.width = Math.max(NX, Math.round(cssW * viewDpr));
+  canvas.height = Math.max(NY, Math.round(cssH * viewDpr));
   oCanvas.style.width = cssW + 'px';
   oCanvas.style.height = cssH + 'px';
-  oCanvas.width = cssW;
-  oCanvas.height = cssH;
+  oCanvas.width = Math.round(cssW * viewDpr);
+  oCanvas.height = Math.round(cssH * viewDpr);
+  oCtx.setTransform(viewDpr, 0, 0, viewDpr, 0, 0);
 }
 
 async function init() {

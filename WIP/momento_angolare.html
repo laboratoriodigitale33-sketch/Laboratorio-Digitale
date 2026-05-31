@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Momento Angolare</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-dark: #ede6d6;
+    --ink: #1a1612;
+    --ink-light: #4a3f35;
+    --ink-faint: #8a7d72;
+    --accent: #8b3a1e;
+    --accent-light: #c05a35;
+    --accent-gold: #b8860b;
+    --blue-vec: #1a4a8a;
+    --green-vec: #1a6b3a;
+    --red-vec: #8b1a1a;
+    --purple-vec: #5a1a8b;
+    --border: #d4c9b8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 1.5rem 3rem;
+    display: flex;
+    align-items: baseline;
+    gap: 2rem;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  header h1 {
+    font-family: 'EB Garamond', serif;
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  header span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent-light);
+    letter-spacing: 0.05em;
+  }
+
+  .tabs-nav {
+    background: var(--ink);
+    display: flex;
+    padding: 0 3rem;
+    gap: 0;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.85rem 1.6rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--cream); }
+
+  .tab-btn.active {
+    color: var(--cream);
+    border-bottom-color: var(--accent-light);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: flex; flex-direction: column; }
+
+  .panel-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    min-height: calc(100vh - 115px);
+  }
+
+  .canvas-area {
+    position: relative;
+    background: #0e0c0a;
+    overflow: hidden;
+  }
+
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .sidebar {
+    background: var(--cream-dark);
+    border-left: 1px solid var(--border);
+    padding: 1.8rem 1.6rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+
+  .sidebar-section {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.4rem;
+  }
+
+  .sidebar-section:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .sidebar h3 {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 0.9rem;
+    letter-spacing: 0.02em;
+  }
+
+  .formula-box {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 0.7rem 1rem;
+    font-size: 0.92rem;
+    border-radius: 2px;
+    margin-bottom: 0.7rem;
+    overflow-x: auto;
+  }
+
+  .info-text {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--ink-light);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .control-row label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .control-row label span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    letter-spacing: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .vec-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .vec-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+  }
+
+  .vec-dot {
+    width: 12px; height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .readout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .readout {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .readout .label {
+    font-size: 0.65rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.15rem;
+  }
+
+  .readout .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: var(--cream);
+    border: none;
+    padding: 0.45rem 0.9rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .btn:hover { background: var(--accent-light); }
+
+  .btn.outline {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn.outline:hover { background: var(--accent); color: var(--cream); }
+
+  select {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .highlight-box {
+    background: #1a1612;
+    color: var(--cream);
+    border-left: 3px solid var(--accent-gold);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .highlight-box strong { color: var(--accent-gold); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--accent);
+    color: var(--cream);
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Momento Angolare</h1>
+  <span>meccanica classica · simulazione interattiva 3D</span>
+</header>
+
+<nav class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab(0)">I · Particella</button>
+  <button class="tab-btn" onclick="switchTab(1)">II · Corpo Rigido</button>
+  <button class="tab-btn" onclick="switchTab(2)">III · Conservazione</button>
+  <button class="tab-btn" onclick="switchTab(3)">IV · Precessione</button>
+</nav>
+
+<!-- ==================== TAB 1: PARTICELLA ==================== -->
+<div class="tab-panel active" id="tab0">
+  <div class="panel-layout">
+    <div class="canvas-area"><canvas id="canvas1"></canvas></div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Definizione vettoriale</h3>
+        <div class="formula-box">$\mathbf{L} = \mathbf{r} \times \mathbf{p} = m\,(\mathbf{r} \times \mathbf{v})$</div>
+        <p class="info-text">
+          Il momento angolare di una particella di massa $m$ rispetto all'origine è il prodotto vettoriale tra il vettore posizione $\mathbf{r}$ e la quantità di moto $\mathbf{p} = m\mathbf{v}$. Il suo modulo vale $L = mrv\sin\theta$, dove $\theta$ è l'angolo tra $\mathbf{r}$ e $\mathbf{v}$.
+        </p>
+      </div>
+      <div class="sidebar-section">
+        <h3>Controlli</h3>
+        <div class="control-row">
+          <label>Massa $m$ <span id="v1_m">1.0</span> kg</label>
+          <input type="range" id="s1_m" min="0.5" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-row">
+          <label>Raggio orbita <span id="v1_r">2.0</span> m</label>
+          <input type="range" id="s1_r" min="1" max="4" step="0.1" value="2">
+        </div>
+        <div class="control-row">
+          <label>Velocità angolare $\omega$ <span id="v1_w">1.5</span> rad/s</label>
+          <input type="range" id="s1_w" min="0.3" max="4" step="0.1" value="1.5">
+        </div>
+        <div class="control-row">
+          <label>Inclinazione piano orbita <span id="v1_tilt">0</span>°</label>
+          <input type="range" id="s1_tilt" min="0" max="80" step="1" value="0">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Letture in tempo reale</h3>
+        <div class="readout-grid">
+          <div class="readout"><div class="label">$|\mathbf{L}|$</div><div class="value" id="r1_L">—</div></div>
+          <div class="readout"><div class="label">$|\mathbf{v}|$</div><div class="value" id="r1_v">—</div></div>
+          <div class="readout"><div class="label">$|\mathbf{r}|$</div><div class="value" id="r1_r">—</div></div>
+          <div class="readout"><div class="label">Angolo $\theta$</div><div class="value" id="r1_th">—</div></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Legenda vettori</h3>
+        <div class="vec-legend">
+          <div class="vec-item"><div class="vec-dot" style="background:#4a9eff"></div> $\mathbf{r}$ — vettore posizione</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#4aff8a"></div> $\mathbf{p} = m\mathbf{v}$ — quantità di moto</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#ff6b4a"></div> $\mathbf{L} = \mathbf{r}\times\mathbf{p}$ — momento angolare</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#e0cc60"></div> Traiettoria orbitale</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="highlight-box">
+          <strong>Regola della mano destra:</strong> Le dita della mano destra, ruotate da $\mathbf{r}$ verso $\mathbf{p}$, indicano la direzione di $\mathbf{L}$. Modifica l'inclinazione del piano orbitale per vedere $\mathbf{L}$ ruotare nello spazio 3D.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: CORPO RIGIDO ==================== -->
+<div class="tab-panel" id="tab1">
+  <div class="panel-layout">
+    <div class="canvas-area"><canvas id="canvas2"></canvas></div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Equazione di Euler</h3>
+        <div class="formula-box">$\mathbf{L} = \mathbf{I}\,\boldsymbol{\omega}$</div>
+        <p class="info-text">
+          Per un corpo rigido il tensore di inerzia $\mathbf{I}$ sostituisce la massa scalare. Quando l'asse di rotazione coincide con un asse principale, $\mathbf{L} \parallel \boldsymbol{\omega}$. Altrimenti, $\mathbf{L}$ e $\boldsymbol{\omega}$ <em>non sono paralleli</em>: questo è il fatto sorprendente alla base della precessione libera di Eulero.
+        </p>
+      </div>
+      <div class="sidebar-section">
+        <h3>Geometria</h3>
+        <div class="control-row">
+          <label>Forma del corpo</label>
+          <select id="s2_shape" onchange="updateTab2()">
+            <option value="disk">Disco (cilindro piatto)</option>
+            <option value="rod">Sbarra</option>
+            <option value="sphere">Sfera piena</option>
+            <option value="asymm">Corpo asimmetrico</option>
+          </select>
+        </div>
+        <div class="formula-box" id="inertia_formula" style="font-size:0.78rem">$I_1=I_2=\tfrac{1}{4}MR^2,\quad I_3=\tfrac{1}{2}MR^2$</div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Asse di rotazione $\hat{\omega}$</h3>
+        <div class="control-row">
+          <label>Angolo rispetto asse principale $\alpha$ <span id="v2_alpha">0</span>°</label>
+          <input type="range" id="s2_alpha" min="0" max="85" step="1" value="0">
+        </div>
+        <div class="control-row">
+          <label>$\omega$ <span id="v2_w">2.0</span> rad/s</label>
+          <input type="range" id="s2_w" min="0.5" max="6" step="0.1" value="2">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Letture</h3>
+        <div class="readout-grid">
+          <div class="readout"><div class="label">$I_{\perp}$</div><div class="value" id="r2_Ip">—</div></div>
+          <div class="readout"><div class="label">$I_{\parallel}$</div><div class="value" id="r2_Ia">—</div></div>
+          <div class="readout"><div class="label">$|\mathbf{L}|$</div><div class="value" id="r2_L">—</div></div>
+          <div class="readout"><div class="label">Angolo $\mathbf{L},\boldsymbol{\omega}$</div><div class="value" id="r2_ang">—</div></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Legenda</h3>
+        <div class="vec-legend">
+          <div class="vec-item"><div class="vec-dot" style="background:#4aff8a"></div> $\boldsymbol{\omega}$ — asse di rotazione</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#ff6b4a"></div> $\mathbf{L} = \mathbf{I}\boldsymbol{\omega}$ — momento angolare</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#aaaaff"></div> Assi principali di inerzia</div>
+        </div>
+        <div class="highlight-box" style="margin-top:0.8rem">
+          <strong>Effetto non intuitivo:</strong> porta $\alpha$ a valori grandi con il disco. Nota come $\mathbf{L}$ (rosso) diverge sempre di più da $\boldsymbol{\omega}$ (verde). Questo disallineamento genera la <em>precessione libera di Eulero</em> in assenza di coppie esterne.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 3: CONSERVAZIONE ==================== -->
+<div class="tab-panel" id="tab2">
+  <div class="panel-layout">
+    <div class="canvas-area"><canvas id="canvas3"></canvas></div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Conservazione di $\mathbf{L}$</h3>
+        <div class="formula-box">$\dfrac{d\mathbf{L}}{dt} = \boldsymbol{\tau}_{\text{ext}}$</div>
+        <p class="info-text">
+          In assenza di coppie esterne ($\boldsymbol{\tau}=0$), il momento angolare totale si conserva. Se il momento di inerzia $I$ cambia, la velocità angolare $\omega$ si adatta affinché $L = I\omega$ rimanga costante.
+        </p>
+      </div>
+      <div class="sidebar-section">
+        <h3>Scenario</h3>
+        <div class="control-row">
+          <label>Scenario</label>
+          <select id="s3_scene" onchange="changeScene3()">
+            <option value="skater">Pattinatore — variazione $I$</option>
+            <option value="disks">Due dischi — accoppiamento</option>
+          </select>
+        </div>
+      </div>
+      <div class="sidebar-section" id="s3_skater_controls">
+        <h3>Pattinatore</h3>
+        <div class="control-row">
+          <label>Apertura braccia $r$ <span id="v3_arms">2.0</span> m</label>
+          <input type="range" id="s3_arms" min="0.3" max="3" step="0.05" value="2">
+        </div>
+        <div class="control-row">
+          <label>Massa braccia $m_b$ <span id="v3_mb">5</span> kg</label>
+          <input type="range" id="s3_mb" min="1" max="15" step="0.5" value="5">
+        </div>
+        <p class="info-text" style="margin-top:0.3rem">$I = I_{\text{corpo}} + 2m_b r^2$</p>
+      </div>
+      <div class="sidebar-section" id="s3_disk_controls" style="display:none">
+        <h3>Accoppiamento dischi</h3>
+        <div class="btn-row">
+          <button class="btn" onclick="dropDisk()">Rilascia disco 2</button>
+          <button class="btn outline" onclick="resetDisks()">Reset</button>
+        </div>
+        <p class="info-text" style="margin-top:0.5rem">Il disco 2 è inizialmente fermo. Quando viene rilasciato sul disco 1 in rotazione, l'attrito li porta alla stessa $\omega'$, con $L$ conservato ma energia dissipata per attrito.</p>
+      </div>
+      <div class="sidebar-section">
+        <h3>Letture</h3>
+        <div class="readout-grid">
+          <div class="readout"><div class="label">$I$ attuale</div><div class="value" id="r3_I">—</div></div>
+          <div class="readout"><div class="label">$\omega$</div><div class="value" id="r3_w">—</div></div>
+          <div class="readout"><div class="label">$L = I\omega$</div><div class="value" id="r3_L">—</div></div>
+          <div class="readout"><div class="label">$E_k = \frac{1}{2}I\omega^2$</div><div class="value" id="r3_E">—</div></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="highlight-box">
+          <strong>Attenzione:</strong> nel caso dell'accoppiamento dei dischi, $L$ si conserva ma l'energia cinetica <em>diminuisce</em> — l'energia viene dissipata dall'attrito. Questo è un fatto termodinamico rilevante: la conservazione di $L$ non implica quella di $E_k$.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 4: PRECESSIONE ==================== -->
+<div class="tab-panel" id="tab3">
+  <div class="panel-layout">
+    <div class="canvas-area"><canvas id="canvas4"></canvas></div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Precessione giroscopica</h3>
+        <div class="formula-box">$\boldsymbol{\Omega}_p = \dfrac{\boldsymbol{\tau}}{L} = \dfrac{Mgd}{I\omega}$</div>
+        <p class="info-text">
+          La coppia gravitazionale $\boldsymbol{\tau} = \mathbf{d} \times M\mathbf{g}$ è sempre perpendicolare a $\mathbf{L}$: non ne cambia il modulo ma ne ruota la direzione. La variazione elementare $d\mathbf{L} = \boldsymbol{\tau}\,dt$ fa quindi descrivere a $\mathbf{L}$ un cono attorno alla verticale con velocità angolare di precessione $\Omega_p = \tau/L$.
+        </p>
+      </div>
+      <div class="sidebar-section">
+        <h3>Parametri giroscopio</h3>
+        <div class="control-row">
+          <label>Spin $\omega_s$ <span id="v4_ws">15</span> rad/s</label>
+          <input type="range" id="s4_ws" min="3" max="40" step="0.5" value="15">
+        </div>
+        <div class="control-row">
+          <label>Massa $M$ <span id="v4_M">1.0</span> kg</label>
+          <input type="range" id="s4_M" min="0.2" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-row">
+          <label>Distanza pivot $d$ <span id="v4_d">1.5</span> m</label>
+          <input type="range" id="s4_d" min="0.5" max="3" step="0.1" value="1.5">
+        </div>
+        <div class="control-row">
+          <label>Inclinazione $\theta$ <span id="v4_theta">30</span>°</label>
+          <input type="range" id="s4_theta" min="5" max="80" step="1" value="30">
+        </div>
+        <div class="control-row" style="margin-top:0.3rem">
+          <div class="btn-row">
+            <button class="btn" id="btn4_pause" onclick="togglePause4()">Pausa</button>
+            <button class="btn outline" onclick="toggle4Nutation()">Nutazione</button>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Letture</h3>
+        <div class="readout-grid">
+          <div class="readout"><div class="label">$L = I\omega_s$</div><div class="value" id="r4_L">—</div></div>
+          <div class="readout"><div class="label">$\tau = Mgd\sin\theta$</div><div class="value" id="r4_tau">—</div></div>
+          <div class="readout"><div class="label">$\Omega_p$</div><div class="value" id="r4_Op">—</div></div>
+          <div class="readout"><div class="label">$T_p$ (periodo)</div><div class="value" id="r4_Tp">—</div></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Legenda</h3>
+        <div class="vec-legend">
+          <div class="vec-item"><div class="vec-dot" style="background:#4aff8a"></div> $\boldsymbol{\omega}_s$ — asse di spin</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#ff6b4a"></div> $\mathbf{L}$ — momento angolare</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#ff4af0"></div> $\boldsymbol{\tau}$ — coppia gravitazionale</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#ffcc44"></div> $d\mathbf{L}$ — incremento (causa precessione)</div>
+          <div class="vec-item"><div class="vec-dot" style="background:#aaaaff"></div> $\boldsymbol{\Omega}_p$ — asse di precessione</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="highlight-box">
+          <strong>Paradosso intuitivo:</strong> la gravità tira <em>in basso</em>, ma il giroscopio non cade — <em>ruota lateralmente</em>. Perché? Perché $\boldsymbol{\tau} \perp \mathbf{L}$ sempre, quindi $d\mathbf{L}$ è sempre perpendicolare a $\mathbf{L}$: questo significa che $\mathbf{L}$ può solo <em>ruotare</em>, non crescere o decrescere in modulo.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// UTILITIES
+// ============================================================
+function switchTab(n) {
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===n));
+  if(n===0 && !scenes[0].initialized) initTab1();
+  if(n===1 && !scenes[1].initialized) initTab2();
+  if(n===2 && !scenes[2].initialized) initTab3();
+  if(n===3 && !scenes[3].initialized) initTab4();
+  currentTab = n;
+}
+
+let currentTab = 0;
+const scenes = [{initialized:false},{initialized:false},{initialized:false},{initialized:false}];
+
+function makeScene(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e0c0a);
+
+  const W = canvas.parentElement.clientWidth;
+  const H = canvas.parentElement.clientHeight || 600;
+  renderer.setSize(W, H);
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+
+  const camera = new THREE.PerspectiveCamera(45, W/H, 0.01, 200);
+
+  // Grid
+  const grid = new THREE.GridHelper(12, 12, 0x2a2520, 0x1f1c18);
+  scene.add(grid);
+
+  // Ambient + directional light
+  scene.add(new THREE.AmbientLight(0xffeedd, 0.5));
+  const dLight = new THREE.DirectionalLight(0xfff8f0, 1.0);
+  dLight.position.set(5, 8, 5);
+  scene.add(dLight);
+
+  return {renderer, scene, camera, canvas};
+}
+
+function makeArrow(color, scene, headLen=0.25, headRad=0.08, shaftRad=0.04) {
+  const mat = new THREE.MeshPhongMaterial({color, emissive: new THREE.Color(color).multiplyScalar(0.3)});
+  const shaftGeo = new THREE.CylinderGeometry(shaftRad, shaftRad, 1, 12);
+  const shaft = new THREE.Mesh(shaftGeo, mat);
+  const headGeo = new THREE.ConeGeometry(headRad, headLen, 12);
+  const head = new THREE.Mesh(headGeo, mat);
+  const grp = new THREE.Group();
+  grp.add(shaft); grp.add(head);
+  scene.add(grp);
+  return {grp, shaft, head, mat};
+}
+
+function setArrow(arrow, from, to, minLen=0.05) {
+  const dir = new THREE.Vector3().subVectors(to, from);
+  const len = dir.length();
+  if(len < minLen) { arrow.grp.visible = false; return; }
+  arrow.grp.visible = true;
+  const headLen = Math.min(0.35, len*0.25);
+  const shaftLen = Math.max(len - headLen, 0.01);
+  arrow.shaft.scale.y = shaftLen;
+  arrow.shaft.position.y = shaftLen/2;
+  arrow.head.scale.set(1,1,1);
+  arrow.head.position.y = shaftLen + headLen/2;
+  arrow.grp.position.copy(from);
+  arrow.grp.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+}
+
+function addOrbitControls(camera, domElement) {
+  // Simple orbit controls implementation
+  let isDragging = false, lastX = 0, lastY = 0;
+  let theta = Math.PI/4, phi = Math.PI/3, radius;
+  const target = new THREE.Vector3(0,0,0);
+
+  function updateCamera() {
+    camera.position.set(
+      target.x + radius * Math.sin(phi) * Math.sin(theta),
+      target.y + radius * Math.cos(phi),
+      target.z + radius * Math.sin(phi) * Math.cos(theta)
+    );
+    camera.lookAt(target);
+  }
+
+  radius = camera.position.distanceTo(target) || 8;
+
+  domElement.addEventListener('mousedown', e => { isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+  window.addEventListener('mouseup', () => isDragging=false);
+  window.addEventListener('mousemove', e => {
+    if(!isDragging) return;
+    theta -= (e.clientX - lastX) * 0.008;
+    phi = Math.max(0.1, Math.min(Math.PI-0.1, phi + (e.clientY - lastY)*0.008));
+    lastX = e.clientX; lastY = e.clientY;
+    updateCamera();
+  });
+  domElement.addEventListener('wheel', e => {
+    radius = Math.max(2, Math.min(25, radius + e.deltaY*0.01));
+    updateCamera(); e.preventDefault();
+  }, {passive:false});
+
+  domElement.addEventListener('touchstart', e => {
+    if(e.touches.length===1){ isDragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+  });
+  domElement.addEventListener('touchend', () => isDragging=false);
+  domElement.addEventListener('touchmove', e => {
+    if(!isDragging||e.touches.length!==1) return;
+    theta -= (e.touches[0].clientX-lastX)*0.008;
+    phi = Math.max(0.1,Math.min(Math.PI-0.1,phi+(e.touches[0].clientY-lastY)*0.008));
+    lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;
+    updateCamera();
+  });
+
+  updateCamera();
+  return {updateCamera};
+}
+
+// ============================================================
+// TAB 1 — PARTICELLA
+// ============================================================
+function initTab1() {
+  scenes[0].initialized = true;
+  const {renderer, scene, camera, canvas} = makeScene('canvas1');
+  camera.position.set(5, 6, 8);
+  const orbit = addOrbitControls(camera, canvas);
+
+  // Tilt group: everything orbit-related lives here.
+  // The orbit plane is XZ (horizontal) in local space; we tilt it around X.
+  const tiltGroup = new THREE.Group();
+  scene.add(tiltGroup);
+
+  // TorusGeometry lies in XY plane by default (axis = Z).
+  // We want the orbit ring to lie in the local XZ plane → rotate torus 90° around X.
+  const orbitGeo = new THREE.TorusGeometry(1, 0.02, 8, 64); // radius=1, scaled later
+  const orbitMat = new THREE.MeshBasicMaterial({color:0xe0cc60, transparent:true, opacity:0.5});
+  const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+  orbitMesh.rotation.x = Math.PI / 2; // torus now lies in local XZ plane
+  tiltGroup.add(orbitMesh);
+
+  // Particle lives inside the tilt group so its local XZ motion matches the ring.
+  const partGeo = new THREE.SphereGeometry(0.18, 16, 16);
+  const partMat = new THREE.MeshPhongMaterial({color:0xffffff, emissive:0x888866});
+  const particle = new THREE.Mesh(partGeo, partMat);
+  tiltGroup.add(particle);
+
+  // Arrows: r, p, L (in world space — added to scene, not tiltGroup)
+  const arrR = makeArrow(0x4a9eff, scene);
+  const arrP = makeArrow(0x4aff8a, scene);
+  const arrL = makeArrow(0xff6b4a, scene);
+
+  // Origin sphere
+  const origGeo = new THREE.SphereGeometry(0.07, 12, 12);
+  scene.add(new THREE.Mesh(origGeo, new THREE.MeshPhongMaterial({color:0xffffff, emissive:0x444444})));
+
+  let angle = 0;
+
+  function getParams() {
+    const m = parseFloat(document.getElementById('s1_m').value);
+    const r = parseFloat(document.getElementById('s1_r').value);
+    const w = parseFloat(document.getElementById('s1_w').value);
+    const tilt = parseFloat(document.getElementById('s1_tilt').value) * Math.PI/180;
+    return {m, r, w, tilt};
+  }
+
+  function update(dt) {
+    const {m, r, w, tilt} = getParams();
+    angle += w * dt;
+
+    // Apply tilt to the group around X axis.
+    // This rotates the whole orbit plane: XZ plane tilts → one side rises, other lowers.
+    tiltGroup.rotation.x = tilt;
+
+    // Scale torus to current radius (geometry has radius=1)
+    orbitMesh.scale.setScalar(r);
+
+    // Particle position in local XZ plane (Y=0 in local space)
+    particle.position.set(r * Math.cos(angle), 0, r * Math.sin(angle));
+
+    // Get world position of particle for vector calculations
+    const pos = new THREE.Vector3();
+    particle.getWorldPosition(pos);
+
+    // Velocity: tangent to circle in local XZ, then transform to world.
+    // Local velocity direction: d/dangle of (r*cos, 0, r*sin) = (-r*w*sin, 0, r*w*cos)
+    const velLocal = new THREE.Vector3(-r * w * Math.sin(angle), 0, r * w * Math.cos(angle));
+    // Rotate velocity by the tilt group's world quaternion
+    const velWorld = velLocal.clone().applyQuaternion(tiltGroup.quaternion);
+    const p_vec = velWorld.clone().multiplyScalar(m);
+
+    // L = r × p  (both in world space)
+    const L_vec = pos.clone().cross(p_vec);
+    const L_mag = L_vec.length();
+    const v_mag = velWorld.length();
+
+    // Arrows
+    const pScale = 0.4;
+    const Lscale = 0.14;
+    setArrow(arrR, new THREE.Vector3(0,0,0), pos.clone()); // r goes exactly to particle
+    setArrow(arrP, pos.clone(), pos.clone().add(p_vec.clone().multiplyScalar(pScale)));
+    setArrow(arrL, new THREE.Vector3(0,0,0), L_vec.clone().multiplyScalar(Lscale));
+
+    // Readouts
+    const theta_angle = Math.acos(Math.max(-1,Math.min(1, pos.dot(velWorld)/(pos.length()*velWorld.length()))));
+    document.getElementById('r1_L').textContent = L_mag.toFixed(2)+' kg·m²/s';
+    document.getElementById('r1_v').textContent = v_mag.toFixed(2)+' m/s';
+    document.getElementById('r1_r').textContent = pos.length().toFixed(2)+' m';
+    document.getElementById('r1_th').textContent = (theta_angle*180/Math.PI).toFixed(1)+'°';
+    document.getElementById('v1_m').textContent = m.toFixed(1);
+    document.getElementById('v1_r').textContent = r.toFixed(1);
+    document.getElementById('v1_w').textContent = w.toFixed(1);
+    document.getElementById('v1_tilt').textContent = Math.round(parseFloat(document.getElementById('s1_tilt').value));
+  }
+
+  let last = performance.now();
+  function animate() {
+    if(currentTab !== 0) { scenes[0].animId = requestAnimationFrame(animate); return; }
+    const now = performance.now();
+    const dt = Math.min((now-last)/1000, 0.05);
+    last = now;
+    update(dt);
+    // Handle resize
+    const W = canvas.parentElement.clientWidth;
+    const H = canvas.parentElement.clientHeight || 600;
+    if(renderer.domElement.width !== W || renderer.domElement.height !== H) {
+      renderer.setSize(W, H);
+      camera.aspect = W/H;
+      camera.updateProjectionMatrix();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ============================================================
+// TAB 2 — CORPO RIGIDO
+// ============================================================
+let tab2State = {alpha:0, w:2, shape:'disk', angle:0};
+
+function getInertia(shape) {
+  const M=1, R=1.5, L=3;
+  switch(shape) {
+    case 'disk':   return {I1:M*R*R/4, I3:M*R*R/2, label:'$I_\\perp=\\tfrac{1}{4}MR^2,\\;I_\\parallel=\\tfrac{1}{2}MR^2$'};
+    case 'rod':    return {I1:M*L*L/12, I3:0.001, label:'$I_\\perp=\\tfrac{1}{12}ML^2,\\;I_\\parallel\\approx 0$'};
+    case 'sphere': return {I1:2*M*R*R/5, I3:2*M*R*R/5, label:'$I_\\perp=I_\\parallel=\\tfrac{2}{5}MR^2$'};
+    case 'asymm':  return {I1:0.4, I3:1.8, label:'$I_1=0.4,\\;I_2=0.8,\\;I_3=1.8\\;(\\text{kg·m}^2)$'};
+  }
+}
+
+function updateTab2() {
+  const shape = document.getElementById('s2_shape').value;
+  const info = getInertia(shape);
+  const el = document.getElementById('inertia_formula');
+  el.textContent = info.label;
+  if(window.katex) katex.render(info.label.replace(/\$/g,''), el, {throwOnError:false, displayMode:false});
+}
+
+function initTab2() {
+  scenes[1].initialized = true;
+  const {renderer, scene, camera, canvas} = makeScene('canvas2');
+  camera.position.set(4, 5, 8);
+  addOrbitControls(camera, canvas);
+
+  // Body mesh (disk by default)
+  let bodyMesh = null;
+  function makeBody(shape) {
+    if(bodyMesh) scene.remove(bodyMesh);
+    let geo;
+    switch(shape) {
+      case 'disk':   geo = new THREE.CylinderGeometry(1.5, 1.5, 0.3, 40); break;
+      case 'rod':    geo = new THREE.CylinderGeometry(0.12, 0.12, 3.5, 16); break;
+      case 'sphere': geo = new THREE.SphereGeometry(1.2, 32, 32); break;
+      case 'asymm':  geo = new THREE.BoxGeometry(0.8, 3, 1.6); break;
+    }
+    const mat = new THREE.MeshPhongMaterial({color:0x3a6090, transparent:true, opacity:0.75, emissive:0x0a1a2a});
+    bodyMesh = new THREE.Mesh(geo, mat);
+    scene.add(bodyMesh);
+    return bodyMesh;
+  }
+  makeBody('disk');
+
+  // Principal axis lines
+  const axisMat = new THREE.LineBasicMaterial({color:0xaaaaff, transparent:true, opacity:0.7});
+  function makeAxisLine(dir, len=3.5) {
+    const pts = [dir.clone().multiplyScalar(-len), dir.clone().multiplyScalar(len)];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const line = new THREE.Line(geo, axisMat);
+    scene.add(line);
+    return line;
+  }
+  const ax1 = makeAxisLine(new THREE.Vector3(1,0,0));
+  const ax2 = makeAxisLine(new THREE.Vector3(0,0,1));
+  const ax3 = makeAxisLine(new THREE.Vector3(0,1,0));
+
+  const arrW = makeArrow(0x4aff8a, scene, 0.3, 0.12, 0.055);
+  const arrL = makeArrow(0xff6b4a, scene, 0.3, 0.12, 0.055);
+
+  let angle2 = 0;
+
+  function animate2() {
+    if(currentTab !== 1) { requestAnimationFrame(animate2); return; }
+
+    const shape = document.getElementById('s2_shape').value;
+    if(shape !== tab2State.shape) { makeBody(shape); tab2State.shape = shape; updateTab2(); }
+
+    const alpha = parseFloat(document.getElementById('s2_alpha').value) * Math.PI/180;
+    const omega = parseFloat(document.getElementById('s2_w').value);
+
+    document.getElementById('v2_alpha').textContent = Math.round(parseFloat(document.getElementById('s2_alpha').value));
+    document.getElementById('v2_w').textContent = omega.toFixed(1);
+
+    // omega vector: rotated alpha from principal axis (y), in yz plane
+    const omegaDir = new THREE.Vector3(Math.sin(alpha), Math.cos(alpha), 0);
+    const omegaVec = omegaDir.clone().multiplyScalar(omega);
+
+    // Inertia components
+    const {I1, I3} = getInertia(shape);
+    // In body frame: omega_perp = omega*sin(alpha) → contributes I1, omega_par = omega*cos(alpha) → contributes I3
+    const L_par = I3 * omega * Math.cos(alpha);
+    const L_perp = I1 * omega * Math.sin(alpha);
+    const L_mag = Math.sqrt(L_par*L_par + L_perp*L_perp);
+    const L_angle = Math.atan2(L_perp, L_par); // angle of L from body axis
+
+    const LDir = new THREE.Vector3(Math.sin(L_angle), Math.cos(L_angle), 0);
+
+    // Rotate body
+    angle2 += omega * 0.016;
+    bodyMesh.rotation.y = angle2;
+
+    const scale = 0.45;
+    setArrow(arrW, new THREE.Vector3(0,0,0), omegaVec.clone().multiplyScalar(scale));
+    setArrow(arrL, new THREE.Vector3(0,0,0), LDir.clone().multiplyScalar(L_mag*scale));
+
+    // Readouts
+    const angDiff = Math.abs(L_angle - alpha) * 180/Math.PI;
+    document.getElementById('r2_Ip').textContent = I1.toFixed(3)+' kg·m²';
+    document.getElementById('r2_Ia').textContent = I3.toFixed(3)+' kg·m²';
+    document.getElementById('r2_L').textContent = L_mag.toFixed(3)+' kg·m²/s';
+    document.getElementById('r2_ang').textContent = angDiff.toFixed(1)+'°';
+
+    const W = canvas.parentElement.clientWidth;
+    const H = canvas.parentElement.clientHeight || 600;
+    if(renderer.domElement.width !== W || renderer.domElement.height !== H) {
+      renderer.setSize(W, H); camera.aspect = W/H; camera.updateProjectionMatrix();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate2);
+  }
+  animate2();
+}
+
+// ============================================================
+// TAB 3 — CONSERVAZIONE
+// ============================================================
+let tab3 = {scene3:null, disk2dropped:false, disk2y:3, disk2w:0, I0:1, w0:3, Lconst:3, diskMesh2:null, renderer3:null, camera3:null, canvas3:null};
+
+function changeScene3() {
+  const s = document.getElementById('s3_scene').value;
+  document.getElementById('s3_skater_controls').style.display = s==='skater'?'':'none';
+  document.getElementById('s3_disk_controls').style.display = s==='disks'?'':'none';
+}
+
+function dropDisk() { tab3.disk2dropped = true; }
+function resetDisks() { tab3.disk2dropped=false; tab3.disk2y=3; tab3.disk2w=0; tab3.disk2mesh&&(tab3.disk2mesh.position.y=3); }
+
+function initTab3() {
+  scenes[2].initialized = true;
+  const {renderer, scene, camera, canvas} = makeScene('canvas3');
+  camera.position.set(6, 7, 10);
+  addOrbitControls(camera, canvas);
+  tab3.renderer3=renderer; tab3.camera3=camera; tab3.canvas3=canvas;
+
+  // Skater body
+  const bodyGeo = new THREE.CylinderGeometry(0.35, 0.25, 2.2, 20);
+  const bodyMat = new THREE.MeshPhongMaterial({color:0x5080c0, emissive:0x102030});
+  const skaterBody = new THREE.Mesh(bodyGeo, bodyMat);
+  skaterBody.position.y = 1.1;
+  scene.add(skaterBody);
+
+  // Arms (two spheres on sticks)
+  const armMat = new THREE.MeshPhongMaterial({color:0x80a0e0});
+  const armGeo = new THREE.SphereGeometry(0.18, 12, 12);
+  const arm1 = new THREE.Mesh(armGeo, armMat); scene.add(arm1);
+  const arm2 = new THREE.Mesh(armGeo, armMat); scene.add(arm2);
+  const stick1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1,8), armMat);
+  const stick2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1,8), armMat);
+  stick1.rotation.z = Math.PI/2; stick2.rotation.z = Math.PI/2;
+  scene.add(stick1); scene.add(stick2);
+
+  // Angular momentum arrow
+  const arrL3 = makeArrow(0xff6b4a, scene, 0.3, 0.1, 0.05);
+  const arrW3 = makeArrow(0x4aff8a, scene, 0.3, 0.1, 0.05);
+
+  // Disk scene objects
+  const diskGeo1 = new THREE.CylinderGeometry(2, 2, 0.22, 40);
+  const diskMat1 = new THREE.MeshPhongMaterial({color:0x306090, transparent:true, opacity:0.8});
+  const disk1 = new THREE.Mesh(diskGeo1, diskMat1);
+  disk1.position.y = 0.11;
+  scene.add(disk1); disk1.visible = false;
+
+  const diskGeo2 = new THREE.CylinderGeometry(2, 2, 0.22, 40);
+  const diskMat2 = new THREE.MeshPhongMaterial({color:0x903060, transparent:true, opacity:0.8});
+  const disk2 = new THREE.Mesh(diskGeo2, diskMat2);
+  disk2.position.y = 3;
+  scene.add(disk2); disk2.visible = false;
+  tab3.disk2mesh = disk2;
+
+  // L constant for disks
+  const I_disk = 0.5*2*4; // 0.5*M*R^2, M=2, R=2
+  let Ldisk = I_disk * 2.5;
+  let disk1angle = 0, disk2angle = 0;
+  const I_body = 0.8;
+
+  let t3angle = 0;
+
+  function animate3() {
+    if(currentTab !== 2) { requestAnimationFrame(animate3); return; }
+
+    const s = document.getElementById('s3_scene').value;
+    const isSkater = s==='skater';
+
+    skaterBody.visible = isSkater; arm1.visible=isSkater; arm2.visible=isSkater;
+    stick1.visible=isSkater; stick2.visible=isSkater;
+    disk1.visible=!isSkater; disk2.visible=!isSkater;
+
+    let I_cur, w_cur, L_cur, E_cur;
+
+    if(isSkater) {
+      const r = parseFloat(document.getElementById('s3_arms').value);
+      const mb = parseFloat(document.getElementById('s3_mb').value);
+      I_cur = I_body + 2*mb*r*r;
+      L_cur = 15.0; // fixed L
+      w_cur = L_cur / I_cur;
+      E_cur = 0.5*I_cur*w_cur*w_cur;
+
+      t3angle += w_cur * 0.016;
+      skaterBody.rotation.y = t3angle;
+
+      // Arms position
+      const armX = r * 0.8;
+      arm1.position.set(armX, 2.0, 0); arm2.position.set(-armX, 2.0, 0);
+      stick1.scale.x = r*0.75; stick2.scale.x = r*0.75;
+      stick1.position.set(armX*0.5, 2.0, 0); stick2.position.set(-armX*0.5, 2.0, 0);
+      arm1.rotation.y = t3angle; arm2.rotation.y = t3angle;
+      stick1.rotation.y = t3angle; stick2.rotation.y = t3angle;
+
+      document.getElementById('v3_arms').textContent = r.toFixed(2);
+      document.getElementById('v3_mb').textContent = parseFloat(document.getElementById('s3_mb').value).toFixed(1);
+
+      setArrow(arrL3, new THREE.Vector3(0,0,0), new THREE.Vector3(0, L_cur*0.12, 0));
+      setArrow(arrW3, new THREE.Vector3(0,2.5,0), new THREE.Vector3(0, 2.5+w_cur*0.2, 0));
+
+    } else {
+      // Two disks
+      if(!tab3.disk2dropped) {
+        disk1angle += 2.5 * 0.016;
+        disk2angle = 0;
+        I_cur = I_disk; w_cur = 2.5; L_cur = I_cur*w_cur; E_cur = 0.5*I_cur*w_cur*w_cur;
+        disk2.position.y = 3;
+      } else {
+        // Disk 2 falls
+        if(tab3.disk2y > 0.33) {
+          tab3.disk2y -= 0.04;
+          disk2.position.y = tab3.disk2y;
+          I_cur = I_disk; w_cur = 2.5; L_cur = I_cur*w_cur; E_cur = 0.5*I_cur*w_cur*w_cur;
+          disk1angle += w_cur * 0.016;
+        } else {
+          // Coupled: conserve L, I doubles
+          I_cur = 2*I_disk;
+          L_cur = I_disk * 2.5;
+          w_cur = L_cur / I_cur;
+          E_cur = 0.5*I_cur*w_cur*w_cur;
+          disk1angle += w_cur * 0.016;
+          disk2angle = disk1angle;
+          disk2.position.y = 0.33;
+        }
+      }
+      disk1.rotation.y = disk1angle;
+      disk2.rotation.y = disk2angle;
+      setArrow(arrL3, new THREE.Vector3(0,0,0), new THREE.Vector3(0, L_cur*0.05, 0));
+      setArrow(arrW3, new THREE.Vector3(0,1.2,0), new THREE.Vector3(0,1.2+w_cur*0.2,0));
+    }
+
+    document.getElementById('r3_I').textContent = I_cur.toFixed(2)+' kg·m²';
+    document.getElementById('r3_w').textContent = w_cur.toFixed(3)+' rad/s';
+    document.getElementById('r3_L').textContent = L_cur.toFixed(3)+' kg·m²/s';
+    document.getElementById('r3_E').textContent = E_cur.toFixed(2)+' J';
+
+    const W = canvas.parentElement.clientWidth;
+    const H = canvas.parentElement.clientHeight || 600;
+    if(renderer.domElement.width!==W||renderer.domElement.height!==H) {
+      renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate3);
+  }
+  animate3();
+}
+
+// ============================================================
+// TAB 4 — PRECESSIONE GIROSCOPICA
+// ============================================================
+let tab4State = {paused:false, nutating:false, nutAngle:0, nutPhase:0};
+
+function togglePause4() {
+  tab4State.paused = !tab4State.paused;
+  document.getElementById('btn4_pause').textContent = tab4State.paused ? 'Riprendi' : 'Pausa';
+}
+
+function toggle4Nutation() {
+  tab4State.nutating = !tab4State.nutating;
+}
+
+function initTab4() {
+  scenes[3].initialized = true;
+  const {renderer, scene, camera, canvas} = makeScene('canvas4');
+  camera.position.set(5, 7, 9);
+  addOrbitControls(camera, canvas);
+
+  scene.remove(scene.children.find(c=>c instanceof THREE.GridHelper));
+  const grid = new THREE.GridHelper(14, 14, 0x2a2520, 0x1f1c18);
+  scene.add(grid);
+
+  // Pivot point
+  const pivGeo = new THREE.SphereGeometry(0.12, 12, 12);
+  const pivMat = new THREE.MeshPhongMaterial({color:0xffffff, emissive:0x666655});
+  const pivot = new THREE.Mesh(pivGeo, pivMat);
+  pivot.position.set(0, 1.5, 0);
+  scene.add(pivot);
+
+  // Gyroscope disk
+  const gyroGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.22, 40);
+  const gyroMat = new THREE.MeshPhongMaterial({color:0x5090d0, emissive:0x0a1a30, transparent:true, opacity:0.9});
+  const gyro = new THREE.Mesh(gyroGeo, gyroMat);
+  scene.add(gyro);
+
+  // Axle
+  const axleGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 12);
+  const axleMat = new THREE.MeshPhongMaterial({color:0xcccccc, emissive:0x333333});
+  const axle1 = new THREE.Mesh(axleGeo, axleMat);
+  const axle2 = new THREE.Mesh(axleGeo, axleMat);
+  scene.add(axle1); scene.add(axle2);
+
+  // Arrows
+  const arrSpin = makeArrow(0x4aff8a, scene, 0.35, 0.13, 0.06); // omega_s
+  const arrL4   = makeArrow(0xff6b4a, scene, 0.35, 0.13, 0.06); // L
+  const arrTau  = makeArrow(0xff4af0, scene, 0.3, 0.11, 0.05);  // tau
+  const arrDL   = makeArrow(0xffcc44, scene, 0.28, 0.1, 0.045); // dL
+  const arrPrec = makeArrow(0xaaaaff, scene, 0.3, 0.1, 0.04);   // Omega_p (vertical)
+
+  // Precession cone trace
+  const tracePts = [];
+  const traceGeo = new THREE.BufferGeometry();
+  const traceMat = new THREE.LineBasicMaterial({color:0xff6b4a, transparent:true, opacity:0.4});
+  const traceLine = new THREE.Line(traceGeo, traceMat);
+  scene.add(traceLine);
+
+  // Gravity arrow
+  const arrG = makeArrow(0x888844, scene, 0.25, 0.09, 0.04);
+  setArrow(arrG, new THREE.Vector3(0, 3.5, 0), new THREE.Vector3(0, 2.8, 0));
+
+  // Precessional angle
+  let precAngle = 0;
+  let spinAngle = 0;
+  const I_gyro = 0.5 * 1.0 * 1.0; // 0.5*M*R^2, M=1, R=1
+
+  function animate4() {
+    if(currentTab !== 3) { requestAnimationFrame(animate4); return; }
+
+    const ws  = parseFloat(document.getElementById('s4_ws').value);
+    const M   = parseFloat(document.getElementById('s4_M').value);
+    const d   = parseFloat(document.getElementById('s4_d').value);
+    const th  = parseFloat(document.getElementById('s4_theta').value) * Math.PI/180;
+
+    document.getElementById('v4_ws').textContent = ws.toFixed(1);
+    document.getElementById('v4_M').textContent = M.toFixed(1);
+    document.getElementById('v4_d').textContent = d.toFixed(1);
+    document.getElementById('v4_theta').textContent = Math.round(parseFloat(document.getElementById('s4_theta').value));
+
+    const L_mag  = I_gyro * ws;
+    const tau_mag = M * 9.81 * d * Math.sin(th);
+    const Omega_p = tau_mag / L_mag;
+    const T_p = (Omega_p > 0.001) ? 2*Math.PI/Omega_p : Infinity;
+
+    if(!tab4State.paused) {
+      precAngle += Omega_p * 0.016;
+      spinAngle += ws * 0.016;
+    }
+
+    // Nutation
+    let nutDelta = 0;
+    if(tab4State.nutating) {
+      tab4State.nutPhase += 0.04;
+      nutDelta = 0.12 * Math.sin(tab4State.nutPhase);
+    }
+
+    const thetaEff = th + nutDelta;
+
+    // Gyro axis direction: tilted by theta from vertical, precessing
+    const axisDir = new THREE.Vector3(
+      Math.sin(thetaEff) * Math.sin(precAngle),
+      Math.cos(thetaEff),
+      Math.sin(thetaEff) * Math.cos(precAngle)
+    );
+
+    // Pivot position (fixed)
+    const pivotPos = new THREE.Vector3(0, 1.5, 0);
+    // Center of mass
+    const cmPos = pivotPos.clone().add(axisDir.clone().multiplyScalar(d));
+    gyro.position.copy(cmPos);
+
+    // Orient gyro: cylinder y-axis → axisDir
+    gyro.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), axisDir);
+    // Add spin rotation
+    gyro.rotateOnWorldAxis(axisDir, spinAngle);
+
+    // Axle segments
+    axle1.position.copy(pivotPos.clone().add(axisDir.clone().multiplyScalar(0.5)));
+    axle1.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), axisDir);
+    axle2.position.copy(cmPos.clone().add(axisDir.clone().multiplyScalar(0.7)));
+    axle2.quaternion.copy(axle1.quaternion);
+
+    // L arrow: along axis from pivot
+    const Lend = pivotPos.clone().add(axisDir.clone().multiplyScalar(L_mag * 0.3));
+    setArrow(arrL4, pivotPos, Lend);
+
+    // Spin axis (omega_s) same direction, shorter
+    const wsEnd = pivotPos.clone().add(axisDir.clone().multiplyScalar(Math.min(ws*0.15, 3.5)));
+    setArrow(arrSpin, pivotPos, wsEnd);
+
+    // Tau: horizontal, perp to L projected on horizontal
+    // tau = r×F = axisDir_horizontal × (-y), where axisDir_horizontal is the horizontal component
+    const horizAxis = new THREE.Vector3(Math.sin(thetaEff)*Math.sin(precAngle), 0, Math.sin(thetaEff)*Math.cos(precAngle)).normalize();
+    const tauDir = new THREE.Vector3(-horizAxis.z, 0, horizAxis.x); // perp in horizontal plane
+    const tauViz = tauDir.clone().multiplyScalar(Math.min(tau_mag * 0.12, 2.0));
+    setArrow(arrTau, cmPos, cmPos.clone().add(tauViz));
+
+    // dL: same direction as tau (tau*dt, small vector at tip of L)
+    const dLviz = tauDir.clone().multiplyScalar(Math.min(tau_mag*0.06, 1.0));
+    setArrow(arrDL, Lend, Lend.clone().add(dLviz));
+
+    // Omega_p: vertical arrow at origin
+    setArrow(arrPrec, new THREE.Vector3(0,0.1,0), new THREE.Vector3(0, 0.1+Math.min(Omega_p*0.4,3), 0));
+
+    // Trace
+    if(!tab4State.paused) {
+      tracePts.push(Lend.clone());
+      if(tracePts.length > 300) tracePts.shift();
+      traceGeo.setFromPoints(tracePts);
+    }
+
+    // Readouts
+    document.getElementById('r4_L').textContent = L_mag.toFixed(3)+' kg·m²/s';
+    document.getElementById('r4_tau').textContent = tau_mag.toFixed(3)+' N·m';
+    document.getElementById('r4_Op').textContent = Omega_p.toFixed(4)+' rad/s';
+    document.getElementById('r4_Tp').textContent = isFinite(T_p) ? T_p.toFixed(2)+' s' : '∞';
+
+    const W = canvas.parentElement.clientWidth;
+    const H = canvas.parentElement.clientHeight || 600;
+    if(renderer.domElement.width!==W||renderer.domElement.height!==H) {
+      renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate4);
+  }
+  animate4();
+}
+
+// Boot
+window.addEventListener('DOMContentLoaded', () => {
+  initTab1();
+  // Render KaTeX
+  setTimeout(()=>{
+    if(window.renderMathInElement) renderMathInElement(document.body,{
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]
+    });
+    updateTab2();
+  }, 600);
+});
+
+window.addEventListener('resize', () => {
+  // handled inside each loop
+});
+</script>
+</body>
+</html>

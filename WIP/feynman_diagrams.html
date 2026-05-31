@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  title: "Diagrammi di Feynman",
+  description: "Libreria interattiva di diagrammi di Feynman per processi QED (Quantum Electrodynamics), QCD (Quantum Chromodynamics) e interazione elettrodebole, con visualizzazione di vertici, propagatori, ampiezze di scattering e contributi perturbativi alla matrice S.",
+  category: "Fisica delle Particelle",
+  icon: "⚛️",
+  order: 10,
+  tags: [
+    "diagrammi di Feynman",
+    "fisica delle particelle",
+    "teoria quantistica dei campi",
+    "QFT",
+    "Quantum Field Theory",
+    "QED",
+    "Quantum Electrodynamics",
+    "QCD",
+    "Quantum Chromodynamics",
+    "interazione elettrodebole",
+    "matrice S",
+    "propagatori",
+    "scattering",
+    "ampiezza di transizione",
+    "rinormalizzazione"
+  ],
+  level: "avanzato"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagrammi di Feynman — Fisica delle Particelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{
+  --cream:#f5f0e8; --cream-dark:#ede7d9; --ink:#1a1410; --ink-light:#3d3028;
+  --ink-muted:#7a6a58; --red:#c0392b; --blue:#1a5276; --green:#1e6b3c;
+  --amber:#b7770d; --border:#cfc5b0; --shadow:rgba(26,20,16,0.14);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.7;}
+
+/* ── HEADER ── */
+header{background:var(--ink);color:var(--cream);padding:48px 60px 36px;position:relative;overflow:hidden;}
+header::before{content:'';position:absolute;top:-60px;right:-60px;width:320px;height:320px;border:1px solid rgba(245,240,232,.08);border-radius:50%;}
+header::after{content:'';position:absolute;bottom:-40px;left:40px;width:180px;height:180px;border:1px solid rgba(245,240,232,.06);border-radius:50%;}
+.header-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;}
+header h1{font-family:'EB Garamond',serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:400;line-height:1.15;margin-bottom:12px;}
+header h1 em{color:var(--amber);font-style:italic;}
+.header-sub{font-weight:300;font-size:14px;color:rgba(245,240,232,.65);max-width:580px;}
+.meta-bar{display:flex;gap:32px;flex-wrap:wrap;margin-top:28px;padding-top:24px;border-top:1px solid rgba(245,240,232,.1);}
+.meta-item{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(245,240,232,.45);}
+.meta-item span{color:rgba(245,240,232,.75);margin-left:6px;}
+
+/* ── LAYOUT ── */
+.container{max-width:1120px;margin:0 auto;padding:0 40px;}
+.section{padding:56px 0 40px;border-bottom:1px solid var(--border);}
+.section:last-child{border-bottom:none;}
+.section-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:8px;}
+.section h2{font-family:'EB Garamond',serif;font-size:2rem;font-weight:400;margin-bottom:20px;}
+.prose{max-width:780px;color:var(--ink-light);font-size:15px;line-height:1.8;}
+.prose p{margin-bottom:14px;}
+.prose strong{font-weight:500;color:var(--ink);}
+.formula-box{background:var(--cream-dark);border:1px solid var(--border);border-left:3px solid var(--amber);padding:20px 24px;margin:20px 0;border-radius:2px;overflow-x:auto;}
+.formula-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:10px;}
+
+/* ── TABS ── */
+.tabs-nav{display:flex;border-bottom:2px solid var(--border);margin-bottom:32px;overflow-x:auto;}
+.tab-btn{font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;padding:10px 24px;border:none;background:transparent;color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .2s,border-color .2s;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);}
+
+/* ── CARD GRID ── */
+.diagrams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px;}
+
+.diagram-card{
+  background:white;border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;cursor:pointer;
+  transition:box-shadow .25s,border-color .25s,transform .2s;
+  display:flex;flex-direction:column;
+}
+.diagram-card:hover{box-shadow:0 8px 32px var(--shadow);border-color:#a89880;transform:translateY(-3px);}
+
+.card-canvas-wrap{
+  background:#111;
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  overflow:hidden;
+}
+.card-canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+/* subtle "clicca" hint */
+.card-canvas-wrap::after{
+  content:'↗ dettaglio';
+  position:absolute;bottom:8px;right:10px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;
+  color:rgba(245,240,232,.35);pointer-events:none;
+  transition:color .2s;
+}
+.diagram-card:hover .card-canvas-wrap::after{color:rgba(245,240,232,.7);}
+
+.card-body{padding:14px 16px 16px;}
+.card-title{font-family:'EB Garamond',serif;font-size:1.08rem;margin-bottom:3px;color:var(--ink);}
+.card-subtitle{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-muted);letter-spacing:.1em;margin-bottom:8px;}
+.card-order{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 8px;border-radius:20px;background:var(--cream-dark);border:1px solid var(--border);color:var(--ink-muted);}
+
+/* ── MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(20,15,10,.78);
+  z-index:1000;align-items:center;justify-content:center;padding:24px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--cream);border-radius:10px;
+  max-width:980px;width:100%;max-height:92vh;overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+  position:relative;
+  display:grid;grid-template-columns:1fr 1fr;
+}
+@media(max-width:740px){.modal{grid-template-columns:1fr;}}
+
+/* left: big canvas */
+.modal-left{
+  background:#0e0e0e;
+  border-radius:10px 0 0 10px;
+  padding:28px 24px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  border-right:1px solid rgba(255,255,255,.07);
+}
+#modalCanvas{display:block;width:100%;border-radius:4px;}
+
+.anim-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.anim-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:5px 16px;border:1px solid rgba(245,240,232,.2);border-radius:20px;
+  background:transparent;cursor:pointer;color:rgba(245,240,232,.6);
+  transition:all .15s;
+}
+.anim-btn:hover{border-color:rgba(245,240,232,.5);color:rgba(245,240,232,.9);}
+.anim-btn.active{background:rgba(245,240,232,.12);border-color:rgba(245,240,232,.45);color:var(--cream);}
+.speed-wrap{display:flex;align-items:center;gap:8px;}
+.speed-wrap label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(245,240,232,.4);}
+.speed-wrap input{width:80px;accent-color:var(--amber);}
+
+/* right: info */
+.modal-right{padding:32px 28px 28px;display:flex;flex-direction:column;gap:18px;}
+.modal-close{
+  position:absolute;top:14px;right:16px;
+  background:none;border:none;font-size:24px;cursor:pointer;
+  color:var(--ink-muted);line-height:1;z-index:10;
+  transition:color .15s;
+}
+.modal-close:hover{color:var(--ink);}
+.modal-title{font-family:'EB Garamond',serif;font-size:1.7rem;font-weight:400;line-height:1.2;color:var(--ink);}
+.modal-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-muted);letter-spacing:.1em;margin-bottom:4px;}
+.modal-order{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;background:var(--cream-dark);border:1px solid var(--border);color:var(--ink-muted);margin-top:6px;}
+.modal-desc{font-size:14px;color:var(--ink-light);line-height:1.78;}
+.modal-amp{background:white;border:1px solid var(--border);border-radius:4px;padding:16px 18px;overflow-x:auto;}
+.modal-amp-label{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-muted);margin-bottom:10px;}
+
+/* ── REGOLE ── */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:680px){.rules-grid{grid-template-columns:1fr;}}
+.rule-card{background:white;border:1px solid var(--border);border-radius:4px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;}
+.rule-name{font-weight:500;font-size:13px;color:var(--ink);margin-bottom:4px;}
+.rule-factor{font-size:13px;color:var(--ink-light);overflow-x:auto;}
+
+/* ── FOOTER ── */
+footer{background:var(--ink);color:rgba(245,240,232,.4);padding:28px 60px;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:60px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-tag">Fisica Teorica delle Particelle</div>
+  <h1>Diagrammi di <em>Feynman</em></h1>
+  <p class="header-sub">Rappresentazione perturbativa degli elementi di matrice S nella teoria quantistica dei campi. Libreria interattiva di processi QED, QCD e interazione elettrodebole con animazione dei propagatori.</p>
+  <div class="meta-bar">
+    <div class="meta-item">Livello:<span>Avanzato (Università)</span></div>
+    <div class="meta-item">Teoria:<span>QFT / S-Matrix</span></div>
+    <div class="meta-item">Processi:<span>13 diagrammi</span></div>
+    <div class="meta-item">Versione:<span>2.1</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ── TEORIA ── -->
+<div class="section">
+  <div class="section-label">01 — Fondamenti teorici</div>
+  <h2>Perturbazione e matrice S</h2>
+  <div class="prose">
+    <p>I diagrammi di Feynman sono uno strumento grafico per calcolare sistematicamente le ampiezze di transizione nella <strong>teoria quantistica dei campi (TQC)</strong>. Ogni diagramma corrisponde esattamente a un termine dello sviluppo perturbativo della <strong>matrice S (matrice di diffusione)</strong>, l'operatore che mappa gli stati asintotici iniziali negli stati finali:</p>
+    <div class="formula-box">
+      <div class="formula-label">Elemento di matrice S</div>
+      $$S_{fi} = \langle f | \hat{S} | i \rangle = \langle f | \,\mathcal{T}\exp\!\left(-i\int d^4x\,\mathcal{H}_\mathrm{int}(x)\right) | i \rangle$$
+    </div>
+    <p>dove $\mathcal{T}$ indica il <strong>prodotto ordinato nel tempo</strong> e $\mathcal{H}_\mathrm{int}$ è la densità di Hamiltoniano d'interazione. Espandendo l'esponenziale in serie di Taylor, ogni ordine $n$ nella costante d'accoppiamento genera un insieme finito di diagrammi con $n$ vertici. In QED la costante è la <strong>costante di struttura fine</strong> $\alpha = e^2/4\pi\epsilon_0\hbar c \approx 1/137$, che garantisce la convergenza della serie perturbativa.</p>
+    <p>L'ampiezza invariante $\mathcal{M}_{fi}$ è legata a $S_{fi}$ tramite $S_{fi} = \delta_{fi} + i(2\pi)^4\delta^{(4)}(p_f-p_i)\,\mathcal{M}_{fi}$. La sezione d'urto e la probabilità di decadimento si ottengono da $|\mathcal{M}|^2$ tramite la <strong>regola d'oro di Fermi</strong> relativistica:</p>
+    <div class="formula-box">
+      <div class="formula-label">Sezione d'urto differenziale (Lorentz-invariante)</div>
+      $$d\sigma = \frac{|\mathcal{M}|^2}{4\sqrt{(p_1\cdot p_2)^2 - m_1^2 m_2^2}}\,d\Phi_n \qquad d\Phi_n = \prod_{f}\frac{d^3p_f}{(2\pi)^3 2E_f}\,(2\pi)^4\delta^{(4)}\!\left(\textstyle\sum p_f - \sum p_i\right)$$
+    </div>
+    <p>Ogni diagramma di Feynman contribuisce un addendo ad $\mathcal{M}$: i diagrammi con $n$ vertici contribuiscono con un fattore $\sim\alpha^n$. I <strong>loop</strong> (diagrammi con circuiti chiusi di propagatori) contribuiscono a ordini superiori e sono in genere ultraviolettamente divergenti: richiedono la procedura di <strong>rinormalizzazione</strong>, che assorbe le divergenze nella ridefinizione dei parametri fisici della teoria.</p>
+  </div>
+</div>
+
+<!-- ── LIBRERIA ── -->
+<div class="section">
+  <div class="section-label">02 — Libreria dei processi</div>
+  <h2>Diagrammi fondamentali</h2>
+  <div class="tabs-nav" id="libTabs">
+    <button class="tab-btn active" data-group="qed">QED</button>
+    <button class="tab-btn" data-group="weak">Interazione Debole</button>
+    <button class="tab-btn" data-group="qcd">QCD</button>
+    <button class="tab-btn" data-group="loop">Correzioni di Loop</button>
+    <button class="tab-btn" data-group="complessi">Processi Complessi</button>
+  </div>
+  <div class="diagrams-grid" id="diagramsGrid"></div>
+</div>
+
+<!-- ── REGOLE ── -->
+<div class="section">
+  <div class="section-label">03 — Regole di Feynman</div>
+  <h2>Dizionario grafico–analitico</h2>
+  <div class="prose" style="margin-bottom:24px;">
+    <p>A ogni elemento grafico corrisponde un fattore analitico preciso. Per calcolare $\mathcal{M}$: (1) disegnare tutti i diagrammi topologicamente distinti all'ordine desiderato, (2) applicare le regole a ciascuno, (3) sommare tenendo conto dei segni — un fattore $-1$ per ogni loop fermionico, e un fattore $-1$ per ogni permutazione dispari di fermioni identici nello stato finale (principio di Pauli).</p>
+  </div>
+  <div class="rules-grid" id="rulesGrid"></div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">×</button>
+    <div class="modal-left">
+      <canvas id="modalCanvas" width="460" height="340"></canvas>
+      <div class="anim-controls">
+        <button class="anim-btn active" id="animToggle">⏸ Pausa</button>
+        <div class="speed-wrap">
+          <label>velocità</label>
+          <input type="range" id="animSpeed" min="0.2" max="3.5" step="0.1" value="1">
+        </div>
+      </div>
+    </div>
+    <div class="modal-right">
+      <div>
+        <div class="modal-sub" id="mSub"></div>
+        <div class="modal-title" id="mTitle"></div>
+        <div class="modal-order" id="mOrder"></div>
+      </div>
+      <div class="modal-desc" id="mDesc"></div>
+      <div class="modal-amp">
+        <div class="modal-amp-label">Ampiezza invariante $\mathcal{M}$</div>
+        <div id="mAmp"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>Diagrammi di Feynman · Fisica Teorica delle Particelle</div>
+  <div>Simulazione didattica · v2.1</div>
+  <div>QED · QCD · Teoria Elettrodebole</div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// PRIMITIVI DI DISEGNO
+// tutti accettano un parametro phase (0..1) per l'animazione
+// ══════════════════════════════════════════════════════════════
+
+function arrowHead(ctx, x, y, angle, color, sz) {
+  sz = sz || 7;
+  ctx.save();
+  ctx.fillStyle = color || '#e8e0d0';
+  ctx.translate(x, y); ctx.rotate(angle);
+  ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz*.55, -sz*.62); ctx.lineTo(-sz*.55, sz*.62);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawFermion(ctx, x1, y1, x2, y2, phase, color) {
+  color = color || '#e8e0d0';
+  var dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  // moving arrow along line
+  var p = ((phase % 1) + 1) % 1;
+  var mx = x1 + p*dx, my = y1 + p*dy;
+  arrowHead(ctx, mx, my, Math.atan2(dy, dx), color, 7);
+  ctx.restore();
+}
+
+function drawPhoton(ctx, x1, y1, x2, y2, phase, color) {
+  color = color || '#f0c040';
+  var dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  var nx = -dy/len, ny = dx/len;
+  var waves = Math.max(3, Math.round(len/14));
+  var offset = phase * Math.PI * 2 * waves;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(x1,y1);
+  for (var i = 0; i <= waves*20; i++) {
+    var t = i/(waves*20);
+    var amp = 6 * Math.sin(i*Math.PI/10 + offset);
+    ctx.lineTo(x1+t*dx + nx*amp, y1+t*dy + ny*amp);
+  }
+  ctx.stroke();
+  // travelling glow
+  var p = ((phase%1)+1)%1;
+  var gx = x1+p*dx, gy = y1+p*dy;
+  ctx.beginPath(); ctx.arc(gx,gy,4.5,0,Math.PI*2);
+  ctx.fillStyle = color; ctx.globalAlpha = 0.75; ctx.fill();
+  ctx.restore();
+}
+
+function drawGluon(ctx, x1, y1, x2, y2, phase, color) {
+  color = color || '#5dc98a';
+  var dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  var nx = -dy/len, ny = dx/len;
+  var loops = Math.max(2, Math.round(len/17));
+  var offset = phase * Math.PI * 2;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1,y1);
+  for (var i = 0; i <= loops*32; i++) {
+    var t = i/(loops*32);
+    var s = Math.sin(i*Math.PI/16 + offset);
+    var amp = 7 * s * (Math.floor(i/16)%2===0 ? 1 : -1);
+    ctx.lineTo(x1+t*dx+nx*amp, y1+t*dy+ny*amp);
+  }
+  ctx.stroke();
+  var p = ((phase%1)+1)%1;
+  ctx.beginPath(); ctx.arc(x1+p*dx, y1+p*dy, 4.5,0,Math.PI*2);
+  ctx.fillStyle = color; ctx.globalAlpha = 0.65; ctx.fill();
+  ctx.restore();
+}
+
+function drawWeak(ctx, x1, y1, x2, y2, phase, color) {
+  color = color || '#6ab0e0';
+  var dx = x2-x1, dy = y2-y1;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  var dashLen = 10, gapLen = 5, period = dashLen+gapLen;
+  ctx.setLineDash([dashLen, gapLen]);
+  ctx.lineDashOffset = -(phase * period * 2.5) % period;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]);
+  var p = ((phase%1)+1)%1;
+  ctx.beginPath(); ctx.arc(x1+p*dx, y1+p*dy, 5,0,Math.PI*2);
+  ctx.fillStyle = color; ctx.globalAlpha = 0.55; ctx.fill();
+  ctx.restore();
+}
+
+function drawHiggs(ctx, x1, y1, x2, y2, phase) {
+  var dx = x2-x1, dy = y2-y1;
+  ctx.save();
+  ctx.strokeStyle = '#c0a878'; ctx.lineWidth = 1.8;
+  ctx.setLineDash([6,5]); ctx.lineDashOffset = -(phase*22)%11;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]);
+  var p = ((phase%1)+1)%1;
+  ctx.beginPath(); ctx.arc(x1+p*dx, y1+p*dy, 4.5,0,Math.PI*2);
+  ctx.fillStyle = '#c0a878'; ctx.globalAlpha = 0.55; ctx.fill();
+  ctx.restore();
+}
+
+function drawVertex(ctx, x, y, color, r) {
+  r = r || 5.5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = color || '#e04040'; ctx.fill();
+  // subtle halo
+  ctx.beginPath(); ctx.arc(x,y,r+3,0,Math.PI*2);
+  ctx.strokeStyle = (color||'#e04040'); ctx.lineWidth=0.8; ctx.globalAlpha=0.3; ctx.stroke();
+  ctx.globalAlpha=1;
+}
+
+function lbl(ctx, text, x, y, color, size) {
+  ctx.save();
+  ctx.font = (size||11.5)+"px 'IBM Plex Mono',monospace";
+  ctx.fillStyle = color || 'rgba(232,224,208,0.85)';
+  ctx.textAlign = 'center'; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+// background for dark canvas
+function darkBg(ctx, W, H) {
+  ctx.fillStyle = '#0e0e0e'; ctx.fillRect(0,0,W,H);
+  // subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth=1;
+  for (var x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for (var y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+}
+
+// ══════════════════════════════════════════════════════════════
+// FUNZIONI DI DISEGNO PER OGNI DIAGRAMMA
+// fn(ctx, W, H, phase)
+// ══════════════════════════════════════════════════════════════
+
+function fnCompton(ctx,W,H,ph){
+  // Tempo scorre sx→dx. Fotoni: linee diagonali esterne.
+  // Canale s (sx): e⁻ assorbe γᵢ al V1, propaga virtuale, emette γ_f al V2.
+  // Canale u (dx): e⁻ emette γ_f al V1, propaga virtuale, assorbe γᵢ al V2.
+  darkBg(ctx,W,H);
+  var eY = H*.52; // quota linea elettronica
+
+  // ── CANALE s ──────────────────────────────────────────
+  var sL=W*.03, sV1=W*.2, sV2=W*.38, sR=W*.46;
+  // linee fermioniche
+  drawFermion(ctx, sL,  eY, sV1, eY,  ph,      '#e8e0d0');
+  drawFermion(ctx, sV1, eY, sV2, eY,  ph+.4,   '#e8e0d0');
+  drawFermion(ctx, sV2, eY, sR,  eY,  ph+.75,  '#e8e0d0');
+  // γ entrante: diagonale dal basso-sx verso V1
+  drawPhoton(ctx, sL,  H*.9,  sV1, eY,  ph+.1,  '#f0c040');
+  // γ uscente: diagonale da V2 verso alto-dx
+  drawPhoton(ctx, sV2, eY,    sR,  H*.12, ph+.6,'#f0c040');
+  drawVertex(ctx, sV1, eY, '#e04040');
+  drawVertex(ctx, sV2, eY, '#e04040');
+  // etichette
+  lbl(ctx,'e⁻',   sL+3,    eY-11, 'rgba(232,224,208,.8)', 10);
+  lbl(ctx,'e⁻',   sR-3,    eY-11, 'rgba(232,224,208,.8)', 10);
+  lbl(ctx,'γᵢ',   sL+8,    H*.96, '#f0c040', 10);
+  lbl(ctx,'γ_f',  sR,      H*.08, '#f0c040', 10);
+  lbl(ctx,'virt.',(sV1+sV2)/2, eY-11,'rgba(200,175,140,.45)', 8.5);
+  lbl(ctx,'canale s',(sL+sR)/2, H*.05,'rgba(200,175,140,.45)', 9);
+
+  // ── SEPARATORE ────────────────────────────────────────
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(W*.5,H*.06); ctx.lineTo(W*.5,H*.94); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+  lbl(ctx,'+', W*.5, H*.52, 'rgba(200,175,140,.55)', 14);
+
+  // ── CANALE u ──────────────────────────────────────────
+  // Al V1 l'elettrone emette γ_f; al V2 assorbe γᵢ.
+  var uL=W*.54, uV1=W*.71, uV2=W*.89, uR=W*.97;
+  drawFermion(ctx, uL,  eY, uV1, eY,  ph+.2,   '#e8e0d0');
+  drawFermion(ctx, uV1, eY, uV2, eY,  ph+.55,  '#e8e0d0');
+  drawFermion(ctx, uV2, eY, uR,  eY,  ph+.85,  '#e8e0d0');
+  // γ entrante: diagonale dal basso-sx verso V2
+  drawPhoton(ctx, uL,  H*.9,  uV2, eY,  ph+.3, '#f0c040');
+  // γ uscente: diagonale da V1 verso alto-dx
+  drawPhoton(ctx, uV1, eY,    uR,  H*.12, ph+.7,'#f0c040');
+  drawVertex(ctx, uV1, eY, '#e04040');
+  drawVertex(ctx, uV2, eY, '#e04040');
+  lbl(ctx,'e⁻',   uL+3,    eY-11, 'rgba(232,224,208,.8)', 10);
+  lbl(ctx,'e⁻',   uR-3,    eY-11, 'rgba(232,224,208,.8)', 10);
+  lbl(ctx,'γᵢ',   uL+8,    H*.96, '#f0c040', 10);
+  lbl(ctx,'γ_f',  uR,      H*.08, '#f0c040', 10);
+  lbl(ctx,'virt.',(uV1+uV2)/2, eY-11,'rgba(200,175,140,.45)', 8.5);
+  lbl(ctx,'canale u',(uL+uR)/2, H*.05,'rgba(200,175,140,.45)', 9);
+}
+function fnMoller(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.08,H*.22,W*.4,H*.22,ph);
+  drawFermion(ctx,W*.4,H*.22,W*.92,H*.22,ph+.5);
+  drawFermion(ctx,W*.08,H*.78,W*.4,H*.78,ph);
+  drawFermion(ctx,W*.4,H*.78,W*.92,H*.78,ph+.5);
+  drawPhoton(ctx,W*.4,H*.22,W*.4,H*.78,ph+.25);
+  drawVertex(ctx,W*.4,H*.22,'#e04040');
+  drawVertex(ctx,W*.4,H*.78,'#e04040');
+  lbl(ctx,'e⁻',W*.06,H*.19);lbl(ctx,'e⁻',W*.06,H*.81);
+  lbl(ctx,'e⁻',W*.94,H*.19);lbl(ctx,'e⁻',W*.94,H*.81);
+  lbl(ctx,'γ',W*.33,H*.5,'#f0c040');
+  lbl(ctx,'t-channel',W*.7,H*.93,'rgba(200,180,150,0.4)',9.5);
+}
+function fnAnnih(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.08,H*.3,W*.38,H*.5,ph);
+  drawFermion(ctx,W*.38,H*.5,W*.08,H*.7,ph+.5);
+  drawPhoton(ctx,W*.38,H*.5,W*.62,H*.5,ph+.25);
+  drawFermion(ctx,W*.62,H*.5,W*.92,H*.3,ph+.5);
+  drawFermion(ctx,W*.92,H*.7,W*.62,H*.5,ph);
+  drawVertex(ctx,W*.38,H*.5,'#e04040');
+  drawVertex(ctx,W*.62,H*.5,'#e04040');
+  lbl(ctx,'e⁻',W*.06,H*.27);lbl(ctx,'e⁺',W*.06,H*.73);
+  lbl(ctx,'μ⁻',W*.94,H*.27);lbl(ctx,'μ⁺',W*.94,H*.73);
+  lbl(ctx,'γ*',W*.5,H*.41,'#f0c040');
+}
+function fnBhabha(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  // t-channel (left)
+  drawFermion(ctx,W*.03,H*.22,W*.27,H*.22,ph);
+  drawFermion(ctx,W*.27,H*.22,W*.47,H*.22,ph+.5);
+  drawFermion(ctx,W*.03,H*.78,W*.27,H*.78,ph);
+  drawFermion(ctx,W*.27,H*.78,W*.47,H*.78,ph+.5);
+  drawPhoton(ctx,W*.27,H*.22,W*.27,H*.78,ph+.25);
+  drawVertex(ctx,W*.27,H*.22,'#e04040');drawVertex(ctx,W*.27,H*.78,'#e04040');
+  // s-channel (right)
+  drawFermion(ctx,W*.54,H*.22,W*.72,H*.5,ph);
+  drawFermion(ctx,W*.72,H*.5,W*.54,H*.78,ph+.5);
+  drawPhoton(ctx,W*.72,H*.5,W*.92,H*.5,ph+.25);
+  drawFermion(ctx,W*.92,H*.5,W*.97,H*.28,ph+.5);
+  drawFermion(ctx,W*.97,H*.72,W*.92,H*.5,ph);
+  drawVertex(ctx,W*.72,H*.5,'#e04040');drawVertex(ctx,W*.92,H*.5,'#e04040');
+  lbl(ctx,'t',W*.24,H*.93,'rgba(200,180,150,0.4)',9.5);
+  lbl(ctx,'+',W*.5,H*.93,'rgba(200,180,150,0.4)',9.5);
+  lbl(ctx,'s',W*.74,H*.93,'rgba(200,180,150,0.4)',9.5);
+}
+function fnMuDecay(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.07,H*.44,W*.38,H*.44,ph);
+  drawWeak(ctx,W*.38,H*.44,W*.62,H*.57,ph+.25);
+  drawFermion(ctx,W*.38,H*.44,W*.93,H*.19,ph+.5);
+  drawFermion(ctx,W*.62,H*.57,W*.93,H*.54,ph+.5);
+  drawFermion(ctx,W*.93,H*.82,W*.62,H*.57,ph);
+  drawVertex(ctx,W*.38,H*.44,'#6ab0e0');
+  drawVertex(ctx,W*.62,H*.57,'#6ab0e0');
+  lbl(ctx,'μ⁻',W*.05,H*.41);
+  lbl(ctx,'W⁻',W*.5,H*.41,'#6ab0e0');
+  lbl(ctx,'νμ',W*.96,H*.16);lbl(ctx,'e⁻',W*.96,H*.52);lbl(ctx,'ν̄ₑ',W*.96,H*.86);
+}
+function fnBeta(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.07,H*.54,W*.38,H*.54,ph,'#5dc98a');
+  drawFermion(ctx,W*.38,H*.54,W*.93,H*.41,ph+.5,'#5dc98a');
+  drawWeak(ctx,W*.38,H*.54,W*.62,H*.72,ph+.25);
+  drawFermion(ctx,W*.62,H*.72,W*.93,H*.64,ph+.5);
+  drawFermion(ctx,W*.93,H*.88,W*.62,H*.72,ph);
+  drawVertex(ctx,W*.38,H*.54,'#6ab0e0');
+  drawVertex(ctx,W*.62,H*.72,'#6ab0e0');
+  lbl(ctx,'d',W*.05,H*.51,'#5dc98a');lbl(ctx,'u',W*.96,H*.38,'#5dc98a');
+  lbl(ctx,'W⁻',W*.47,H*.58,'#6ab0e0');
+  lbl(ctx,'e⁻',W*.96,H*.62);lbl(ctx,'ν̄ₑ',W*.96,H*.88);
+}
+function fnDrellYan(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.07,H*.3,W*.4,H*.5,ph,'#5dc98a');
+  drawFermion(ctx,W*.4,H*.5,W*.07,H*.7,ph+.5,'#5dc98a');
+  drawPhoton(ctx,W*.4,H*.5,W*.62,H*.5,ph+.25);
+  drawFermion(ctx,W*.62,H*.5,W*.93,H*.3,ph+.5);
+  drawFermion(ctx,W*.93,H*.7,W*.62,H*.5,ph);
+  drawVertex(ctx,W*.4,H*.5,'#5dc98a');
+  drawVertex(ctx,W*.62,H*.5,'#e04040');
+  lbl(ctx,'q',W*.05,H*.27,'#5dc98a');lbl(ctx,'q̄',W*.05,H*.73,'#5dc98a');
+  lbl(ctx,'Z/γ*',W*.51,H*.41,'#f0c040',10);
+  lbl(ctx,'l⁺',W*.96,H*.27);lbl(ctx,'l⁻',W*.96,H*.73);
+}
+function fnTTbar(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawGluon(ctx,W*.07,H*.3,W*.4,H*.5,ph);
+  drawGluon(ctx,W*.07,H*.7,W*.4,H*.5,ph+.4);
+  drawGluon(ctx,W*.4,H*.5,W*.6,H*.5,ph+.25);
+  drawFermion(ctx,W*.6,H*.5,W*.93,H*.3,ph+.5,'#f0a060');
+  drawFermion(ctx,W*.93,H*.7,W*.6,H*.5,ph,'#f0a060');
+  drawVertex(ctx,W*.4,H*.5,'#5dc98a');
+  drawVertex(ctx,W*.6,H*.5,'#5dc98a');
+  lbl(ctx,'g',W*.05,H*.27,'#5dc98a');lbl(ctx,'g',W*.05,H*.73,'#5dc98a');
+  lbl(ctx,'t',W*.96,H*.27,'#f0a060');lbl(ctx,'t̄',W*.96,H*.73,'#f0a060');
+  lbl(ctx,'g*',W*.5,H*.41,'#5dc98a',10);
+}
+function fnHgg(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawHiggs(ctx,W*.07,H*.5,W*.32,H*.5,ph);
+  // top triangle
+  var tx1=W*.32,ty1=H*.5,tx2=W*.65,ty2=H*.28,tx3=W*.65,ty3=H*.72;
+  drawFermion(ctx,tx1,ty1,tx2,ty2,ph,'#f0a060');
+  drawFermion(ctx,tx2,ty2,tx3,ty3,ph+.33,'#f0a060');
+  drawFermion(ctx,tx3,ty3,tx1,ty1,ph+.66,'#f0a060');
+  drawVertex(ctx,tx1,ty1,'#c0a878');
+  drawVertex(ctx,tx2,ty2,'#c0a878');
+  drawVertex(ctx,tx3,ty3,'#c0a878');
+  drawPhoton(ctx,tx2,ty2,W*.93,H*.18,ph+.5);
+  drawPhoton(ctx,tx3,ty3,W*.93,H*.82,ph);
+  lbl(ctx,'H',W*.07,H*.44);
+  lbl(ctx,'t',W*.44,H*.32,'#f0a060');
+  lbl(ctx,'γ',W*.95,H*.15,'#f0c040');lbl(ctx,'γ',W*.95,H*.85,'#f0c040');
+  lbl(ctx,'loop',W*.5,H*.93,'rgba(200,180,150,0.4)',9.5);
+}
+function fnQQG(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.08,H*.28,W*.5,H*.5,ph,'#5dc98a');
+  drawFermion(ctx,W*.5,H*.5,W*.08,H*.72,ph+.5,'#5dc98a');
+  drawGluon(ctx,W*.5,H*.5,W*.93,H*.5,ph+.25);
+  drawVertex(ctx,W*.5,H*.5,'#5dc98a');
+  lbl(ctx,'q',W*.06,H*.25,'#5dc98a');lbl(ctx,'q̄',W*.06,H*.75,'#5dc98a');
+  lbl(ctx,'g',W*.95,H*.44,'#5dc98a');
+}
+function fnGGG(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  var cx=W*.5,cy=H*.56;
+  drawGluon(ctx,cx,cy,W*.14,H*.18,ph);
+  drawGluon(ctx,cx,cy,W*.86,H*.18,ph+.33);
+  drawGluon(ctx,cx,cy,cx,H*.93,ph+.66);
+  drawVertex(ctx,cx,cy,'#5dc98a',6.5);
+  lbl(ctx,'g',W*.12,H*.14,'#5dc98a');lbl(ctx,'g',W*.88,H*.14,'#5dc98a');lbl(ctx,'g',cx,H*.97,'#5dc98a');
+}
+function fnGGGG(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  var cx=W*.5,cy=H*.5;
+  drawGluon(ctx,cx,cy,W*.14,H*.16,ph);
+  drawGluon(ctx,cx,cy,W*.86,H*.16,ph+.25);
+  drawGluon(ctx,cx,cy,W*.86,H*.84,ph+.5);
+  drawGluon(ctx,cx,cy,W*.14,H*.84,ph+.75);
+  drawVertex(ctx,cx,cy,'#5dc98a',7.5);
+  lbl(ctx,'g',W*.12,H*.13,'#5dc98a');lbl(ctx,'g',W*.88,H*.13,'#5dc98a');
+  lbl(ctx,'g',W*.88,H*.89,'#5dc98a');lbl(ctx,'g',W*.12,H*.89,'#5dc98a');
+}
+function fnVacPol(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawPhoton(ctx,W*.05,H*.5,W*.3,H*.5,ph);
+  // loop circle with travelling dot
+  ctx.beginPath();ctx.ellipse(W*.5,H*.5,W*.2,H*.3,0,0,Math.PI*2);
+  ctx.strokeStyle='rgba(232,224,208,0.8)';ctx.lineWidth=2;ctx.stroke();
+  var ang=ph*Math.PI*2;
+  var lx=W*.5+W*.2*Math.cos(ang),ly=H*.5+H*.3*Math.sin(ang);
+  ctx.beginPath();ctx.arc(lx,ly,5.5,0,Math.PI*2);
+  ctx.fillStyle='rgba(232,224,208,0.75)';ctx.fill();
+  drawPhoton(ctx,W*.7,H*.5,W*.95,H*.5,ph+.5);
+  drawVertex(ctx,W*.3,H*.5,'#e04040');drawVertex(ctx,W*.7,H*.5,'#e04040');
+  lbl(ctx,'γ',W*.03,H*.44,'#f0c040');lbl(ctx,'γ',W*.97,H*.44,'#f0c040');
+  lbl(ctx,'e⁻',W*.5,H*.5-H*.3-13);lbl(ctx,'e⁺',W*.5,H*.5+H*.3+16);
+}
+function fnVertCorr(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  drawFermion(ctx,W*.07,H*.76,W*.3,H*.61,ph);
+  drawFermion(ctx,W*.3,H*.61,W*.7,H*.61,ph+.33);
+  drawFermion(ctx,W*.7,H*.61,W*.93,H*.76,ph+.66);
+  drawPhoton(ctx,W*.3,H*.61,W*.5,H*.21,ph+.5);
+  drawPhoton(ctx,W*.5,H*.21,W*.7,H*.61,ph+.5);
+  drawPhoton(ctx,W*.5,H*.96,W*.5,H*.61,ph);
+  drawVertex(ctx,W*.3,H*.61,'#e04040');
+  drawVertex(ctx,W*.7,H*.61,'#e04040');
+  drawVertex(ctx,W*.5,H*.61,'#e04040');
+  lbl(ctx,'e⁻',W*.05,H*.74);lbl(ctx,'e⁻',W*.95,H*.74);
+  lbl(ctx,'γ*',W*.5,H*.47,'#f0c040');lbl(ctx,'γ',W*.5,H*.99,'#f0c040');
+  lbl(ctx,'a_e = α/2π',W*.5,H*.1,'rgba(200,180,150,0.5)',10);
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROCESSI COMPLESSI
+// ══════════════════════════════════════════════════════════════
+
+// Blob adronico (protone) — ellisse con quarks animati interni
+function drawProton(ctx, cx, cy, rx, ry, ph, label) {
+  ctx.save();
+  ctx.strokeStyle='rgba(240,180,60,0.55)'; ctx.lineWidth=1.5;
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  // 3 quarks orbitanti
+  var cols=['#5dc98a','#f0a060','#6ab0e0'];
+  for(var i=0;i<3;i++){
+    var ang=(ph+i/3)*Math.PI*2;
+    var qx=cx+Math.cos(ang)*rx*.55, qy=cy+Math.sin(ang)*ry*.6;
+    ctx.beginPath(); ctx.arc(qx,qy,3.5,0,Math.PI*2);
+    ctx.fillStyle=cols[i]; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+  }
+  if(label) lbl(ctx,label,cx,cy+ry+13,'rgba(240,180,60,0.6)',10);
+  ctx.restore();
+}
+
+// Blob generico (hadrone finale, X nel DIS)
+function drawBlob(ctx, cx, cy, r, ph, label) {
+  ctx.save();
+  ctx.strokeStyle='rgba(200,160,80,0.4)'; ctx.lineWidth=1.2;
+  ctx.setLineDash([2,3]);
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  // jets uscenti
+  var nj=4;
+  for(var i=0;i<nj;i++){
+    var ang=(ph*Math.PI*2+i*Math.PI*2/nj);
+    var ex=cx+Math.cos(ang)*(r+14), ey=cy+Math.sin(ang)*(r+14);
+    ctx.beginPath(); ctx.moveTo(cx+Math.cos(ang)*r*0.6,cy+Math.sin(ang)*r*0.6);
+    ctx.lineTo(ex,ey); ctx.strokeStyle='rgba(200,160,80,0.45)';
+    ctx.lineWidth=1.2; ctx.setLineDash([]); ctx.stroke();
+  }
+  if(label) lbl(ctx,label,cx,cy+r+14,'rgba(200,160,80,0.55)',10);
+  ctx.restore();
+}
+
+// DIS: e⁻p → e⁻X
+function fnDIS(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  // elettrone entrante (alto sx) → vertice γ → elettrone uscente (alto dx)
+  var eInX=W*.06, eInY=H*.22;
+  var vGX=W*.32, vGY=H*.38;
+  var eOutX=W*.06, eOutY=H*.72; // uscente verso alto-dx in realtà
+  // protone entrante (basso sx) → vertice adronico
+  var pX=W*.12, pY=H*.72;
+  var vHX=W*.58, vHY=H*.65;
+
+  // leptone: entra, scambia γ*, esce
+  drawFermion(ctx, eInX, eInY, vGX, vGY, ph);
+  drawFermion(ctx, vGX, vGY, W*.94, H*.18, ph+.6);
+  // fotone virtuale γ* : da vertice leptonico a vertice adronico
+  drawPhoton(ctx, vGX, vGY, vHX, vHY, ph+.25,'#f0c040');
+  // propagatore quark colpito (dal blob protone al blob X)
+  drawFermion(ctx, vHX, vHY, W*.94, H*.72, ph+.5,'#5dc98a');
+  // protone (blob)
+  drawProton(ctx, pX+W*.12, vHY, W*.1, H*.12, ph,'p');
+  // quark spettatori (linee tenui dal blob)
+  for(var i=0;i<2;i++){
+    var ang=(i===0?-0.3:0.25)+Math.PI;
+    ctx.save(); ctx.strokeStyle='rgba(90,200,140,0.25)'; ctx.lineWidth=1.2; ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(pX+W*.12+Math.cos(ang)*W*.1, vHY+Math.sin(ang)*H*.12);
+    ctx.lineTo(W*.94, H*.82+i*H*.1);
+    ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  }
+  // blob X (stato adronico finale)
+  drawBlob(ctx, W*.78, H*.72, W*.08, ph+.5,'X');
+
+  drawVertex(ctx, vGX, vGY, '#e04040');
+  drawVertex(ctx, vHX, vHY, '#5dc98a');
+
+  lbl(ctx,'e⁻', eInX+4, eInY-10);
+  lbl(ctx,'e⁻', W*.96, H*.14);
+  lbl(ctx,'γ*', (vGX+vHX)/2-8, (vGY+vHY)/2-10,'#f0c040',10);
+  lbl(ctx,'q', vHX+8, vHY-12,'#5dc98a',10);
+  lbl(ctx,'DIS',W*.5,H*.05,'rgba(200,175,140,.4)',9);
+}
+
+// VBF: qq → qqH (fusione di bosoni vettori)
+function fnVBF(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  // quark superiore: entra sx, emette W/Z, esce dx
+  var q1iX=W*.05, q1iY=H*.2,  v1X=W*.3,  v1Y=H*.28, q1oX=W*.65, q1oY=H*.15;
+  // quark inferiore: entra sx, emette W/Z, esce dx
+  var q2iX=W*.05, q2iY=H*.8,  v2X=W*.3,  v2Y=H*.72, q2oX=W*.65, q2oY=H*.85;
+  // vertice HWW: dove i due W/Z si fondono in H
+  var vHX=W*.5, vHY=H*.5;
+
+  drawFermion(ctx,q1iX,q1iY, v1X,v1Y, ph);
+  drawFermion(ctx,v1X,v1Y,   q1oX,q1oY, ph+.5);
+  drawFermion(ctx,q2iX,q2iY, v2X,v2Y, ph+.2);
+  drawFermion(ctx,v2X,v2Y,   q2oX,q2oY, ph+.7);
+
+  // W/Z superiore: da v1 al vertice H
+  drawWeak(ctx, v1X,v1Y, vHX,vHY, ph+.1,'#6ab0e0');
+  // W/Z inferiore: da v2 al vertice H
+  drawWeak(ctx, v2X,v2Y, vHX,vHY, ph+.4,'#6ab0e0');
+  // Higgs uscente
+  drawHiggs(ctx, vHX,vHY, W*.94,vHY, ph+.6);
+
+  drawVertex(ctx,v1X,v1Y,'#6ab0e0');
+  drawVertex(ctx,v2X,v2Y,'#6ab0e0');
+  drawVertex(ctx,vHX,vHY,'#c0a878',6.5);
+
+  lbl(ctx,'q',  q1iX+4, q1iY-10,'#e8e0d0',10);
+  lbl(ctx,"q'", q1oX+4, q1oY-10,'#e8e0d0',10);
+  lbl(ctx,'q',  q2iX+4, q2iY+16,'#e8e0d0',10);
+  lbl(ctx,"q'", q2oX+4, q2oY+16,'#e8e0d0',10);
+  lbl(ctx,'W/Z',v1X+14, (v1Y+vHY)/2,'#6ab0e0',9.5);
+  lbl(ctx,'W/Z',v2X+14, (v2Y+vHY)/2,'#6ab0e0',9.5);
+  lbl(ctx,'H',  W*.96,  vHY-10,'#c0a878',10);
+  lbl(ctx,'VBF',W*.5,H*.05,'rgba(200,175,140,.4)',9);
+}
+
+// H → WW* → 4 leptoni (catena di decadimenti)
+function fnH4L(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  // H al centro-sx
+  var hX=W*.18, hY=H*.5;
+  // W+ e W- escono da H
+  var wPX=W*.38, wPY=H*.28;
+  var wMX=W*.38, wMY=H*.72;
+  // W+ → l+ νl
+  var lPX=W*.65, lPY=H*.15; var nlX=W*.65, nlY=H*.38;
+  // W- → l- ν̄l
+  var lMX=W*.65, lMY=H*.85; var nlbX=W*.65, nlbY=H*.62;
+
+  drawHiggs(ctx, W*.04, hY, hX, hY, ph);
+  drawWeak(ctx, hX,hY, wPX,wPY, ph+.1,'#6ab0e0');
+  drawWeak(ctx, hX,hY, wMX,wMY, ph+.3,'#6ab0e0');
+  drawFermion(ctx, wPX,wPY, lPX,lPY, ph+.5);
+  drawFermion(ctx, nlX,nlY, wPX,wPY, ph+.55);
+  drawFermion(ctx, wMX,wMY, lMX,lMY, ph+.6);
+  drawFermion(ctx, nlbX,nlbY, wMX,wMY, ph+.65);
+
+  drawVertex(ctx,hX,hY,'#c0a878',6.5);
+  drawVertex(ctx,wPX,wPY,'#6ab0e0');
+  drawVertex(ctx,wMX,wMY,'#6ab0e0');
+
+  lbl(ctx,'H', W*.04, hY-12,'#c0a878',10);
+  lbl(ctx,'W⁺',wPX-14, wPY-12,'#6ab0e0',10);
+  lbl(ctx,'W⁻*',wMX-18, wMY+16,'#6ab0e0',10);
+  lbl(ctx,'l⁺', lPX+6, lPY-10,'#e8e0d0',10);
+  lbl(ctx,'νl', nlX+6, nlY+14,'#e8e0d0',10);
+  lbl(ctx,'l⁻', lMX+6, lMY+14,'#e8e0d0',10);
+  lbl(ctx,'ν̄l', nlbX+6, nlbY-10,'#e8e0d0',10);
+  lbl(ctx,'H→WW*→4ℓ',W*.5,H*.05,'rgba(200,175,140,.4)',9);
+}
+
+// tt̄H: produzione associata top + Higgs
+function fnTTH(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  // gg → gluone virtuale nel canale s → tt̄H
+  // gluone 1 (alto sx) e gluone 2 (basso sx) si fondono
+  var g1X=W*.05, g1Y=H*.28;
+  var g2X=W*.05, g2Y=H*.72;
+  var vGX=W*.25, vGY=H*.5; // vertice gluonico
+  // dal vertice gluonico: propagatore gluone virtuale
+  var vTX=W*.42, vTY=H*.5; // vertice tt̄ produzione
+  // top e antitop escono
+  var tX=W*.58, tY=H*.25;
+  var tbX=W*.58, tbY=H*.75;
+  // Higgs dal vertice di top (accoppiamento di Yukawa top-Higgs)
+  var vHX=W*.72, vHY=H*.25;
+  var hX=W*.94, hY=H*.15;
+
+  drawGluon(ctx,g1X,g1Y, vGX,vGY, ph);
+  drawGluon(ctx,g2X,g2Y, vGX,vGY, ph+.4);
+  drawGluon(ctx,vGX,vGY, vTX,vTY, ph+.2);  // gluone virtuale
+  drawFermion(ctx,vTX,vTY, tX,tY,  ph+.5,'#f0a060');    // top
+  drawFermion(ctx,tbX,tbY, vTX,vTY,ph+.6,'#f0a060');    // antitop
+  // top → emette H tramite Yukawa
+  drawFermion(ctx,tX,tY, vHX,vHY,  ph+.7,'#f0a060');
+  drawFermion(ctx,vHX,vHY, W*.94,tY+H*.1, ph+.8,'#f0a060');
+  drawHiggs(ctx,vHX,vHY, hX,hY, ph+.4);
+  // antitop continua
+  drawFermion(ctx,tbX,tbY, W*.94,tbY, ph+.65,'#f0a060');
+
+  drawVertex(ctx,vGX,vGY,'#5dc98a',6);
+  drawVertex(ctx,vTX,vTY,'#5dc98a',6);
+  drawVertex(ctx,vHX,vHY,'#c0a878',6);
+
+  lbl(ctx,'g', g1X+4, g1Y-10,'#5dc98a',10);
+  lbl(ctx,'g', g2X+4, g2Y+16,'#5dc98a',10);
+  lbl(ctx,'g*',(vGX+vTX)/2, vGY-12,'#5dc98a',9.5);
+  lbl(ctx,'t', tX+4, tY-12,'#f0a060',10);
+  lbl(ctx,'t̄', tbX+4, tbY+16,'#f0a060',10);
+  lbl(ctx,'H', hX+2, hY-10,'#c0a878',10);
+  lbl(ctx,'tt̄H',W*.5,H*.05,'rgba(200,175,140,.4)',9);
+}
+
+// 2-loop: self-energia del fermione a 2 loop (QED)
+function fn2Loop(ctx,W,H,ph){
+  darkBg(ctx,W,H);
+  var eY=H*.52;
+  // propagatore esterno sx
+  drawFermion(ctx, W*.04,eY, W*.2,eY, ph);
+  // primo loop (γ): da V1 a V2
+  var v1X=W*.2, v2X=W*.44;
+  drawFermion(ctx, v1X,eY, v2X,eY, ph+.3);   // fermione interno 1
+  // arco superiore del primo loop
+  var lc1X=(v1X+v2X)/2, lc1Y=H*.26;
+  drawPhoton(ctx, v1X,eY, lc1X,lc1Y-H*.01, ph+.15,'#f0c040');
+  drawPhoton(ctx, lc1X,lc1Y-H*.01, v2X,eY, ph+.45,'#f0c040');
+  // secondo loop (γ) innestato: da V3 a V4 sul propagatore interno
+  var v3X=W*.29, v4X=W*.38;
+  drawVertex(ctx,v3X,eY,'#e04040',4.5);
+  drawVertex(ctx,v4X,eY,'#e04040',4.5);
+  var lc2X=(v3X+v4X)/2, lc2Y=H*.36;
+  drawPhoton(ctx, v3X,eY, lc2X,lc2Y, ph+.6,'rgba(240,192,64,0.7)');
+  drawPhoton(ctx, lc2X,lc2Y, v4X,eY, ph+.8,'rgba(240,192,64,0.7)');
+  // segmento fermionico dopo V3, V4
+  drawFermion(ctx, W*.2,eY, v3X,eY, ph+.25);
+  drawFermion(ctx, v3X,eY, v4X,eY, ph+.5);
+  drawFermion(ctx, v4X,eY, W*.44,eY, ph+.7);
+  // propagatore esterno dopo V2
+  var v5X=W*.62, v6X=W*.82;
+  drawFermion(ctx, W*.44,eY, v5X,eY, ph+.4);
+  // terzo loop (gluone se QCD, o γ per QED puro) più a destra
+  drawFermion(ctx, v5X,eY, v6X,eY, ph+.55);
+  var lc3X=(v5X+v6X)/2, lc3Y=H*.28;
+  drawPhoton(ctx, v5X,eY, lc3X,lc3Y, ph+.5,'#f0c040');
+  drawPhoton(ctx, lc3X,lc3Y, v6X,eY, ph+.75,'#f0c040');
+  drawFermion(ctx, v6X,eY, W*.96,eY, ph+.8);
+
+  drawVertex(ctx,v1X,eY,'#e04040');
+  drawVertex(ctx,v2X,eY,'#e04040');
+  drawVertex(ctx,v5X,eY,'#e04040');
+  drawVertex(ctx,v6X,eY,'#e04040');
+
+  lbl(ctx,'e⁻', W*.03, eY-12);
+  lbl(ctx,'e⁻', W*.97, eY-12);
+  lbl(ctx,'γ', lc1X, lc1Y-12,'#f0c040',9.5);
+  lbl(ctx,'γ', lc3X, lc3Y-12,'#f0c040',9.5);
+  lbl(ctx,'γ', lc2X, lc2Y+14,'rgba(240,192,64,0.7)',9);
+  lbl(ctx,'2-loop self-energia',W*.5,H*.93,'rgba(200,175,140,.4)',9);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATI DEI DIAGRAMMI
+// ══════════════════════════════════════════════════════════════
+var DIAGRAMS = {
+  qed:[
+    {id:'compton',title:'Diffusione Compton',subtitle:'e⁻γ → e⁻γ',order:'O(α) — tree level',
+     desc:'La diffusione Compton descrive lo scattering di un fotone su un elettrone libero. A tree level contribuiscono due diagrammi connessi: nel <em>canale s</em> il fotone incidente viene assorbito al primo vertice e il propagatore virtuale porta il sistema a uno stato eccitato, poi il fotone finale viene emesso; nel <em>canale u</em> l\'ordine è invertito. La sezione d\'urto differenziale è descritta dalla <strong>formula di Klein-Nishina</strong>, che nel limite non relativistico $h\nu\ll m_ec^2$ si riduce alla classica sezione d\'urto di Thomson $\sigma_T = 8\pi r_e^2/3$.',
+     amplitude:'\\mathcal{M} = (-ie)^2\\,\\bar{u}(p\')\\!\\left[\\frac{\\not{\\varepsilon}_f^*\\,(\\not{p}+\\not{k}+m)\\,\\not{\\varepsilon}_i}{(p+k)^2-m^2}+\\frac{\\not{\\varepsilon}_i\\,(\\not{p}-\\not{k}\'+m)\\,\\not{\\varepsilon}_f^*}{(p-k\')^2-m^2}\\right]\\!u(p)',fn:fnCompton},
+    {id:'moller',title:'Scattering Møller',subtitle:'e⁻e⁻ → e⁻e⁻',order:'O(α) — tree level',
+     desc:'Urto elastico tra due elettroni: contribuiscono lo scambio di fotone nel <em>canale t</em> e nel <em>canale u</em>. Quest\'ultimo entra con segno $-1$ per il <strong>principio di esclusione di Pauli</strong> — lo scambio di due fermioni identici nello stato finale introduce un fattore $-1$. La somma garantisce l\'antisimmetria dell\'ampiezza sotto scambio degli elettroni finali $p_3 \leftrightarrow p_4$.',
+     amplitude:'\\mathcal{M} = (-ie)^2\\!\\left[\\bar{u}_3\\gamma^\\mu u_1\\,\\frac{-ig_{\\mu\\nu}}{(p_1-p_3)^2}\\,\\bar{u}_4\\gamma^\\nu u_2\\;-\\;(p_3\\leftrightarrow p_4)\\right]',fn:fnMoller},
+    {id:'annih',title:'Annichilazione e⁺e⁻',subtitle:'e⁺e⁻ → μ⁺μ⁻',order:'O(α) — tree level',
+     desc:'Annichilazione in coppia muone-antimuone tramite fotone virtuale nel canale s ($q^2=s>0$, timelike). La sezione d\'urto totale è $\\sigma = 4\\pi\\alpha^2/3s$. Il rapporto $R = \\sigma(e^+e^-\\to\\mathrm{hadrons})/\\sigma(e^+e^-\\to\\mu^+\\mu^-)$ misura la somma dei quadrati delle cariche dei quarks accessibili: $R = 3\\sum_f Q_f^2$, fornendo la prova diretta dei <strong>tre colori</strong> della QCD e dell\'esistenza dei quarks.',
+     amplitude:'\\mathcal{M} = (-ie)^2\\,\\bar{v}(p_2)\\gamma^\\mu u(p_1)\\,\\frac{-ig_{\\mu\\nu}}{q^2}\\,\\bar{u}(k_1)\\gamma^\\nu v(k_2)',fn:fnAnnih},
+    {id:'bhabha',title:'Scattering Bhabha',subtitle:'e⁺e⁻ → e⁺e⁻',order:'O(α) — tree level',
+     desc:'Urto elastico tra elettrone e positrone: i canali <em>t</em> (scambio di fotone tra particelle distinte) e <em>s</em> (annichilazione e ricreazione) si sommano con segno positivo perché le particelle non sono identiche. La sezione d\'urto è dominata dal canale t a piccolo angolo $\\theta\\to 0$ con una divergenza $\\sim 1/\\theta^4$ detta <strong>picco di Bhabha</strong>, utilizzata per misurare la luminosità dei collider $e^+e^-$.',
+     amplitude:'\\mathcal{M} = (-ie)^2\\!\\left[\\frac{\\bar{u}(p\')\\gamma^\\mu v(q\')\\,\\bar{v}(q)\\gamma_\\mu u(p)}{(p+q)^2}-\\frac{\\bar{u}(p\')\\gamma^\\mu u(p)\\,\\bar{v}(q)\\gamma_\\mu v(q\')}{(p-p\')^2}\\right]',fn:fnBhabha},
+  ],
+  weak:[
+    {id:'mudecay',title:'Decadimento del Muone',subtitle:'μ⁻ → e⁻ν̄ₑνμ',order:'O(G_F) — tree level',
+     desc:'Processo mediato dal bosone W⁻ virtuale dell\'interazione debole. Nel limite di bassa energia $q^2\\ll M_W^2$, il propagatore del W si riduce alla <strong>costante di Fermi</strong> $G_F/\\sqrt{2}=g^2/(8M_W^2)\\approx 1.166\\times10^{-5}$ GeV$^{-2}$. La struttura <strong>V−A</strong> (vettore meno assiale) del vertice debole viola massimamente la parità: solo le componenti left-handed dei fermioni partecipano all\'interazione, tramite il proiettore $(1-\\gamma^5)/2$.',
+     amplitude:'\\mathcal{M}=\\frac{g^2}{8M_W^2}\\,\\bar{u}_{\\nu_\\mu}\\gamma^\\mu(1-\\gamma^5)u_\\mu\\cdot\\bar{u}_e\\gamma_\\mu(1-\\gamma^5)v_{\\bar\\nu_e}',fn:fnMuDecay},
+    {id:'beta',title:'Decadimento Beta',subtitle:'n → p e⁻ ν̄ₑ',order:'O(G_F) — tree level',
+     desc:'Un quark $d$ del neutrone si trasforma in quark $u$ emettendo un W⁻ virtuale. L\'ampiezza include l\'elemento <strong>CKM (Cabibbo-Kobayashi-Maskawa)</strong> $V_{ud}\\approx 0.974$, che parametrizza il mixing dei quarks di generazione diversa. I fattori di forma adronica $g_V\\approx1$ e $g_A\\approx1.27$ descrivono la struttura interna del nucleone. Il tempo di vita del neutrone $\\tau_n\\approx 878$ s è uno dei test fondamentali del Modello Standard a bassa energia.',
+     amplitude:'\\mathcal{M}=\\frac{g^2 V_{ud}}{8M_W^2}\\,\\bar{u}_p\\gamma^\\mu(g_V-g_A\\gamma^5)u_n\\cdot\\bar{u}_e\\gamma_\\mu(1-\\gamma^5)v_{\\bar\\nu_e}',fn:fnBeta},
+    {id:'drellyan',title:'Processo di Drell-Yan',subtitle:'qq̄ → l⁺l⁻',order:'O(α) — tree level',
+     desc:'Un quark e un antiquark all\'interno di due adroni si annichilano producendo un bosone neutro virtuale ($\\gamma^*/Z^0$), che decade in coppia leptonica. È uno dei processi principali di produzione di dileptons agli acceleratori adronici (LHC, Tevatron). Vicino alla risonanza $Z^0$ ($\\sqrt{s}\\approx 91.2$ GeV) la sezione d\'urto è amplificata di un fattore $\\sim M_Z^2\\Gamma_Z^{-2}\\approx 10^3$ rispetto al contributo QED puro.',
+     amplitude:'\\mathcal{M}=\\bar{v}(\\bar{q})\\gamma^\\mu u(q)\\left[-\\frac{ieQ_q\\,g_{\\mu\\nu}}{q^2}+\\frac{ig^2(g_V^q-g_A^q\\gamma^5)(g_{\\mu\\nu}-q_\\mu q_\\nu/M_Z^2)}{4c_W^2(q^2-M_Z^2)}\\right]J^\\nu_{\\ell\\ell}',fn:fnDrellYan},
+  ],
+  qcd:[
+    {id:'qqg',title:'Vertice quark-gluone',subtitle:'q → q g',order:'O(α_s) — tree level',
+     desc:'Il vertice fondamentale della <strong>QCD (Cromodinamica Quantistica)</strong>. Rispetto al vertice QED include il fattore di colore $(t^a)_{ij}=\\lambda^a_{ij}/2$, con $\\lambda^a$ le otto <strong>matrici di Gell-Mann</strong> generatori di SU(3). La costante $\\alpha_s(M_Z)\\approx 0.118$ è molto più grande di $\\alpha\\approx 1/137$, ma decresce logaritmicamente con l\'energia — fenomeno della <strong>libertà asintotica</strong>, per cui Gross, Politzer e Wilczek ricevettero il Nobel nel 2004.',
+     amplitude:'\\Gamma^\\mu_{qqg}=ig_s\\,\\gamma^\\mu\\,(t^a)_{ij}',fn:fnQQG},
+    {id:'ggg',title:'Vertice triplo gluonico',subtitle:'ggg',order:'O(α_s) — tree level',
+     desc:'Il vertice a tre gluoni è assente in QED (i fotoni non si auto-interagiscono) e caratteristico della struttura non abeliana di SU(3). Deriva dal termine $\\tfrac{1}{2}g_sf^{abc}A^b_\\mu A^c_\\nu F^{a\\mu\\nu}$ del Lagrangiano. Le costanti di struttura $f^{abc}$ di SU(3) soddisfano $f^{abe}f^{cbe}=C_A\\delta^{ac}$ con $C_A=3$. Questo vertice è responsabile del <strong>confinamento dei quarks</strong> a bassa energia e della libertà asintotica ad alta energia.',
+     amplitude:'V^{\\mu\\nu\\rho}_{abc}=g_s f^{abc}\\!\\left[g^{\\mu\\nu}(p_1-p_2)^\\rho+g^{\\nu\\rho}(p_2-p_3)^\\mu+g^{\\rho\\mu}(p_3-p_1)^\\nu\\right]',fn:fnGGG},
+    {id:'gggg',title:'Vertice quadruplo gluonico',subtitle:'gggg',order:'O(α_s²) — tree level',
+     desc:'Il vertice a quattro gluoni è un\'ulteriore caratteristica esclusiva delle teorie di gauge non abeliane, assente nella QED. Deriva dal termine $(g_s^2/4)(f^{abc}A^b_\\mu A^c_\\nu)^2$ nel Lagrangiano QCD. Benché di ordine $\\alpha_s^2$, questo vertice di contatto è essenziale per la renormalizabilità della teoria e interviene in processi multi-jet ad alta energia come la produzione di quattro jet al <strong>Large Hadron Collider (LHC)</strong>.',
+     amplitude:'V^{\\mu\\nu\\rho\\sigma}_{abcd}=-ig_s^2\\!\\left[f^{abe}f^{cde}(g^{\\mu\\rho}g^{\\nu\\sigma}-g^{\\mu\\sigma}g^{\\nu\\rho})+f^{ace}f^{bde}(g^{\\mu\\nu}g^{\\rho\\sigma}-g^{\\mu\\sigma}g^{\\nu\\rho})+f^{ade}f^{bce}(g^{\\mu\\nu}g^{\\rho\\sigma}-g^{\\mu\\rho}g^{\\nu\\sigma})\\right]',fn:fnGGGG},
+    {id:'ttbar',title:'Produzione di coppie tt̄',subtitle:'gg → tt̄',order:'O(α_s²) — tree level',
+     desc:'La produzione di coppie top-antitop per fusione gluonica è il processo dominante al LHC (circa 90% della sezione d\'urto di produzione top, $\\sigma\\approx 830$ pb a $\\sqrt{s}=13$ TeV). Contribuiscono tre diagrammi: canali t, u e s. Il quark top ($m_t\\approx 173$ GeV) è il fermione più pesante noto e decade quasi esclusivamente in $b+W^+$ con $\\tau_t\\approx 5\\times10^{-25}$ s, prima della adronizzazione, rendendo accessibili le sue proprietà di spin.',
+     amplitude:'\\mathcal{M}(gg\\to t\\bar{t})=g_s^2\\left[\\frac{\\bar{u}\\,(t^at^b)_{ij}(\\not{\\varepsilon}_1(\\not{p}_t\\!-\\!\\not{k}_1\\!+\\!m_t)\\not{\\varepsilon}_2)v}{(p_t-k_1)^2-m_t^2}+\\text{(canale u)}+\\text{(canale s)}\\right]',fn:fnTTbar},
+  ],
+  loop:[
+    {id:'vacpol',title:'Polarizzazione del vuoto',subtitle:'Auto-energia del fotone',order:'O(α²) — 1 loop',
+     desc:'La polarizzazione del vuoto è la correzione di loop al propagatore del fotone: un fotone virtuale crea temporaneamente una coppia $e^+e^-$. Questo loop modifica il propagatore con un tensore trasverso $\\Pi^{\\mu\\nu}=(g^{\\mu\\nu}q^2-q^\\mu q^\\nu)\\Pi(q^2)$, per invarianza di gauge. Il risultato è una <strong>carica elettrica dipendente dall\'energia</strong> (running coupling): $\\alpha(q^2)=\\alpha[1-\\Pi(q^2)]^{-1}$, per cui $\\alpha(M_Z^2)\\approx 1/129$ contro $\\alpha(0)\\approx 1/137$.',
+     amplitude:'\\Pi(q^2)=\\frac{\\alpha}{3\\pi}\\int_0^1\\!dx\\;2x(1-x)\\ln\\frac{\\Lambda^2}{m_e^2-x(1-x)q^2}\\;\\Longrightarrow\\;\\alpha_\\mathrm{eff}(q^2)=\\frac{\\alpha}{1-\\Pi(q^2)}',fn:fnVacPol},
+    {id:'vertcorr',title:'Correzione al vertice QED',subtitle:'Momento anomalo g−2',order:'O(α²) — 1 loop',
+     desc:'La correzione di vertice al primo loop modifica il fattore di forma magnetico $F_2(0)$ del fermione, dando il <strong>contributo di Schwinger</strong> $a_e^{(1)}=\\alpha/(2\\pi)\\approx 1.16\\times10^{-3}$. Il calcolo a 5 loop ($\\sim10\\ 000$ diagrammi, ordine $\\alpha^5$) e la misura sperimentale concordano a livello di $10^{-12}$, stabilendo la QED come la teoria fisica più accurata mai formulata.',
+     amplitude:'F_2(0)=\\frac{\\alpha}{2\\pi}\\;\\Longrightarrow\\;g_e=2\\!\\left(1+\\frac{\\alpha}{2\\pi}-\\frac{\\alpha^2}{2\\pi^2}\\!\\left(\\frac{197}{144}+\\frac{\\pi^2}{12}\\right)+O(\\alpha^3)\\right)',fn:fnVertCorr},
+    {id:'hgg',title:'Decadimento H → γγ',subtitle:'Loop di quark top',order:'O(α²α_s) — 1 loop',
+     desc:'Il bosone di Higgs non si accoppia direttamente ai fotoni (è neutro), ma può decadere in $\\gamma\\gamma$ tramite loop di fermioni carichi, dominati dal <strong>quark top</strong> per via del suo grande accoppiamento di Yukawa $y_t=m_t\\sqrt{2}/v\\approx1$. Il loop fermionico porta un fattore $-1$ caratteristico. Sebbene il <em>branching ratio</em> sia solo $\\approx0.23\\%$, questo canale fu determinante per la <strong>scoperta dell\'Higgs all\'LHC nel luglio 2012</strong> grazie alla risoluzione sperimentale in massa di $\\sim1\\%$.',
+     amplitude:'\\Gamma(H\\to\\gamma\\gamma)=\\frac{G_F\\alpha^2 m_H^3}{128\\sqrt{2}\\,\\pi^3}\\left|\\sum_f N_c Q_f^2\\,A_{1/2}(\\tau_f)+A_1(\\tau_W)\\right|^2',fn:fnHgg},
+  ],
+  complessi:[
+    {id:'dis',title:'Scattering Profondamente Anelastico',subtitle:'e⁻p → e⁻X',order:'O(αα_s) — tree level',
+     desc:'Il DIS (Deep Inelastic Scattering) è lo strumento con cui negli anni \'70 (esperimenti SLAC) fu dimostrata la <strong>struttura a partoni del protone</strong>. Un elettrone scambia un fotone virtuale altamente spacelike ($q^2=-Q^2\ll 0$) con un singolo quark del protone, che viene estratto mentre i quark spettatori formano lo stato adronico finale X. Il processo è descritto da due variabili di Bjorken: $x=Q^2/2p\cdot q$ (frazione di impulso del quark colpito) e $y=p\cdot q/p\cdot k$ (inelasticità). La <strong>scala invarianza di Bjorken</strong> — le funzioni di struttura $F_2(x,Q^2)$ dipendono debolmente da $Q^2$ a $x$ fissato — fu la prima prova del comportamento asintotico libero dei quarks.',
+     amplitude:'\\frac{d^2\\sigma}{dx\\,dy}=\\frac{4\\pi\\alpha^2 s}{Q^4}\\left[y^2 x F_1(x,Q^2)+\\left(1-y-\\frac{m_p^2 x^2 y^2}{Q^2}\\right)F_2(x,Q^2)\\right]',fn:fnDIS},
+    {id:'vbf',title:'Produzione VBF dell\'Higgs',subtitle:'qq → qqH',order:'O(α²) — tree level',
+     desc:'La <strong>fusione di bosoni vettori (VBF)</strong> è il secondo canale di produzione del bosone di Higgs all\'LHC per sezione d\'urto ($\\sigma\\approx 3.8$ pb a 13 TeV), dopo la fusione gluonica. Due quarks di due protoni collidenti emettono ciascuno un bosone W o Z (reale o virtuale), che si fondono in un bosone di Higgs tramite il vertice HWW o HZZ. La segnatura sperimentale caratteristica sono due jet ad alto $\\eta$ nelle regioni forward del rivelatore (i quark che rimbalzano) e bassa attività adronicanel gap centrale. La topologia è altamente discriminante rispetto al fondo QCD.',
+     amplitude:'\\mathcal{M}_{\\mathrm{VBF}}=\\frac{g^2 m_W}{2}\\left[\\bar{u}(q_3)\\gamma^\\mu u(q_1)\\frac{-i(g_{\\mu\\nu}-k_{1\\mu}k_{1\\nu}/M_W^2)}{k_1^2-M_W^2}\\epsilon^\\nu_H\\right]\\times\\left[1\\leftrightarrow 2\\right]',fn:fnVBF},
+    {id:'h4l',title:'Decadimento H → WW* → 4ℓ',subtitle:'H → l⁺νl l⁻ν̄l',order:'O(α²G_F) — tree level',
+     desc:'Il canale <strong>H→WW*→4ℓ</strong> è uno dei canali "golden" per la scoperta e la misura delle proprietà dell\'Higgs. Poiché $m_H=125$ GeV $< 2M_W=160$ GeV, uno dei due W è necessariamente fuori guscio (virtuale, indicato con W*). L\'ampiezza include il propagatore fuori guscio $1/(k^2-M_W^2+iM_W\Gamma_W)$ e le correnti leptoniche V−A di entrambi i vertici W. Il <em>branching ratio</em> totale $H\to WW^*$ è circa 21%, il più grande tra i canali di decadimento dell\'Higgs.',
+     amplitude:'\\mathcal{M}=\\frac{g^3 m_W}{2}\\,\\bar{u}(l^+)\\gamma^\\mu(1-\\gamma^5)v(\\nu_l)\\,\\frac{g_{\\mu\\nu}-k_\\mu^{W^+} k_\\nu^{W^+}/M_W^2}{k_{W^+}^2-M_W^2}\\,g^{\\nu\\rho}\\,\\frac{g_{\\rho\\sigma}}{k_{W^{*}}^2-M_W^2+iM_W\\Gamma_W}\\,\\bar{u}(\\nu_l)\\gamma^\\sigma(1-\\gamma^5)v(l^-)',fn:fnH4L},
+    {id:'tth',title:'Produzione Associata tt̄H',subtitle:'gg → tt̄H',order:'O(α_s²·y_t) — tree level',
+     desc:'La <strong>produzione associata tt̄H</strong> permette di misurare direttamente l\'accoppiamento di Yukawa del quark top $y_t=m_t\\sqrt{2}/v$, il più grande tra i fermioni del Modello Standard. Due gluoni si fondono in una coppia top-antitop tramite un gluone virtuale; il bosone di Higgs viene radiato da una delle linee top tramite il vertice di Yukawa $-iy_t/\\sqrt{2}$. A tree level contribuiscono diversi diagrammi (il top o antitop può emettere l\'Higgs prima o dopo la creazione della coppia). La sezione d\'urto all\'LHC a 13 TeV è $\\sigma\\approx 0.5$ pb.',
+     amplitude:'\\mathcal{M}_{tt\\bar{H}}=\\left(-\\frac{iy_t}{\\sqrt{2}}\\right)g_s^2\\,\\bar{u}(p_t)\\!\\left[\\frac{\\not{\\varepsilon}_1(\\not{p}_t+\\not{k}_H+m_t)}{(p_t+k_H)^2-m_t^2}+\\frac{(\\not{p}_t-\\not{k}_1+m_t)\\not{\\varepsilon}_1}{(p_t-k_1)^2-m_t^2}\\right]\\!v(p_{\\bar t})+(\\text{emissione da }\\bar{t})',fn:fnTTH},
+    {id:'2loop',title:'Self-Energia Fermione a 2 Loop',subtitle:'Propagatore QED a 2 loop',order:'O(α²) — 2 loop',
+     desc:'Il propagatore del fermione riceve correzioni radiative a ogni ordine in $\\alpha$. A 2 loop compaiono topologie con due loop indipendenti — ad esempio un loop di fotone su cui insiste un secondo loop (loop innestato o "overlapping"), e loop separati disposti in serie. Il calcolo richiede la regolarizzazione dimensionale $d=4-2\\epsilon$ per estrarre le divergenze UV, e la rinormalizzazione a 2 loop della massa e del campo fermionico. La funzione di massa rinormalizzata $m(\\mu)$ a 2 loop soddisfa l\'equazione del gruppo di rinormalizzazione $\\mu\\,dm/d\\mu = m(-3\\alpha/\\pi - 3\\alpha^2/2\\pi^2 + \\cdots)$.',
+     amplitude:'\\Sigma^{(2)}(p)=\\left(\\frac{\\alpha}{4\\pi}\\right)^2\\!\\left[a_{20}\\frac{1}{\\epsilon^2}+a_{21}\\frac{1}{\\epsilon}+a_{22}+b_{20}\\frac{\\not{p}}{m}\\frac{1}{\\epsilon^2}+\\cdots\\right]\\quad\\Rightarrow\\quad\\delta m^{(2)}=m\\frac{3\\alpha^2}{2\\pi^2}\\ln\\frac{\\Lambda^2}{m^2}+\\cdots',fn:fn2Loop},
+  ]
+};
+
+// ══════════════════════════════════════════════════════════════
+// ANIMAZIONE CONTINUA SULLE CARD
+// ══════════════════════════════════════════════════════════════
+var cardAnimations = []; // {canvas, fn, phase, speed}
+
+function startCardAnimations() {
+  var last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    var dt = Math.min((ts - last) / 1000, 0.05); // cap dt
+    last = ts;
+    cardAnimations.forEach(function(a) {
+      a.phase = (a.phase + dt * a.speed * 0.35) % 1;
+      // always draw in CSS-pixel space (320x180), DPR scaling is handled by the context transform
+      a.fn(a.canvas.getContext('2d'), 320, 180, a.phase);
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER LIBRERIA
+// ══════════════════════════════════════════════════════════════
+function renderLibrary(group) {
+  // stop card animations for old cards
+  cardAnimations = [];
+  var grid = document.getElementById('diagramsGrid');
+  grid.innerHTML = '';
+  DIAGRAMS[group].forEach(function(diag) {
+    var card = document.createElement('div');
+    card.className = 'diagram-card';
+
+    // canvas wrap (dark background, animated)
+    var wrap = document.createElement('div');
+    wrap.className = 'card-canvas-wrap';
+    var cvs = document.createElement('canvas');
+    // DPR fix: draw at physical pixel resolution, display at CSS size
+    var dpr = window.devicePixelRatio || 1;
+    cvs.width = 320 * dpr; cvs.height = 180 * dpr;
+    cvs.style.width = '100%'; cvs.style.height = '100%';
+    cvs.getContext('2d').scale(dpr, dpr);
+    wrap.appendChild(cvs);
+    card.appendChild(wrap);
+
+    // text body
+    var body = document.createElement('div');
+    body.className = 'card-body';
+    body.innerHTML = '<div class="card-title">'+diag.title+'</div>'
+      +'<div class="card-subtitle">'+diag.subtitle+'</div>'
+      +'<div class="card-order">'+diag.order+'</div>';
+    card.appendChild(body);
+
+    grid.appendChild(card);
+
+    // register for animation
+    cardAnimations.push({canvas:cvs, fn:diag.fn, phase:Math.random(), speed:1});
+
+    card.addEventListener('click', function() { openModal(diag); });
+  });
+}
+
+document.getElementById('libTabs').addEventListener('click', function(e) {
+  var btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  renderLibrary(btn.dataset.group);
+});
+
+// ══════════════════════════════════════════════════════════════
+// MODAL + ANIMAZIONE MODALE
+// ══════════════════════════════════════════════════════════════
+var modalAnim = {running:false, phase:0, speed:1, raf:null, diag:null};
+
+function openModal(diag) {
+  modalAnim.diag = diag;
+  modalAnim.phase = 0;
+  modalAnim.speed = parseFloat(document.getElementById('animSpeed').value);
+
+  // DPR fix for modal canvas
+  var cvs = document.getElementById('modalCanvas');
+  var dpr = window.devicePixelRatio || 1;
+  cvs.width = 460 * dpr; cvs.height = 340 * dpr;
+  cvs.style.width = '100%';
+  var ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  document.getElementById('mSub').textContent = diag.subtitle;
+  document.getElementById('mTitle').textContent = diag.title;
+  document.getElementById('mOrder').textContent = diag.order;
+  document.getElementById('mDesc').innerHTML = diag.desc;
+  document.getElementById('mAmp').innerHTML = '<div class="modal-amp-label">Ampiezza invariante</div><div>$$'+diag.amplitude+'$$</div>';
+
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('modal'), {
+      delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]
+    });
+  }
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('animToggle').textContent = '⏸ Pausa';
+  document.getElementById('animToggle').classList.add('active');
+  modalAnim.running = true;
+  startModalAnim();
+}
+
+function startModalAnim() {
+  if (modalAnim.raf) cancelAnimationFrame(modalAnim.raf);
+  var last = null;
+  function frame(ts) {
+    if (!modalAnim.running) { modalAnim.raf = null; return; }
+    if (last === null) last = ts;
+    var dt = Math.min((ts-last)/1000, 0.05);
+    last = ts;
+    modalAnim.phase = (modalAnim.phase + dt * modalAnim.speed * 0.38) % 1;
+    var cvs = document.getElementById('modalCanvas');
+    modalAnim.diag.fn(cvs.getContext('2d'), 460, 340, modalAnim.phase);
+    modalAnim.raf = requestAnimationFrame(frame);
+  }
+  modalAnim.raf = requestAnimationFrame(frame);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  if (modalAnim.raf) { cancelAnimationFrame(modalAnim.raf); modalAnim.raf = null; }
+  modalAnim.running = false;
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e) { if(e.key==='Escape') closeModal(); });
+
+document.getElementById('animToggle').addEventListener('click', function() {
+  modalAnim.running = !modalAnim.running;
+  if (modalAnim.running) {
+    this.textContent = '⏸ Pausa'; this.classList.add('active');
+    startModalAnim();
+  } else {
+    this.textContent = '▶ Play'; this.classList.remove('active');
+  }
+});
+document.getElementById('animSpeed').addEventListener('input', function() {
+  modalAnim.speed = parseFloat(this.value);
+});
+
+// ══════════════════════════════════════════════════════════════
+// REGOLE DI FEYNMAN
+// ══════════════════════════════════════════════════════════════
+var RULES = [
+  {name:'Propagatore del fotone (calibro di Feynman)', factor:'\\dfrac{-ig_{\\mu\\nu}}{k^2+i\\epsilon}',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawPhoton(ctx,4,h/2,w-4,h/2,0);}},
+  {name:'Propagatore del fermione', factor:'\\dfrac{i(\\not{p}+m)}{p^2-m^2+i\\epsilon}',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawFermion(ctx,4,h/2,w-4,h/2,0);}},
+  {name:'Vertice QED', factor:'-ie\\gamma^\\mu',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawFermion(ctx,4,h/2,w/2,h/2,0);drawFermion(ctx,w/2,h/2,w-4,h*.25,0.5);drawPhoton(ctx,w/2,h/2,w-4,h*.82,0);drawVertex(ctx,w/2,h/2,'#e04040');}},
+  {name:'Propagatore del gluone (calibro di Feynman)', factor:'\\dfrac{-ig_{\\mu\\nu}\\delta^{ab}}{k^2+i\\epsilon}',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawGluon(ctx,4,h/2,w-4,h/2,0);}},
+  {name:'Propagatore W/Z', factor:'\\dfrac{-i(g_{\\mu\\nu}-k_\\mu k_\\nu/M^2)}{k^2-M^2+i\\epsilon}',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawWeak(ctx,4,h/2,w-4,h/2,0);}},
+  {name:'Vertice QCD quark-gluone', factor:'ig_s\\gamma^\\mu(t^a)_{ij}',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawFermion(ctx,4,h/2,w/2,h/2,0,'#5dc98a');drawFermion(ctx,w/2,h/2,w-4,h*.22,0.5,'#5dc98a');drawGluon(ctx,w/2,h/2,w-4,h*.82,0);drawVertex(ctx,w/2,h/2,'#5dc98a');}},
+  {name:'Stato esterno: fermione entrante', factor:'u(p,s)\\;/\\;v(p,s)',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawFermion(ctx,4,h/2,w-4,h/2,0.3);}},
+  {name:'Stato esterno: fermione uscente', factor:'\\bar{u}(p,s)\\;/\\;\\bar{v}(p,s)',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawFermion(ctx,4,h/2,w-4,h/2,0.3,'#f08080');}},
+  {name:'Loop fermionico', factor:'-1\\cdot\\mathrm{Tr}[\\cdots]\\cdot\\int\\frac{d^4k}{(2\\pi)^4}',
+   ico:function(ctx,w,h){
+     ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);
+     ctx.beginPath();ctx.arc(w/2,h/2,14,0,Math.PI*2);
+     ctx.strokeStyle='rgba(232,224,208,0.7)';ctx.lineWidth=2;ctx.stroke();
+     var ang=0.4*Math.PI*2;
+     ctx.beginPath();ctx.arc(w/2+14*Math.cos(ang),h/2+14*Math.sin(ang),4.5,0,Math.PI*2);
+     ctx.fillStyle='rgba(232,224,208,0.7)';ctx.fill();
+   }},
+  {name:'Fotone esterno (polarizzazione)', factor:'\\varepsilon_\\mu(k,\\lambda)\\;/\\;\\varepsilon_\\mu^*(k,\\lambda)',
+   ico:function(ctx,w,h){ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);drawPhoton(ctx,4,h/2,w-4,h/2,0.2);}},
+];
+
+function renderRules() {
+  var grid = document.getElementById('rulesGrid');
+  RULES.forEach(function(r) {
+    var card = document.createElement('div');
+    card.className = 'rule-card';
+    var ic = document.createElement('canvas');
+    ic.width = 70; ic.height = 44; ic.style.flexShrink = '0';
+    r.ico(ic.getContext('2d'), 70, 44);
+    var content = document.createElement('div');
+    content.innerHTML = '<div class="rule-name">'+r.name+'</div><div class="rule-factor">$'+r.factor+'$</div>';
+    card.appendChild(ic); card.appendChild(content);
+    grid.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  renderLibrary('qed');
+  renderRules();
+  startCardAnimations();
+  setTimeout(function() {
+    if (window.renderMathInElement)
+      renderMathInElement(document.getElementById('rulesGrid'), {
+        delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}]
+      });
+  }, 700);
+});
+</script>
+</body>
+</html>

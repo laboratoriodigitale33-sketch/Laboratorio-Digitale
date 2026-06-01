@@ -29,6 +29,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 header{background:var(--text);color:var(--bg);padding:10px 20px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--acc);flex-shrink:0;}
 header h1{font-family:'Space Mono',monospace;font-size:.9rem;letter-spacing:-.02em;}
 .tag{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--acc2);background:rgba(192,74,26,.15);padding:2px 6px;border-radius:3px;}
+.view-tabs{margin-left:auto;display:flex;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:5px;padding:3px;}
+.tab-btn{background:transparent;color:rgba(245,242,235,.72);border:1px solid transparent;font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;}
+.tab-btn:hover{color:var(--bg);border-color:rgba(245,242,235,.25);}
+.tab-btn.active{background:var(--acc);color:#fff;border-color:var(--acc);}
 .app{display:grid;grid-template-columns:252px 1fr 240px;flex:1;min-height:0;overflow:hidden;}
 /* LEFT */
 .lp{background:var(--panel);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
@@ -84,6 +88,30 @@ details.form summary:hover{color:var(--acc);}
 .fc h4{font-family:'Space Mono',monospace;font-size:.56rem;text-transform:uppercase;letter-spacing:.09em;color:var(--acc2);margin-bottom:6px;}
 .fc p{font-family:'Space Mono',monospace;font-size:.67rem;color:rgba(245,242,235,.85);line-height:1.6;}
 .fc p em{color:var(--yel2);font-style:normal;}
+/* TEORIA */
+.theory{display:none;flex:1;min-height:0;overflow-y:auto;background:var(--bg);padding:18px 28px 34px;}
+.theory.vis{display:block;}
+.th-wrap{max-width:1180px;margin:0 auto;}
+.th-head{border-bottom:2px solid var(--border);padding:8px 0 16px;margin-bottom:16px;}
+.th-kicker{font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(--acc);margin-bottom:6px;}
+.th-head h2{font-family:'Space Mono',monospace;font-size:1.55rem;line-height:1.15;margin-bottom:8px;color:var(--text);}
+.th-head p{max-width:860px;color:var(--text2);font-size:.96rem;line-height:1.55;}
+.th-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin:14px 0 20px;}
+.th-map a{display:block;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:9px 11px;font-weight:600;font-size:.82rem;}
+.th-map a:hover{border-color:var(--acc);color:var(--acc);}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px;}
+.th-section{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:15px 16px;}
+.th-section.wide{grid-column:1/-1;}
+.th-section h3{font-family:'Space Mono',monospace;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);margin-bottom:9px;}
+.th-section h4{font-size:.86rem;margin:12px 0 5px;color:var(--text);}
+.th-section p,.th-section li{font-size:.84rem;line-height:1.58;color:var(--text2);}
+.th-section ul{padding-left:18px;margin:7px 0;}
+.eq{font-family:'Space Mono',monospace;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;margin:8px 0;color:var(--text);font-size:.78rem;line-height:1.65;}
+.note{border-left:3px solid var(--acc);background:rgba(192,74,26,.08);padding:8px 10px;margin-top:8px;color:var(--text2);font-size:.82rem;line-height:1.5;}
+.th-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.8rem;}
+.th-table th,.th-table td{border:1px solid var(--border);padding:6px 7px;text-align:left;vertical-align:top;}
+.th-table th{background:var(--bg2);font-family:'Space Mono',monospace;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);}
+.th-table td{color:var(--text2);}
 /* MODAL */
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
 .mo.vis{display:flex;}
@@ -100,8 +128,12 @@ details.form summary:hover{color:var(--acc);}
   <h1>⚡ Simulatore di Circuiti Elettrici</h1>
   <span class="tag">FISICA II — LICEO</span>
   <span class="tag" id="hdr-mode">CC</span>
+  <nav class="view-tabs" aria-label="Vista">
+    <button class="tab-btn active" id="tab-sim" onclick="setView('sim')">Simulazione</button>
+    <button class="tab-btn" id="tab-theory" onclick="setView('theory')">Teoria</button>
+  </nav>
 </header>
-<div class="app">
+<div class="app" id="sim-view">
   <!-- LEFT -->
   <div class="lp">
     <div class="ps">
@@ -180,7 +212,122 @@ details.form summary:hover{color:var(--acc);}
     <div class="ps"><h3>Componenti</h3><div class="cl" id="clist"><p style="font-size:.68rem;color:var(--text3)">Nessun componente.</p></div></div>
   </div>
 </div>
-<details class="form">
+<section class="theory" id="theory-view" aria-label="Spiegazione teorica">
+  <div class="th-wrap">
+    <div class="th-head">
+      <div class="th-kicker">Teoria dei circuiti</div>
+      <h2>Dalle leggi fondamentali all'impedenza complessa</h2>
+      <p>Un circuito elettrico è un modello concentrato: si assume che tensione e corrente siano ben definite sui nodi e sui rami, e che ogni componente descriva localmente una relazione fra differenza di potenziale e corrente. Questa app usa proprio questa idea: costruisce una rete, calcola le grandezze equivalenti e poi risolve l'evoluzione in corrente continua o alternata.</p>
+    </div>
+    <nav class="th-map" aria-label="Indice teoria">
+      <a href="#th-grandezze">Grandezze e segni</a>
+      <a href="#th-kirchhoff">Kirchhoff e nodi</a>
+      <a href="#th-componenti">R, C, L</a>
+      <a href="#th-equivalenti">Serie e parallelo</a>
+      <a href="#th-transitori">Carica e scarica</a>
+      <a href="#th-dielettrici">Dielettrici</a>
+      <a href="#th-ca">CA e impedenza</a>
+      <a href="#th-rlc">Risonanza RLC</a>
+    </nav>
+
+    <div class="th-grid">
+      <section class="th-section" id="th-grandezze">
+        <h3>Grandezze e convenzioni</h3>
+        <p>La tensione misura energia per unità di carica, la corrente misura carica per unità di tempo. La potenza è il ritmo con cui il campo elettrico trasferisce energia ai componenti.</p>
+        <div class="eq">V = W/q &nbsp;&nbsp; [volt]<br>I = dq/dt &nbsp;&nbsp; [ampere]<br>P = V I &nbsp;&nbsp; [watt]</div>
+        <p>Il segno dipende dalla convenzione scelta. In genere si considera positiva la corrente che entra dal terminale a potenziale più alto di un utilizzatore: in quel caso il componente assorbe potenza. Se la corrente esce dal terminale positivo, il componente sta cedendo energia al circuito.</p>
+      </section>
+
+      <section class="th-section" id="th-kirchhoff">
+        <h3>Leggi di Kirchhoff</h3>
+        <p>La legge dei nodi deriva dalla conservazione della carica: in un nodo ideale non si accumula carica, quindi la somma delle correnti entranti e uscenti è nulla.</p>
+        <div class="eq">Σ I_k = 0</div>
+        <p>La legge delle maglie deriva dalla conservazione dell'energia: lungo un percorso chiuso la somma algebrica delle differenze di potenziale è nulla.</p>
+        <div class="eq">Σ ΔV_k = 0</div>
+        <p>Nel simulatore le maglie vengono risolte con queste relazioni: i rami condivisi portano correnti che dipendono dalla differenza fra le correnti delle maglie adiacenti.</p>
+      </section>
+
+      <section class="th-section" id="th-componenti">
+        <h3>Resistore, condensatore, induttore</h3>
+        <table class="th-table">
+          <tr><th>Componente</th><th>Relazione</th><th>Energia</th></tr>
+          <tr><td>Resistore</td><td>V = R I</td><td>dissipa: P = R I²</td></tr>
+          <tr><td>Condensatore</td><td>Q = C V, I = C dV/dt</td><td>U = ½ C V²</td></tr>
+          <tr><td>Induttore</td><td>V = L dI/dt</td><td>U = ½ L I²</td></tr>
+        </table>
+        <p>Il resistore converte energia elettrica in calore. Il condensatore immagazzina energia nel campo elettrico fra le piastre. L'induttore immagazzina energia nel campo magnetico generato dalla corrente.</p>
+      </section>
+
+      <section class="th-section" id="th-equivalenti">
+        <h3>Serie e parallelo</h3>
+        <p>In serie passa la stessa corrente; in parallelo i componenti hanno la stessa tensione. Da questa distinzione nascono le formule degli equivalenti.</p>
+        <div class="eq">R serie: R_eq = Σ R_k<br>R parallelo: 1/R_eq = Σ 1/R_k<br><br>C serie: 1/C_eq = Σ 1/C_k<br>C parallelo: C_eq = Σ C_k<br><br>L serie: L_eq = Σ L_k<br>L parallelo: 1/L_eq = Σ 1/L_k</div>
+        <p>La regola dei condensatori sembra “invertita” rispetto ai resistori perché il condensatore lega carica e tensione: in parallelo le cariche si sommano alla stessa tensione, in serie ogni condensatore porta la stessa carica.</p>
+      </section>
+
+      <section class="th-section wide" id="th-transitori">
+        <h3>Transitori: carica e scarica</h3>
+        <p>Quando si collega un generatore a un circuito con condensatori o induttori, la corrente non passa subito allo stato finale. Il circuito attraversa un transitorio: una fase in cui l'energia si trasferisce gradualmente tra generatore, campo elettrico, campo magnetico e resistenze.</p>
+        <div class="th-grid">
+          <div>
+            <h4>Circuito RC</h4>
+            <p>Un condensatore inizialmente scarico si comporta quasi come un corto circuito; quando si carica, la sua tensione cresce e la corrente diminuisce.</p>
+            <div class="eq">V_C(t) = ε(1 - e^{-t/RC})<br>I(t) = (ε/R)e^{-t/RC}<br>τ = RC</div>
+            <p>Nella scarica, senza generatore, la tensione residua decade esponenzialmente.</p>
+            <div class="eq">V_C(t) = V_0 e^{-t/RC}</div>
+          </div>
+          <div>
+            <h4>Circuito RL</h4>
+            <p>L'induttore si oppone alle variazioni di corrente: all'inizio limita la crescita di I, poi tende a comportarsi come un filo ideale in regime continuo.</p>
+            <div class="eq">I(t) = (ε/R)(1 - e^{-tR/L})<br>τ = L/R</div>
+            <p>Quando si interrompe l'alimentazione, il campo magnetico collassa e può generare tensioni elevate per mantenere la corrente.</p>
+          </div>
+        </div>
+        <div class="note">Nel simulatore il tempo fisico resta usato da calcoli e grafici. Alcune animazioni, come la visualizzazione della carica sulle piastre, sono rallentate artificialmente per renderle leggibili.</div>
+      </section>
+
+      <section class="th-section" id="th-dielettrici">
+        <h3>Dielettrici</h3>
+        <p>Un dielettrico è un materiale isolante inserito fra le piastre di un condensatore. Le sue molecole si polarizzano: le cariche legate si orientano e riducono il campo elettrico interno a parità di carica libera sulle piastre.</p>
+        <div class="eq">C = κ ε₀ A/d</div>
+        <p>Qui κ è la costante dielettrica relativa. Aumentando κ aumenta la capacità: a parità di tensione il condensatore può accumulare più carica e più energia.</p>
+        <ul>
+          <li>Se il condensatore resta collegato al generatore, V resta fissata e Q aumenta.</li>
+          <li>Se il condensatore è isolato, Q resta fissata e V diminuisce.</li>
+          <li>Ogni dielettrico ha una rigidità dielettrica: oltre un certo campo può avvenire la scarica o la rottura dell'isolante.</li>
+        </ul>
+      </section>
+
+      <section class="th-section" id="th-ca">
+        <h3>Corrente alternata e impedenza</h3>
+        <p>In corrente alternata tensioni e correnti variano sinusoidalmente. Conviene rappresentarle come fasori: numeri complessi che portano ampiezza e fase. L'impedenza generalizza la resistenza.</p>
+        <div class="eq">Z_R = R<br>Z_C = 1/(jωC) = -j/(ωC)<br>Z_L = jωL<br>V = Z I</div>
+        <p>La parte reale dell'impedenza dissipa energia; la parte immaginaria rappresenta energia che viene accumulata e restituita a ogni ciclo. Il condensatore fa anticipare la corrente rispetto alla tensione, l'induttore la fa ritardare.</p>
+        <div class="eq">|Z| = √(R² + X²)<br>φ = atan(X/R), con X = X_L - X_C</div>
+      </section>
+
+      <section class="th-section" id="th-rlc">
+        <h3>Risonanza RLC</h3>
+        <p>In un circuito RLC serie l'induttore e il condensatore scambiano energia tra campo magnetico e campo elettrico. Alla risonanza le reattanze si compensano e l'impedenza è minima.</p>
+        <div class="eq">ω₀ = 1/√(LC)<br>f₀ = 1/(2π√(LC))<br>Alla risonanza: X_L = X_C e Z ≈ R</div>
+        <p>La resistenza decide quanto l'oscillazione è smorzata. Se R è piccola, le oscillazioni sono più marcate; se R è grande, l'energia si dissipa rapidamente.</p>
+        <div class="note">Per vedere un esempio nell'app: torna alla tab Simulazione, premi “≈ RLC osc.” e poi “Avvia”. Il preset imposta un RLC vicino alla risonanza ma con una resistenza sufficiente a evitare valori irrealistici.</div>
+      </section>
+
+      <section class="th-section wide">
+        <h3>Come leggere la simulazione</h3>
+        <p>Le grandezze equivalenti sono calcolate fra i morsetti del generatore. In DC, condensatori e induttori hanno transitori: il loro comportamento iniziale può essere molto diverso da quello a regime. In AC, invece, il simulatore usa le impedenze complesse e mostra modulo dell'impedenza, correnti e tensioni coerenti con frequenza, componenti e topologia.</p>
+        <ul>
+          <li>“R_eq”, “C_eq” e “L_eq” descrivono la rete vista dal generatore per quel tipo di componente.</li>
+          <li>“|Z|” compare in CA e include resistenze, condensatori e induttori nella stessa rete.</li>
+          <li>I grafici mostrano il tempo fisico usato dal solver; le animazioni sono didattiche e possono essere rallentate.</li>
+          <li>La corrente nei rami condivisi è la differenza fra correnti di maglie adiacenti: per questo può cambiare verso.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</section>
+<details class="form" id="formula-panel">
   <summary>📐 Formulario — Leggi dei Circuiti</summary>
   <div class="fg">
     <div class="fc"><h4>Legge di Ohm</h4><p><em>V = R · I</em><br>V: tensione [V]<br>R: resistenza [Ω]<br>I: corrente [A]<br><em>P = V·I = R·I² = V²/R</em></p></div>
@@ -1048,6 +1195,16 @@ function fmtN(v){if(!isFinite(v)||isNaN(v))return'—';const a=Math.abs(v);if(a=
 function fmtVal(v,t){if(t==='R')return v>=1000?`${(v/1000).toFixed(1)}kΩ`:`${v}Ω`;if(t==='C')return v<1e-6?`${(v*1e9).toFixed(0)}nF`:v<1e-3?`${(v*1e6).toFixed(1)}μF`:`${(v*1e3).toFixed(1)}mF`;if(t==='L')return v<1e-3?`${(v*1e6).toFixed(0)}μH`:v<1?`${(v*1e3).toFixed(1)}mH`:`${v.toFixed(2)}H`;return`${v}`;}
 
 // ══════ CONTROLS ══════
+function setView(v){
+  const sim=document.getElementById('sim-view'),theory=document.getElementById('theory-view'),form=document.getElementById('formula-panel');
+  const isTheory=v==='theory';
+  sim.style.display=isTheory?'none':'grid';
+  theory.classList.toggle('vis',isTheory);
+  if(form)form.style.display=isTheory?'none':'';
+  document.getElementById('tab-sim').classList.toggle('active',!isTheory);
+  document.getElementById('tab-theory').classList.toggle('active',isTheory);
+  if(!isTheory)requestAnimationFrame(()=>{sizeCv();buildGeo();});
+}
 function setMode(m){S.mode=m;document.getElementById('btn-dc').classList.toggle('active',m==='DC');document.getElementById('btn-ac').classList.toggle('active',m==='AC');document.getElementById('ac-ctrl').style.display=m==='AC'?'block':'none';document.getElementById('hdr-mode').textContent=m;resetSim();}
 function updateFEM(v){S.fem=parseInt(v);document.getElementById('fem-val').textContent=v+' V';updEqMeters();}
 function updateFreq(v){S.freq=parseInt(v);document.getElementById('freq-val').textContent=v+' Hz';updEqMeters();}

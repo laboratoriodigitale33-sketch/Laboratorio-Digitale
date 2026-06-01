@@ -55,7 +55,7 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;border-radius
 .cw{position:relative;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;}
 .sb{background:var(--bg2);border-bottom:1px solid var(--border);padding:3px 12px;font-family:'Space Mono',monospace;font-size:.62rem;color:var(--text3);flex-shrink:0;}
 .sb span{color:var(--acc);}
-#cc{display:block;flex:1;width:100%;}
+#cc{display:block;flex:0 0 auto;width:100%;}
 #hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(192,74,26,.9);color:#fff;font-family:'Space Mono',monospace;font-size:.62rem;padding:3px 12px;border-radius:20px;pointer-events:none;display:none;}
 .ga{display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(20,20,14,.93);border-top:1px solid #555;padding:7px 12px;gap:12px;}
 .ga.vis{display:flex;}
@@ -148,6 +148,8 @@ details.form summary:hover{color:var(--acc);}
         <button class="bp" onclick="startSim()">▶ Avvia</button>
         <button class="bs" onclick="pauseSim()">⏸ Pausa</button>
         <button class="bd" onclick="resetSim()">↺ Reset</button>
+        <button class="bs" onclick="dischargeCaps()">↧ Scarica C</button>
+        <button class="bs" onclick="presetOscillator()">≈ RLC osc.</button>
       </div>
       <label style="font-size:.71rem;display:flex;align-items:center;gap:5px;cursor:pointer;margin-top:4px">
         <input type="checkbox" id="show-g" onchange="toggleGraphs(this.checked)"> Grafici V(t)/I(t)
@@ -222,12 +224,14 @@ function Zimp(comp,omega){
 // ══════ STATE ══════
 const S={
   mode:'DC',fem:12,freq:50,meshCount:1,
-  selType:null,pendSeg:null,
+  selType:null,pendSeg:null,discharging:false,
   components:[],running:false,paused:false,
-  simTime:0,visPhase:0,visFreq:0.4,simSpeed:3,numParticles:20,
+  simTime:0,visPhase:0,flowT:0,visFreq:0.4,simSpeed:3,numParticles:20,
   particles:[],graphV:[],graphI:[],showGraphs:false,
   vc:{},il:{},ilN:{},heat:{},lastSol:null,maxFlowI:0,compId:0,
 };
+const CAP_VIS_RATE=.75;
+const CAP_VIS_RATE_AC=7;
 
 // ══════ GEOMETRY ══════
 const MW=210,MH=170;
@@ -263,9 +267,11 @@ function sizeCv(){
   if(!wrap||!sb)return;
   const w=wrap.clientWidth,h=wrap.clientHeight;
   if(w<10||h<10)return;
-  const gh=S.showGraphs?110:0;
+  const ga=document.getElementById('ga');
+  const gh=S.showGraphs?(ga&&ga.offsetHeight?ga.offsetHeight:110):0;
   canvas.width=w;
   canvas.height=Math.max(150,h-sb.offsetHeight-gh);
+  canvas.style.height=canvas.height+'px';
 }
 
 const slen=s=>Math.hypot(s.x2-s.x1,s.y2-s.y1);
@@ -274,6 +280,20 @@ function dps(px,py,s){
   if(l2<1)return Math.hypot(px-s.x1,py-s.y1);
   const t=Math.max(0,Math.min(1,((px-s.x1)*dx+(py-s.y1)*dy)/l2));
   return Math.hypot(px-s.x1-t*dx,py-s.y1-t*dy);
+}
+function canvasPoint(e){
+  const r=canvas.getBoundingClientRect();
+  const sx=canvas.width/r.width,sy=canvas.height/r.height;
+  return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};
+}
+function pickSeg(x,y){
+  let best=null,bestD=Infinity;
+  for(const s of segs){
+    if(s.type==='gen')continue;
+    const d=dps(x,y,s);
+    if(d<bestD){best=s;bestD=d;}
+  }
+  return bestD<34?best:null;
 }
 
 function topNode(i){return`t${i}`;}
@@ -473,7 +493,8 @@ function drawGen(s,mx,my,isV){
   ctx.fillStyle='#c04a1a';ctx.font='bold 12px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
   if(isV){ctx.fillText('+',mx,my-11);ctx.fillText('−',mx,my+12);}else{ctx.fillText('+',mx-11,my);ctx.fillText('−',mx+12,my);}
   ctx.fillStyle='#333';ctx.font='10px DM Sans,sans-serif';
-  ctx.fillText(`ε=${S.fem}V`,mx+(isV?28:0),my+(isV?0:-18));
+  ctx.fillText(S.discharging?'ε=0V':`ε=${S.fem}V`,mx+(isV?28:0),my+(isV?0:-18));
+  if(S.discharging)ctx.fillText('scarica',mx+(isV?31:0),my+(isV?13:-31));
   if(S.mode==='AC')ctx.fillText(`${S.freq}Hz`,mx+(isV?28:0),my+(isV?13:-31));
 }
 
@@ -517,8 +538,9 @@ function drawC(s,mx,my,ang,len){
 
 function drawEfield(s,mx,my,ang){
   const comp=getComp(s.compId);if(!comp)return;
+  const vVis=comp._visV!==undefined?comp._visV:(comp._V||0);
   const charge=Math.min(Math.abs(comp._chargeNorm||0),1);if(charge<0.02)return;
-  const pol=(comp._V||0)>=0?1:-1;
+  const pol=vVis>=0?1:-1;
   ctx.save();ctx.translate(mx,my);ctx.rotate(ang);
   const gap=10,pl=26;
   const nDots=Math.round(2+charge*7);
@@ -542,7 +564,7 @@ function drawEfield(s,mx,my,ang){
   if(pol>0){grd.addColorStop(0,`rgba(192,74,26,${charge*.22})`);grd.addColorStop(.5,`rgba(255,215,65,${charge*.18})`);grd.addColorStop(1,`rgba(26,74,138,${charge*.22})`);}
   else{grd.addColorStop(0,`rgba(26,74,138,${charge*.22})`);grd.addColorStop(.5,`rgba(255,215,65,${charge*.18})`);grd.addColorStop(1,`rgba(192,74,26,${charge*.22})`);}
   ctx.fillStyle=grd;ctx.fillRect(-gap/2,-pl/2,gap,pl);
-  if(Math.abs(comp._V||0)>0.001){ctx.fillStyle=`rgba(26,74,138,${.6+charge*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`V=${fmtN(comp._V)}V`,0,pl/2+13);}
+  if(Math.abs(vVis)>0.001){ctx.fillStyle=`rgba(26,74,138,${.6+charge*.4})`;ctx.font='bold 9px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`V=${fmtN(vVis)}V`,0,pl/2+13);}
   ctx.restore();
 }
 
@@ -657,26 +679,29 @@ function ptPos(t,path){
 
 function drawParticles(){
   if(!S.running||S.paused)return;
-  const paths=buildAllPaths();
-  if(!paths.length)return;
-  const flowFactor=S.mode==='DC'?currentFlowFactor():1;
-  if(flowFactor<0.01)return;
-  // In CA: particles oscillate — direction determined by sign of current
-  // We use a signed speed: positive = forward, negative = backward
-  let signedFlow=1;
-  if(S.mode==='AC'){
-    signedFlow=sourceCurrentInstant(S.lastSol)>=0?1:-1;
-  }
-  for(const p of S.particles){
-    const path=paths[p.pathIdx%paths.length];
-    const tot=pathTotalLen(path);if(tot<1)continue;
-    // Hide particles that are on the generator segment
-    const pos=ptPos(p.t,path);if(!pos)continue;
-    if(isOnGen(pos.x,pos.y))continue; // nasconde particelle sul generatore
-    const t2=(p.t-0.007*signedFlow+1)%1,tail=ptPos(t2,path);
-    const alpha=flowFactor*0.9;
-    if(tail&&!isOnGen(tail.x,tail.y)){ctx.save();ctx.strokeStyle=`rgba(210,90,25,${flowFactor*.26})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(pos.x,pos.y);ctx.stroke();ctx.restore();}
-    ctx.save();ctx.beginPath();ctx.arc(pos.x,pos.y,4.5,0,Math.PI*2);ctx.fillStyle=`rgba(228,92,42,${alpha})`;ctx.fill();ctx.strokeStyle=`rgba(255,210,175,${flowFactor*.68})`;ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  const bI=S.lastSol&&S.lastSol.bI;if(!bI)return;
+  const maxI=Math.max(S.maxFlowI||0,...Object.values(bI).map(v=>Math.abs(v||0)),1e-12);
+  for(const s of segs){
+    if(s.type==='gen')continue;
+    const I=bI[s.id]||0,mag=Math.abs(I);
+    if(mag<maxI*0.015)continue;
+    const factor=Math.min(1,mag/maxI),dir=I>=0?1:-1;
+    const len=slen(s),count=Math.max(2,Math.min(9,Math.round(len/42)));
+    const dx=s.x2-s.x1,dy=s.y2-s.y1;
+    const phase=(S.flowT*(.45+.9*factor)+(s.mi*.17+s.si*.07))%1;
+    for(let i=0;i<count;i++){
+      let f=(phase+i/count)%1;
+      if(dir<0)f=1-f;
+      const x=s.x1+dx*f,y=s.y1+dy*f;
+      if(isOnGen(x,y))continue;
+      const tailF=Math.max(0,Math.min(1,f-dir*.035));
+      const tx=s.x1+dx*tailF,ty=s.y1+dy*tailF;
+      const alpha=.18+factor*.72;
+      ctx.save();
+      ctx.strokeStyle=`rgba(210,90,25,${alpha*.34})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(x,y);ctx.stroke();
+      ctx.beginPath();ctx.arc(x,y,3.2+factor*1.7,0,Math.PI*2);ctx.fillStyle=`rgba(228,92,42,${alpha})`;ctx.fill();
+      ctx.strokeStyle=`rgba(255,210,175,${alpha*.8})`;ctx.lineWidth=1;ctx.stroke();ctx.restore();
+    }
   }
 }
 
@@ -731,7 +756,7 @@ function gaussC(M,b,N){
 
 function buildZmat(efR, efVaux, N){
   const Zm=Array.from({length:N},()=>Array(N).fill(0));
-  const Vv=Array(N).fill(0);Vv[0]+=S.fem;
+  const Vv=Array(N).fill(0);Vv[0]+=sourceVoltage();
   for(let m=0;m<N;m++){
     for(const{id,shared,nb,dir}of getMeshSegs(m)){
       const r=efR(id),va=efVaux(id,dir);
@@ -794,7 +819,6 @@ function stepDC(dt){
       const newV=oldV+Ib*(dt/c.value);
       S.vc[c.id]=Math.sign(newV)*Math.min(Math.abs(newV),Math.abs(S.fem)*1.05);
       c._V=S.vc[c.id];
-      c._chargeNorm=Math.max(0,Math.min(1,Math.abs(S.vc[c.id])/Math.max(Math.abs(S.fem),.001)));
     }
     if(c.type==='L'){
       // In DC: corrente nell'induttore cresce esponenzialmente verso ε/R
@@ -810,7 +834,7 @@ function stepDC(dt){
 function stepAC(visPhase){
   const N=S.meshCount,omega=2*Math.PI*S.freq;
   const Zmat=Array.from({length:N},()=>Array.from({length:N},()=>C(0)));
-  const Vvec=Array.from({length:N},()=>C(0));Vvec[0]=C(S.fem*Math.sqrt(2));
+  const Vvec=Array.from({length:N},()=>C(0));Vvec[0]=C(sourceVoltage()*Math.sqrt(2));
   for(let m=0;m<N;m++){
     for(const{id,shared,nb}of getMeshSegs(m)){const z=getZ(id,omega);Zmat[m][m]=Cadd(Zmat[m][m],z);if(shared&&nb>=0&&nb<N)Zmat[m][nb]=Csub(Zmat[m][nb],z);}
     if(Cabs(Zmat[m][m])<1e-9)Zmat[m][m]=C(1e-9);
@@ -831,8 +855,6 @@ function stepAC(visPhase){
         // Tensione sul C in CA: V_C = I_C * X_C, sfasata di 90°
         const xc=1/(omega*c.value);
         c._V=Cabs(Iph)*xc*Math.cos(visPhase+Carg(Iph)-Math.PI/2);
-        c._chargeNorm=Math.min(1,Math.abs(c._V)/Math.max(Math.abs(S.fem),.001));
-        S.vc[c.id]=c._chargeNorm;
       }
       if(c.type==='L'){
         // In CA: il campo magnetico è proporzionale alla corrente istantanea
@@ -856,21 +878,11 @@ function stepPhysics(dt){
   const sol=S.mode==='DC'?stepDC(simDt):stepAC(S.visPhase);
   S.lastSol=sol;
   S.maxFlowI=Math.max(S.maxFlowI||0,sourceCurrentMagnitude(sol));
-  // Muovi particelle — in CA oscillano avanti/indietro con il segno della corrente
-  const spd=0.00022*S.simSpeed;
-  if(S.mode==='DC'){
-    // DC: il flusso segue la corrente reale del generatore.
-    const ff=currentFlowFactor();
-    for(const p of S.particles){p.t=(p.t+spd*ff+1)%1;}
-  } else {
-    // CA: velocità con segno e fase della corrente del generatore.
-    const maxI=Math.max(S.maxFlowI||0,1e-12);
-    const oscillation=Math.max(-1,Math.min(1,sourceCurrentInstant(sol)/maxI));
-    for(const p of S.particles){p.t=(p.t+spd*oscillation+1)%1;}
-  }
+  updateCapVisuals(dt);
+  S.flowT=(S.flowT+dt*S.simSpeed*(S.mode==='DC'?.35:.28)+1)%1;
   // Graphs
   if(S.showGraphs){
-    const vg=S.mode==='AC'?S.fem*Math.sqrt(2)*Math.cos(S.visPhase):S.fem;
+    const vg=S.mode==='AC'?sourceVoltage()*Math.sqrt(2)*Math.cos(S.visPhase):sourceVoltage();
     const I0r=sol.Im[0];const I0=I0r&&typeof I0r==='object'?Cabs(I0r)*Math.cos(S.visPhase+Carg(I0r)):Math.abs(I0r||0);
     S.graphV.push({t:S.simTime,v:vg});S.graphI.push({t:S.simTime,v:I0});
     if(S.graphV.length>500){S.graphV.shift();S.graphI.shift();}
@@ -878,6 +890,19 @@ function stepPhysics(dt){
   updateMeters(sol);
 }
 
+function sourceVoltage(){return S.discharging?0:S.fem;}
+function updateCapVisuals(dt){
+  const rate=S.mode==='AC'?CAP_VIS_RATE_AC:CAP_VIS_RATE;
+  const a=1-Math.exp(-dt*rate);
+  for(const c of S.components){
+    if(c.type!=='C')continue;
+    const target=c._V||0;
+    if(c._visV===undefined)c._visV=0;
+    c._visV+=(target-c._visV)*a;
+    const base=Math.max(Math.abs(S.fem),Math.abs(target),.001);
+    c._chargeNorm=Math.max(0,Math.min(1,Math.abs(c._visV)/base));
+  }
+}
 function sourceCurrentMagnitude(sol){
   if(!sol||!sol.Im||sol.Im[0]===undefined)return 0;
   const I=sol.Im[0];
@@ -944,23 +969,19 @@ function initEvents(){
   const cv=document.getElementById('cc');
   cv.addEventListener('mousemove',e=>{
     canvas=cv;if(!S.selType){hovSeg=null;return;}
-    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    hovSeg=null;for(const s of segs){if(s.type==='gen')continue;if(dps(mx,my,s)<15){hovSeg=s;break;}}
+    const p=canvasPoint(e);
+    hovSeg=pickSeg(p.x,p.y);
     cv.style.cursor=hovSeg?'pointer':S.selType?'crosshair':'default';
   });
   cv.addEventListener('click',e=>{
     if(!S.selType)return;
-    canvas=cv;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    for(const s of segs){
-      if(s.type==='gen')continue;
-      if(dps(mx,my,s)<15){
-        if(S.selType==='W'){
-          // Rimuovi componente su questo segmento
-          if(s.compId){removeComp(s.compId);}
-        } else {
-          S.pendSeg=s;openModal(S.selType);
-        }
-        return;
+    canvas=cv;const p=canvasPoint(e),s=pickSeg(p.x,p.y);
+    if(s){
+      if(S.selType==='W'){
+        // Rimuovi componente su questo segmento
+        if(s.compId){removeComp(s.compId);}
+      } else {
+        S.pendSeg=s;openModal(S.selType);
       }
     }
   });
@@ -970,13 +991,25 @@ function initEvents(){
 const DEFS={R:{lbl:'Resistenza',u:'Ω',v:100,st:1},C:{lbl:'Condensatore',u:'F (es. 0.0001)',v:0.0001,st:0.0001},L:{lbl:'Induttore',u:'H',v:0.01,st:0.001}};
 function openModal(t){const d=DEFS[t];document.getElementById('mod-title').textContent='Aggiungi '+d.lbl;document.getElementById('mod-lbl').textContent=`Valore (${d.u}):`;const i=document.getElementById('mod-val');i.value=d.v;i.step=d.st;i.min=1e-12;document.getElementById('mod-name').value='';document.getElementById('modal').classList.add('vis');}
 function closeModal(){document.getElementById('modal').classList.remove('vis');S.pendSeg=null;}
+function addComponentToSegment(seg,type,value,name){
+  if(!seg||seg.type==='gen'||!value||value<=0)return null;
+  if(seg.compId)removeComp(seg.compId);
+  const id=++S.compId;
+  const comp={id,type,value,name:name||(type+id),segId:seg.id,_V:0,_I:0,_visV:0,_chargeNorm:0};
+  S.components.push(comp);seg.type=type;seg.compId=id;
+  S.vc[id]=0;S.il[id]=0;S.ilN[id]=0;S.heat[id]=0;
+  return comp;
+}
+function clearComponents(){
+  for(const s of segs){if(s.type!=='gen'){s.type='wire';s.compId=null;}}
+  S.components=[];S.vc={};S.il={};S.ilN={};S.heat={};
+  renderList();updEqMeters();
+}
 function confirmAdd(){
   const seg=S.pendSeg;if(!seg)return closeModal();
   const val=parseFloat(document.getElementById('mod-val').value);if(isNaN(val)||val<=0){alert('Valore non valido.');return;}
-  const name=document.getElementById('mod-name').value.trim();const type=S.selType;const id=++S.compId;
-  const comp={id,type,value:val,name:name||(type+id),segId:seg.id,_V:0,_I:0,_chargeNorm:0};
-  S.components.push(comp);seg.type=type;seg.compId=id;
-  S.vc[id]=0;S.il[id]=0;S.ilN[id]=0;S.heat[id]=0;
+  const name=document.getElementById('mod-name').value.trim();
+  addComponentToSegment(seg,S.selType,val,name);
   closeModal();selComp(null);renderList();updEqMeters();
 }
 function removeComp(id){
@@ -1026,9 +1059,30 @@ function selComp(t){
   document.getElementById('hint').style.display=S.selType?'block':'none';
   if(!S.selType){if(canvas)canvas.style.cursor='default';hovSeg=null;}
 }
-function startSim(){if(S.running&&!S.paused)return;if(!S.running){S.simTime=0;S.visPhase=0;S.maxFlowI=0;S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});initParticles();}S.running=true;S.paused=false;document.getElementById('st').textContent=`In corso — ${S.mode} — ε=${S.fem}V`;}
+function startSim(){if(S.running&&!S.paused)return;if(!S.running){S.discharging=false;S.simTime=0;S.visPhase=0;S.flowT=0;S.maxFlowI=0;S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._visV=0;c._chargeNorm=0;});initParticles();}S.running=true;S.paused=false;document.getElementById('st').textContent=`In corso — ${S.mode} — ε=${S.fem}V`;}
 function pauseSim(){if(!S.running)return;S.paused=!S.paused;document.getElementById('st').textContent=S.paused?'In pausa':`In corso — ${S.mode}`;}
-function resetSim(){S.running=false;S.paused=false;S.simTime=0;S.visPhase=0;S.maxFlowI=0;S.particles=[];S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._chargeNorm=0;});document.getElementById('st').textContent='Resettato';document.getElementById('live').innerHTML='';updEqMeters();}
+function dischargeCaps(){
+  const caps=S.components.filter(c=>c.type==='C');
+  if(!caps.length){document.getElementById('st').textContent='Aggiungi un condensatore da scaricare';return;}
+  if(!caps.some(c=>Math.abs(S.vc[c.id]||0)>1e-6)){
+    for(const c of caps){S.vc[c.id]=S.fem;c._V=S.fem;c._visV=S.fem;c._chargeNorm=1;}
+  }
+  S.mode='DC';document.getElementById('btn-dc').classList.add('active');document.getElementById('btn-ac').classList.remove('active');document.getElementById('ac-ctrl').style.display='none';document.getElementById('hdr-mode').textContent='DC';
+  S.discharging=true;S.running=true;S.paused=false;S.maxFlowI=0;S.graphV=[];S.graphI=[];initParticles();
+  document.getElementById('st').textContent='Scarica condensatori — generatore a 0 V';
+}
+function presetOscillator(){
+  S.running=false;S.paused=false;S.discharging=false;S.meshCount=1;
+  document.getElementById('mesh-sl').value=1;document.getElementById('mesh-val').textContent='1';
+  setMode('AC');buildGeo();clearComponents();
+  addComponentToSegment(segs.find(s=>s.id==='0-0'),'C',0.0001,'C');
+  addComponentToSegment(segs.find(s=>s.id==='0-1'),'R',10,'R');
+  addComponentToSegment(segs.find(s=>s.id==='0-2'),'L',0.01,'L');
+  const f0=Math.round(1/(2*Math.PI*Math.sqrt(0.01*0.0001)));
+  S.freq=Math.min(1000,Math.max(1,f0));document.getElementById('freq-sl').value=S.freq;document.getElementById('freq-val').textContent=S.freq+' Hz';
+  renderList();updEqMeters();document.getElementById('st').textContent='Preset RLC oscillante pronto — premi Avvia';
+}
+function resetSim(){S.running=false;S.paused=false;S.discharging=false;S.simTime=0;S.visPhase=0;S.flowT=0;S.maxFlowI=0;S.particles=[];S.graphV=[];S.graphI=[];S.components.forEach(c=>{S.vc[c.id]=0;S.il[c.id]=0;S.ilN[c.id]=0;S.heat[c.id]=0;c._V=0;c._I=0;c._visV=0;c._chargeNorm=0;});document.getElementById('st').textContent='Resettato';document.getElementById('live').innerHTML='';updEqMeters();}
 function toggleGraphs(v){S.showGraphs=v;document.getElementById('ga').classList.toggle('vis',v);sizeCv();buildGeo();}
 
 // ══════ LOOP ══════

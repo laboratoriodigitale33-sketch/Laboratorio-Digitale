@@ -1,10 +1,10 @@
 /*
- * scontro-galassie.c — Collisione tra due galassie, modello collisionless 2D
+ * scontro-galassie.c — Collisione tra due galassie, modello collisionless 2.5D
  * Core fisico per WebAssembly/Emscripten.
  *
  * Modello fisico:
  * - due nuclei/alone massivi descritti da potenziali di Plummer ammorbiditi;
- * - particelle stellari collisionless usate come traccianti;
+ * - particelle stellari collisionless usate come traccianti con coordinate 3D interne;
  * - ogni particella sente il campo gravitazionale dei due nuclei e un termine di alone della galassia di appartenenza;
  * - non si calcola l'interazione stella-stella: questo permette N molto elevati e animazione fluida.
  *
@@ -42,9 +42,9 @@ static float g_tidal_boost = 1.0f;
 static float g_dynamical_friction = 0.012f;
 static int g_paused = 0;
 
-static float px[MAX_PARTICLES], py[MAX_PARTICLES];
-static float vx[MAX_PARTICLES], vy[MAX_PARTICLES];
-static float ax[MAX_PARTICLES], ay[MAX_PARTICLES];
+static float px[MAX_PARTICLES], py[MAX_PARTICLES], pz[MAX_PARTICLES];
+static float vx[MAX_PARTICLES], vy[MAX_PARTICLES], vz[MAX_PARTICLES];
+static float ax[MAX_PARTICLES], ay[MAX_PARTICLES], az[MAX_PARTICLES];
 static float seed_radius[MAX_PARTICLES];
 static float seed_gal_x[MAX_PARTICLES], seed_gal_y[MAX_PARTICLES];
 static float tag[MAX_PARTICLES];
@@ -86,25 +86,27 @@ static inline float randn(void) {
     return sqrtf(-2.0f * logf(u1)) * cosf(2.0f * M_PI * u2);
 }
 
-static void add_plummer_accel(float x, float y, float sx, float sy, float mass, float soft, float *out_ax, float *out_ay) {
+static void add_plummer_accel(float x, float y, float z, float sx, float sy, float sz, float mass, float soft, float *out_ax, float *out_ay, float *out_az) {
     float dx = sx - x;
     float dy = sy - y;
-    float r2 = dx*dx + dy*dy + soft*soft;
+    float dz = sz - z;
+    float r2 = dx*dx + dy*dy + dz*dz + soft*soft;
     float inv = 1.0f / sqrtf(r2);
     float inv3 = inv * inv * inv;
     float a = g_G * mass * inv3;
     *out_ax += a * dx;
     *out_ay += a * dy;
+    *out_az += a * dz;
 }
 
-static void add_galaxy_accel(float x, float y, int gal, float mass_factor, float *out_ax, float *out_ay) {
+static void add_galaxy_accel(float x, float y, float z, int gal, float mass_factor, float *out_ax, float *out_ay, float *out_az) {
     /* Ogni galassia è rappresentata come nucleo compatto + alone esteso.
        Questo mantiene il costo O(N), ma evita di trattare il compagno come massa puntiforme troppo impulsiva. */
     float m_core = cmass[gal] * mass_factor;
     float m_halo = cmass[gal] * g_halo_strength * mass_factor;
-    add_plummer_accel(x, y, cx[gal], cy[gal], m_core, g_core_soft, out_ax, out_ay);
+    add_plummer_accel(x, y, z, cx[gal], cy[gal], 0.0f, m_core, g_core_soft, out_ax, out_ay, out_az);
     if (m_halo > 0.0f) {
-        add_plummer_accel(x, y, cx[gal], cy[gal], m_halo, g_halo_soft, out_ax, out_ay);
+        add_plummer_accel(x, y, z, cx[gal], cy[gal], 0.0f, m_halo, g_halo_soft, out_ax, out_ay, out_az);
     }
 }
 
@@ -140,23 +142,32 @@ static void set_disk_planes(float plane_mode) {
     }
 }
 
-static void project_disk_point(int gal, float dx, float dy, float *out_x, float *out_y) {
-    float q = cosf(clampf(disk_inclination[gal], 0.0f, 1.25f));
+static void orient_disk_vector(int gal, float dx, float dy, float dz, float *out_x, float *out_y, float *out_z) {
+    float inc = clampf(disk_inclination[gal], 0.0f, 1.25f);
     float a = disk_view_angle[gal];
     float ca = cosf(a);
     float sa = sinf(a);
-    float pyq = dy * q;
-    *out_x = ca * dx - sa * pyq;
-    *out_y = sa * dx + ca * pyq;
+    float ci = cosf(inc);
+    float si = sinf(inc);
+
+    float tx = dx;
+    float ty = dy * ci - dz * si;
+    float tz = dy * si + dz * ci;
+
+    *out_x = ca * tx - sa * ty;
+    *out_y = sa * tx + ca * ty;
+    *out_z = tz;
 }
 
 static void compute_core_accel(void) {
     cax[0] = cay[0] = cax[1] = cay[1] = 0.0f;
+    float dummy_az = 0.0f;
 
     /* Moto dei centri galattici nel campo esteso dell'altra galassia.
        Anche qui usiamo nucleo + alone, con accelerazione per unità di massa del centro testato. */
-    add_galaxy_accel(cx[0], cy[0], 1, 1.0f, &cax[0], &cay[0]);
-    add_galaxy_accel(cx[1], cy[1], 0, 1.0f, &cax[1], &cay[1]);
+    add_galaxy_accel(cx[0], cy[0], 0.0f, 1, 1.0f, &cax[0], &cay[0], &dummy_az);
+    dummy_az = 0.0f;
+    add_galaxy_accel(cx[1], cy[1], 0.0f, 0, 1.0f, &cax[1], &cay[1], &dummy_az);
 
     /* Attrito dinamico fenomenologico: rimuove energia orbitale e favorisce la fusione.
        Non è la formula completa di Chandrasekhar; è un termine dissipativo controllabile. */
@@ -168,15 +179,16 @@ static void compute_core_accel(void) {
 
 static void compute_particle_accel(void) {
     for (int i = 0; i < g_N; i++) {
-        float axi = 0.0f, ayi = 0.0f;
+        float axi = 0.0f, ayi = 0.0f, azi = 0.0f;
         int home = tag[i] < 0.5f ? 0 : 1;
         int other = 1 - home;
 
-        add_galaxy_accel(px[i], py[i], home, 1.0f, &axi, &ayi);
-        add_galaxy_accel(px[i], py[i], other, g_tidal_boost, &axi, &ayi);
+        add_galaxy_accel(px[i], py[i], pz[i], home, 1.0f, &axi, &ayi, &azi);
+        add_galaxy_accel(px[i], py[i], pz[i], other, g_tidal_boost, &axi, &ayi, &azi);
 
         ax[i] = axi;
         ay[i] = ayi;
+        az[i] = azi;
     }
 }
 
@@ -188,11 +200,13 @@ static void update_buffers(void) {
     for (int i = 0; i < g_N; i++) {
         float x = px[i];
         float y = py[i];
-        float v2 = vx[i]*vx[i] + vy[i]*vy[i];
+        float z = pz[i];
+        float v2 = vx[i]*vx[i] + vy[i]*vy[i] + vz[i]*vz[i];
         int home = tag[i] < 0.5f ? 0 : 1;
         float dxh = x - cx[home];
         float dyh = y - cy[home];
-        float r_home = sqrtf(dxh*dxh + dyh*dyh);
+        float dzh = z;
+        float r_home = sqrtf(dxh*dxh + dyh*dyh + dzh*dzh);
         float r_global = sqrtf(x*x + y*y);
         float stretch = r_home / fmaxf(seed_radius[i], 0.05f);
         if (r_home > 2.65f * fmaxf(seed_radius[i], 0.20f) && r_home > 1.25f) escaped++;
@@ -265,10 +279,12 @@ static void seed_spiral_disk(int offset, int n, int gal, float disk_radius, floa
 
         float dx = r * cosf(theta) + zeta * cosf(theta + M_PI*0.5f);
         float dy = r * sinf(theta) + zeta * sinf(theta + M_PI*0.5f);
-        float rx, ry;
-        project_disk_point(gal, dx, dy, &rx, &ry);
+        float dz = thickness * 0.55f * randn();
+        float rx, ry, rz;
+        orient_disk_vector(gal, dx, dy, dz, &rx, &ry, &rz);
         px[i] = center_x + rx;
         py[i] = center_y + ry;
+        pz[i] = rz;
 
         /* Velocità circolare coerente con il potenziale nucleo + alone usato nelle forze. */
         float vc = circular_speed(fmaxf(r, 0.01f), mass);
@@ -277,12 +293,13 @@ static void seed_spiral_disk(int offset, int n, int gal, float disk_radius, floa
 
         float tx = -sinf(theta);
         float ty =  cosf(theta);
-        float tvx, tvy;
-        project_disk_point(gal, vc * tx, vc * ty, &tvx, &tvy);
+        float tvx, tvy, tvz;
+        orient_disk_vector(gal, vc * tx, vc * ty, noise * 0.18f * randn(), &tvx, &tvy, &tvz);
         vx[i] = base_vx + tvx + noise * 0.35f * randn();
         vy[i] = base_vy + tvy + noise * 0.35f * randn();
+        vz[i] = tvz + noise * 0.30f * randn();
 
-        ax[i] = ay[i] = 0.0f;
+        ax[i] = ay[i] = az[i] = 0.0f;
         tag[i] = (float)gal;
         seed_radius[i] = fmaxf(r, 0.04f);
         seed_gal_x[i] = rx;
@@ -317,10 +334,12 @@ static void seed_elliptical(int offset, int n, int gal, float scale_radius, floa
         float ex = r * cosf(theta);
         float ey = axis_q * r * sinf(theta);
 
+        float ez = 0.42f * axis_q * r * randn();
         float rx = ca * ex - sa * ey;
         float ry = sa * ex + ca * ey;
         px[i] = center_x + rx;
         py[i] = center_y + ry;
+        pz[i] = ez;
 
         float vc = circular_speed(fmaxf(r, 0.03f), mass);
         float sigma = 0.30f * vc + 0.05f + noise;
@@ -329,8 +348,9 @@ static void seed_elliptical(int offset, int n, int gal, float scale_radius, floa
 
         vx[i] = base_vx + 0.16f * spin * vc * (ca * tx - sa * ty) + sigma * randn();
         vy[i] = base_vy + 0.16f * spin * vc * (sa * tx + ca * ty) + sigma * randn();
+        vz[i] = 0.72f * sigma * randn();
 
-        ax[i] = ay[i] = 0.0f;
+        ax[i] = ay[i] = az[i] = 0.0f;
         tag[i] = (float)gal;
         seed_radius[i] = fmaxf(r, 0.08f);
         seed_gal_x[i] = rx;
@@ -387,7 +407,7 @@ void sim_init(int n_req, float impact, float v_in, float disk_radius, float mass
         cspin[0] =  1.0f; cspin[1] =  1.0f;
     } else if (spin_mode < 1.5f) {  /* prograde-retrograde */
         cspin[0] =  1.0f; cspin[1] = -1.0f;
-    } else {                        /* secondaria più calda e meno coerente, non vera inclinazione 3D */
+    } else {                        /* secondaria più calda e meno coerente */
         cspin[0] =  1.0f; cspin[1] =  0.45f;
     }
 
@@ -438,8 +458,10 @@ void sim_step(int substeps) {
         for (int i = 0; i < g_N; i++) {
             vx[i] += 0.5f * h * ax[i];
             vy[i] += 0.5f * h * ay[i];
+            vz[i] += 0.5f * h * az[i];
             px[i] += h * vx[i];
             py[i] += h * vy[i];
+            pz[i] += h * vz[i];
         }
 
         compute_core_accel();
@@ -453,6 +475,7 @@ void sim_step(int substeps) {
         for (int i = 0; i < g_N; i++) {
             vx[i] += 0.5f * h * ax[i];
             vy[i] += 0.5f * h * ay[i];
+            vz[i] += 0.5f * h * az[i];
         }
 
         g_time += h;

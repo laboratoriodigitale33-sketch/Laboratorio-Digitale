@@ -66,7 +66,7 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
   <div class="status">
     <span class="badge">Core: <strong>WebAssembly da C</strong></span>
     <span class="badge">Costo: <strong>circa O(N)</strong></span>
-    <span class="badge">Rendering: <strong>Canvas 2D</strong></span>
+    <span class="badge">Rendering: <strong>Canvas 2D, dinamica 2.5D</strong></span>
     <span class="badge" id="loadBadge">Modulo: caricamento…</span>
   </div>
 
@@ -135,7 +135,7 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
         </select>
       </div>
       <div class="control">
-        <label class="lab">Piani dei dischi <span id="planeLabel">complanari</span></label>
+        <label class="lab">Piani 3D dei dischi <span id="planeLabel">complanari</span></label>
         <select id="planeMode">
           <option value="0">complanari / face-on</option>
           <option value="1">secondaria inclinata</option>
@@ -229,7 +229,7 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
     </div>
     <p>Qui $M_c$ e $M_h$ sono rispettivamente massa compatta e massa dell'alone, mentre $\epsilon_c$ ed $\epsilon_h$ sono i due softening associati. Questo evita di inizializzare dischi troppo caldi o con velocità periferiche non coerenti con il potenziale effettivamente usato.</p>
     <p>Il selettore di morfologia modifica solo le condizioni iniziali dei traccianti: una galassia a spirale parte da un disco rotante con bracci logaritmici aperti e diffusi, mentre una galassia ellittica parte da una distribuzione proiettata piu compatta, schiacciata e sostenuta in gran parte da dispersione di velocita. In entrambi i casi il campo gravitazionale globale resta il modello nucleo+alone usato per mantenere il costo circa lineare in $N$.</p>
-    <p>Il selettore dei piani dei dischi introduce una proiezione inclinata dei dischi iniziali. Non è ancora un integratore tridimensionale completo: le orbite evolvono nel piano della simulazione, ma la geometria iniziale e le velocita tangenziali vengono proiettate come se i dischi avessero assi di rotazione non paralleli. Questo permette di confrontare incontri complanari, secondarie inclinate e configurazioni incrociate senza cambiare il costo numerico.</p>
+    <p>Il selettore dei piani dei dischi usa coordinate tridimensionali interne per i traccianti: posizione, velocita e accelerazione includono anche $z$. Il canvas resta una proiezione 2D, mentre i dischi inclinati mantengono il proprio supporto orbitale fuori dal piano della camera. Non è ancora un vero N-body 3D autogravitante, perché i potenziali restano analitici e i centri galattici orbitano nel piano principale, ma evita l'artefatto di schiacciare dinamicamente una galassia inclinata dentro il piano dello schermo.</p>
 
     <h3>2. Perché compaiono code e ponti mareali</h3>
     <p>Il punto essenziale non è l'intensità assoluta della gravità, ma la sua variazione spaziale. Le stelle nella parte del disco più vicina alla galassia compagna subiscono un'accelerazione diversa rispetto alle stelle nella parte opposta. Questa accelerazione differenziale deforma il disco e può estrarre stelle dalle orbite quasi circolari iniziali.</p>
@@ -242,7 +242,7 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
     <p>Nel caso prograde la rotazione del disco ha lo stesso verso del moto orbitale relativo. Le stelle rimangono più a lungo in fase con la perturbazione mareale, quindi ricevono trasferimenti coerenti di energia e momento angolare. Il risultato tipico sono code lunghe e sottili. Nel caso retrograde, invece, la perturbazione cambia fase più rapidamente nel sistema solidale con la stella e l'effetto è meno efficiente: la deformazione è più compatta e meno spettacolare.</p>
 
     <h3>4. Limiti del modello</h3>
-    <p>Questa simulazione non include idrodinamica del gas, formazione stellare, feedback da supernovae, aloni deformabili autogravitanti, inclinazioni tridimensionali reali né rilassamento collisionale. Non è quindi un codice astrofisico predittivo. È però adatta a mostrare la morfologia di base delle interazioni galattiche con un numero elevato di traccianti e buona fluidità nel browser.</p>
+    <p>Questa simulazione non include idrodinamica del gas, formazione stellare, feedback da supernovae, aloni deformabili autogravitanti né rilassamento collisionale. Le inclinazioni dei dischi sono trattate in modo 2.5D: i traccianti hanno quota e velocita verticale, ma i potenziali delle galassie restano lisci e analitici. Non è quindi un codice astrofisico predittivo. È però adatta a mostrare la morfologia di base delle interazioni galattiche con un numero elevato di traccianti e buona fluidità nel browser.</p>
     <p>L'attrito dinamico presente nei controlli è fenomenologico: agisce come termine dissipativo proporzionale alla velocità dei centri galattici e serve a rendere visibile la perdita di energia orbitale e la fusione. Non è una valutazione locale completa della formula di Chandrasekhar.</p>
     <div class="math-box warn">
       $$\text{Vero N-body: costo}\sim O(N^2)\quad\text{oppure}\quad O(N\log N)\text{ con Barnes-Hut}$$
@@ -281,7 +281,7 @@ let fallbackTimer = null;
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d', { alpha:false });
 const DPR_LIMIT = 2;
-const WASM_CACHE = '20260609c';
+const WASM_CACHE = '20260609d';
 
 const ui = {
   loadBadge: document.getElementById('loadBadge'),

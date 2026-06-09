@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<script>
+window.SIM_METADATA = {
+  title: "Scontro tra galassie",
+  description: "Simulazione collisionless dell'interazione gravitazionale tra due galassie a disco, con formazione di code mareali, ponti stellari e progressiva fusione dei nuclei.",
+  category: "Astrofisica",
+  icon: "🌌",
+  order: 40,
+  tags: ["galassie", "collisione galattica", "maree gravitazionali", "n-body", "dinamica stellare", "fusione galattica", "astrofisica"],
+  level: "avanzato"
+};
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scontro tra galassie — simulazione collisionless</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+:root{
+  --bg:#f5f0e8;
+  --bg2:#ede7d9;
+  --bg3:#e1d8c8;
+  --panel:#fbf8f1;
+  --ink:#18130f;
+  --ink2:#4c4034;
+  --ink3:#766958;
+  --border:#c7b8a0;
+  --accent:#6e4aa8;
+  --accent2:#b66a2d;
+  --blue:#356fb0;
+  --red:#b64535;
+  --green:#39745a;
+  --shadow:0 12px 32px rgba(35,26,18,.12);
+  --serif:'EB Garamond',Georgia,serif;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:linear-gradient(180deg,var(--bg),#faf7f1);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;min-height:100vh}
+header{background:var(--ink);color:var(--bg);padding:26px 36px 22px;border-bottom:3px solid var(--accent)}
+header h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.3rem);font-weight:500;line-height:1.05;letter-spacing:.01em}
+header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;line-height:1.6;max-width:940px}
+.page{max-width:1440px;margin:0 auto;padding:24px}
+.status{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--panel);border-radius:999px;padding:7px 11px;color:var(--ink2);font-family:var(--mono);font-size:.72rem;box-shadow:var(--shadow)}
+.badge strong{color:var(--accent);font-weight:500}
+.layout{display:grid;grid-template-columns:315px minmax(0,1fr) 300px;gap:18px;align-items:start}.panel,.canvas-card,.theory{background:var(--panel);border:1.5px solid var(--border);box-shadow:var(--shadow);border-radius:14px}.panel{padding:16px}.panel-title{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:14px}.control{margin-bottom:14px}.control:last-child{margin-bottom:0}.lab{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:6px;font-size:.82rem;color:var(--ink2)}.lab span:last-child{font-family:var(--mono);font-size:.73rem;color:var(--accent);white-space:nowrap}input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}select{width:100%;border:1px solid var(--border);background:white;color:var(--ink);border-radius:9px;padding:8px 10px;font-family:var(--sans);font-size:.88rem}.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}button{border:1.5px solid var(--border);background:var(--bg);color:var(--ink2);border-radius:9px;padding:9px 10px;font-family:var(--sans);font-weight:700;cursor:pointer;transition:.15s}button:hover{background:var(--bg3);color:var(--ink)}button.primary{background:var(--accent);border-color:var(--accent);color:white}.note{font-size:.78rem;color:var(--ink3);line-height:1.55}.canvas-card{padding:12px}.canvas-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:4px 4px 12px}.canvas-head h2{font-family:var(--serif);font-weight:500;font-size:1.35rem}.canvas-head p{font-size:.82rem;color:var(--ink3);font-family:var(--mono)}.canvas-wrap{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#070912;min-height:660px}.canvas-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 24% 40%,rgba(95,116,180,.10),transparent 22%),radial-gradient(circle at 68% 58%,rgba(190,110,70,.11),transparent 25%);pointer-events:none}canvas{display:block;width:100%;height:660px}.overlay{position:absolute;left:14px;bottom:12px;color:rgba(255,255,255,.68);font-family:var(--mono);font-size:.68rem;line-height:1.7;pointer-events:none}.overlay.top{top:12px;bottom:auto}.legend{position:absolute;right:12px;bottom:12px;display:grid;gap:7px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 11px;color:rgba(255,255,255,.76);font-family:var(--mono);font-size:.64rem}.li{display:flex;gap:8px;align-items:center}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}.stats{display:grid;gap:12px}.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px}.stat .k{font-family:var(--mono);font-size:.65rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}.stat .v{font-family:var(--serif);font-size:1.35rem;color:var(--ink);line-height:1.2;margin-top:4px}.bar{height:10px;border:1px solid var(--border);background:var(--bg3);border-radius:999px;overflow:hidden;margin-top:8px}.fill{height:100%;width:0%;background:var(--accent)}.formula{font-family:var(--mono);font-size:.74rem;line-height:1.9;background:var(--bg2);border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;margin-top:10px;color:var(--ink2)}.theory{margin-top:20px;padding:24px 28px}.theory h2{font-family:var(--serif);font-size:1.75rem;font-weight:500;margin-bottom:14px}.theory h3{font-family:var(--serif);font-size:1.22rem;font-weight:600;margin:24px 0 8px}.theory p,.theory li{font-family:var(--serif);font-size:1.06rem;line-height:1.78;color:var(--ink2);max-width:1000px}.theory ul{padding-left:20px;margin:10px 0}.math-box{background:var(--bg2);border-left:3px solid var(--accent2);padding:13px 16px;margin:14px 0;border-radius:0 8px 8px 0;overflow-x:auto}.warn{border-left-color:var(--red)}
+@media(max-width:1180px){.layout{grid-template-columns:300px 1fr}.rightcol{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.canvas-wrap{min-height:560px}canvas{height:560px}}
+@media(max-width:850px){.page{padding:14px}.layout{grid-template-columns:1fr}.rightcol{grid-template-columns:1fr}.canvas-wrap{min-height:520px}canvas{height:520px}header{padding:20px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Scontro tra galassie</h1>
+  <p>Modello collisionless a molti traccianti: due nuclei/alone massivi interagiscono gravitazionalmente, mentre le stelle del disco orbitano nei potenziali e formano code mareali, ponti e strutture diffuse.</p>
+</header>
+
+<div class="page">
+  <div class="status">
+    <span class="badge">Core: <strong>WebAssembly da C</strong></span>
+    <span class="badge">Costo: <strong>circa O(N)</strong></span>
+    <span class="badge">Rendering: <strong>Canvas 2D</strong></span>
+    <span class="badge" id="loadBadge">Modulo: caricamento…</span>
+  </div>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-title">Controlli</div>
+      <div class="btns">
+        <button class="primary" id="btnStart">Avvia</button>
+        <button id="btnPause">Pausa</button>
+      </div>
+      <button id="btnReset" style="width:100%;margin-bottom:14px">Reset con parametri correnti</button>
+      <div class="note">Per cambiare numero di particelle, rapporto di massa, morfologia, geometria iniziale o spin, premi Reset. Gli altri parametri possono essere modificati anche durante il moto.</div>
+
+      <div class="panel-title" style="margin-top:18px">Condizioni iniziali</div>
+      <div class="control">
+        <label class="lab">Preset <span id="presetLabel">Antennae-like</span></label>
+        <select id="preset">
+          <option value="antennae">Antennae-like: prograde, code lunghe</option>
+          <option value="retro">Prograde-retrograde: asimmetrico</option>
+          <option value="minor">Minor merger: satellite meno massivo</option>
+          <option value="headon">Quasi frontale: anelli e ponte</option>
+          <option value="elliptic">Ellittica-spirale: ponte compatto</option>
+        </select>
+      </div>
+      <div class="control">
+        <label class="lab">Numero particelle <span id="nLabel">20000</span></label>
+        <input id="nPart" type="range" min="4000" max="50000" step="1000" value="20000">
+      </div>
+      <div class="control">
+        <label class="lab">Parametro d'impatto $b$ <span id="impactLabel">0.65</span></label>
+        <input id="impact" type="range" min="0" max="1.6" step="0.05" value="0.65">
+      </div>
+      <div class="control">
+        <label class="lab">Velocità iniziale $v_{\rm in}$ <span id="vinLabel">0.62</span></label>
+        <input id="vin" type="range" min="0.12" max="1.35" step="0.01" value="0.62">
+      </div>
+      <div class="control">
+        <label class="lab">Raggio dei dischi $R_d$ <span id="radLabel">0.95</span></label>
+        <input id="radius" type="range" min="0.45" max="1.25" step="0.01" value="0.95">
+      </div>
+      <div class="control">
+        <label class="lab">Rapporto masse $q=M_2/M_1$ <span id="qLabel">1.00</span></label>
+        <input id="massRatio" type="range" min="0.25" max="1" step="0.01" value="1.00">
+      </div>
+      <div class="control">
+        <label class="lab">Configurazione spin <span id="spinLabel">prograde-prograde</span></label>
+        <select id="spinMode">
+          <option value="0">prograde-prograde</option>
+          <option value="1">prograde-retrograde</option>
+          <option value="2">secondaria calda / spin parziale</option>
+        </select>
+      </div>
+      <div class="control">
+        <label class="lab">Morfologia primaria <span id="morphPrimaryLabel">spirale</span></label>
+        <select id="morphPrimary">
+          <option value="0">spirale</option>
+          <option value="1">ellittica</option>
+        </select>
+      </div>
+      <div class="control">
+        <label class="lab">Morfologia secondaria <span id="morphSecondaryLabel">spirale</span></label>
+        <select id="morphSecondary">
+          <option value="0">spirale</option>
+          <option value="1">ellittica</option>
+        </select>
+      </div>
+
+      <div class="panel-title" style="margin-top:18px">Fisica numerica</div>
+      <div class="control">
+        <label class="lab">Passo temporale $\Delta t$ <span id="dtLabel">0.0065</span></label>
+        <input id="dt" type="range" min="0.002" max="0.014" step="0.0005" value="0.0065">
+      </div>
+      <div class="control">
+        <label class="lab">Maree del compagno <span id="tidalLabel">1.00</span></label>
+        <input id="tidal" type="range" min="0.35" max="2.3" step="0.01" value="1.00">
+      </div>
+      <div class="control">
+        <label class="lab">Massa alone esteso <span id="haloLabel">0.55</span></label>
+        <input id="halo" type="range" min="0" max="1.6" step="0.01" value="0.55">
+      </div>
+      <div class="control">
+        <label class="lab">Attrito dinamico <span id="fricLabel">0.012</span></label>
+        <input id="friction" type="range" min="0" max="0.06" step="0.001" value="0.012">
+      </div>
+      <div class="control">
+        <label class="lab">Softening nuclei $\epsilon_c$ <span id="softLabel">0.11</span></label>
+        <input id="soft" type="range" min="0.04" max="0.28" step="0.005" value="0.11">
+      </div>
+    </aside>
+
+    <main class="canvas-card">
+      <div class="canvas-head">
+        <div>
+          <h2>Dinamica mareale galattica</h2>
+          <p>Le particelle chiare appartengono alle popolazioni stellari iniziali; i due punti centrali rappresentano i centri dei potenziali nucleo+alone.</p>
+        </div>
+        <span class="badge">FPS <strong id="fps">—</strong></span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="scene"></canvas>
+        <div class="overlay top" id="topOverlay">t = — · N = —</div>
+        <div class="overlay" id="overlay">Separazione nuclei: —<br>Frazione in code mareali: —</div>
+        <div class="legend">
+          <div class="li"><span class="dot" style="background:#7fb3ff"></span>Galassia primaria</div>
+          <div class="li"><span class="dot" style="background:#ffb072"></span>Galassia secondaria</div>
+          <div class="li"><span class="dot" style="background:#f4f0d8"></span>Particelle riscaldate / code</div>
+          <div class="li"><span class="dot" style="background:#ffffff"></span>Nuclei massivi</div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="rightcol">
+      <section class="panel stats">
+        <div class="panel-title">Diagnostica</div>
+        <div class="stat"><div class="k">Tempo simulato</div><div class="v" id="timeStat">0.00</div></div>
+        <div class="stat"><div class="k">Separazione nuclei</div><div class="v" id="sepStat">—</div><div class="bar"><div class="fill" id="sepBar"></div></div></div>
+        <div class="stat"><div class="k">Code mareali</div><div class="v" id="tailStat">—</div><div class="bar"><div class="fill" id="tailBar"></div></div></div>
+        <div class="stat"><div class="k">Velocità media traccianti</div><div class="v" id="speedStat">—</div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-title">Lettura fisica</div>
+        <p class="note">Le code mareali compaiono quando il campo differenziale del compagno sottrae momento angolare e redistribuisce energia orbitale. L'effetto è massimo negli incontri prograde, perché la rotazione del disco è risonante con il passaggio orbitale.</p>
+        <div class="formula">
+          $a(r)=\dfrac{GM r}{(r^2+\epsilon^2)^{3/2}}$<br>
+          $\Delta a \simeq \dfrac{2GM}{R^3}\,r$<br>
+          $t_{\rm dyn}\sim (G\rho)^{-1/2}$
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-title">Prestazioni</div>
+        <p class="note">La fisica non usa interazione stella-stella. Questo riduce il costo da $O(N^2)$ a circa $O(N)$ per passo e permette molti corpi. La misura delle code è calcolata rispetto al centro della galassia di origine, non rispetto all'origine globale. Se noti scatti, riduci N o il passo temporale.</p>
+      </section>
+    </aside>
+  </div>
+
+  <section class="theory">
+    <h2>Teoria della simulazione</h2>
+    <p>Una collisione galattica non assomiglia a un urto tra oggetti solidi. Le distanze tra stelle sono enormi rispetto alle dimensioni stellari, quindi gli urti diretti stella-stella sono trascurabili. La dinamica è dominata dal campo gravitazionale collettivo prodotto da stelle, gas, materia oscura e nuclei centrali. Per questo una simulazione didattica fluida può trattare le stelle come particelle collisionless immerse in potenziali gravitazionali estesi.</p>
+
+    <h3>1. Modello fisico implementato</h3>
+    <p>Il file C usa, per ciascuna galassia, due componenti ammorbidite di Plummer: un nucleo compatto e un alone esteso. Ogni tracciante stellare sente il campo nucleo+alone della propria galassia e quello nucleo+alone della galassia compagna. Non sente invece direttamente tutte le altre stelle. Questa approssimazione è detta spesso <em>restricted N-body</em>: è meno generale di un vero codice N-body autogravitante, ma conserva bene i fenomeni morfologici più importanti per una visualizzazione interattiva, come ponti, code mareali e dispersione dei dischi.</p>
+    <div class="math-box">
+      $$\Phi(r)=-\frac{GM}{\sqrt{r^2+\epsilon^2}},\qquad
+      \vec a(\vec r)=-\nabla\Phi=-\frac{GM\vec r}{(r^2+\epsilon^2)^{3/2}}$$
+    </div>
+    <p>Nelle formule, $G$ è la costante gravitazionale nelle unità interne della simulazione, $M$ è la massa efficace del nucleo/alone, $r$ è la distanza dal centro galattico, $\epsilon$ è la lunghezza di softening gravitazionale e $\vec a$ è l'accelerazione gravitazionale.</p>
+    <p>Le velocità iniziali dei dischi sono costruite imponendo l'equilibrio circolare approssimato nel potenziale nucleo+alone:</p>
+    <div class="math-box">
+      $$v_c^2(r)=G M_c\frac{r^2}{(r^2+\epsilon_c^2)^{3/2}}+G M_h\frac{r^2}{(r^2+\epsilon_h^2)^{3/2}}$$
+    </div>
+    <p>Qui $M_c$ e $M_h$ sono rispettivamente massa compatta e massa dell'alone, mentre $\epsilon_c$ ed $\epsilon_h$ sono i due softening associati. Questo evita di inizializzare dischi troppo caldi o con velocità periferiche non coerenti con il potenziale effettivamente usato.</p>
+    <p>Il selettore di morfologia modifica solo le condizioni iniziali dei traccianti: una galassia a spirale parte da un disco rotante con bracci logaritmici a due pattern, mentre una galassia ellittica parte da una distribuzione proiettata piu compatta, schiacciata e sostenuta in gran parte da dispersione di velocita. In entrambi i casi il campo gravitazionale globale resta il modello nucleo+alone usato per mantenere il costo circa lineare in $N$.</p>
+
+    <h3>2. Perché compaiono code e ponti mareali</h3>
+    <p>Il punto essenziale non è l'intensità assoluta della gravità, ma la sua variazione spaziale. Le stelle nella parte del disco più vicina alla galassia compagna subiscono un'accelerazione diversa rispetto alle stelle nella parte opposta. Questa accelerazione differenziale deforma il disco e può estrarre stelle dalle orbite quasi circolari iniziali.</p>
+    <div class="math-box">
+      $$|\Delta a|\sim \frac{2GM_{\rm comp}}{R^3}\,r$$
+    </div>
+    <p>Qui $M_{\rm comp}$ è la massa della galassia perturbatrice, $R$ è la distanza tra i nuclei e $r$ è la distanza della stella dal centro della propria galassia. La dipendenza $R^{-3}$ spiega perché il passaggio al pericentro produce la deformazione più evidente.</p>
+
+    <h3>3. Spin prograde e retrograde</h3>
+    <p>Nel caso prograde la rotazione del disco ha lo stesso verso del moto orbitale relativo. Le stelle rimangono più a lungo in fase con la perturbazione mareale, quindi ricevono trasferimenti coerenti di energia e momento angolare. Il risultato tipico sono code lunghe e sottili. Nel caso retrograde, invece, la perturbazione cambia fase più rapidamente nel sistema solidale con la stella e l'effetto è meno efficiente: la deformazione è più compatta e meno spettacolare.</p>
+
+    <h3>4. Limiti del modello</h3>
+    <p>Questa simulazione non include idrodinamica del gas, formazione stellare, feedback da supernovae, aloni deformabili autogravitanti, inclinazioni tridimensionali reali né rilassamento collisionale. Non è quindi un codice astrofisico predittivo. È però adatta a mostrare la morfologia di base delle interazioni galattiche con un numero elevato di traccianti e buona fluidità nel browser.</p>
+    <p>L'attrito dinamico presente nei controlli è fenomenologico: agisce come termine dissipativo proporzionale alla velocità dei centri galattici e serve a rendere visibile la perdita di energia orbitale e la fusione. Non è una valutazione locale completa della formula di Chandrasekhar.</p>
+    <div class="math-box warn">
+      $$\text{Vero N-body: costo}\sim O(N^2)\quad\text{oppure}\quad O(N\log N)\text{ con Barnes-Hut}$$
+      $$\text{Modello usato qui: costo}\sim O(N)$$
+    </div>
+
+    <h3>Formulario</h3>
+    <ul>
+      <li>$\Phi(r)$: potenziale gravitazionale ammorbidito.</li>
+      <li>$\epsilon$: softening gravitazionale, introdotto per evitare accelerazioni numericamente divergenti a piccola distanza.</li>
+      <li>$q=M_2/M_1$: rapporto tra massa della galassia secondaria e primaria.</li>
+      <li>$b$: parametro d'impatto, cioè offset trasversale iniziale fra le traiettorie dei due nuclei; nel codice aggiornato le velocità iniziali trasversali sono nulle, quindi $b$ non viene cancellato artificialmente.</li>
+      <li>$v_{\rm in}$: velocità orbitale iniziale relativa impostata nei controlli.</li>
+      <li>$t_{\rm dyn}\sim(G\rho)^{-1/2}$: scala temporale dinamica di un sistema autogravitante di densità media $\rho$.</li>
+    </ul>
+
+    <h3>Suggerimenti didattici</h3>
+    <p>Per usare la simulazione in modo didattico, conviene confrontare tre casi: incontro quasi frontale, incontro prograde-prograde e incontro prograde-retrograde. Il confronto mostra che la forma finale non dipende solo dalla massa, ma anche dalla geometria orbitale e dall'orientazione dei dischi. Un'estensione naturale sarebbe aggiungere una vista con istogramma del raggio delle particelle, una mappa densità su griglia oppure una vera proiezione 3D dei dischi per evidenziare meglio ponti, code e nucleo fuso.</p>
+  </section>
+</div>
+
+<script>
+let wasmReady = false;
+let running = false;
+let lastFrame = performance.now();
+let fpsSmooth = 0;
+let cwraps = null;
+let Module = null;
+let viewScale = 105;
+let viewCenterX = 0;
+let viewCenterY = 0;
+let renderStride = 1;
+let rafId = 0;
+let fallbackTimer = null;
+
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d', { alpha:false });
+const DPR_LIMIT = 2;
+const WASM_CACHE = '20260609b';
+
+const ui = {
+  loadBadge: document.getElementById('loadBadge'),
+  btnStart: document.getElementById('btnStart'),
+  btnPause: document.getElementById('btnPause'),
+  btnReset: document.getElementById('btnReset'),
+  preset: document.getElementById('preset'),
+  nPart: document.getElementById('nPart'), impact: document.getElementById('impact'), vin: document.getElementById('vin'), radius: document.getElementById('radius'),
+  massRatio: document.getElementById('massRatio'), spinMode: document.getElementById('spinMode'), morphPrimary: document.getElementById('morphPrimary'), morphSecondary: document.getElementById('morphSecondary'), dt: document.getElementById('dt'), tidal: document.getElementById('tidal'), halo: document.getElementById('halo'), friction: document.getElementById('friction'), soft: document.getElementById('soft'),
+  nLabel: document.getElementById('nLabel'), impactLabel: document.getElementById('impactLabel'), vinLabel: document.getElementById('vinLabel'), radLabel: document.getElementById('radLabel'), qLabel: document.getElementById('qLabel'), spinLabel: document.getElementById('spinLabel'), morphPrimaryLabel: document.getElementById('morphPrimaryLabel'), morphSecondaryLabel: document.getElementById('morphSecondaryLabel'), dtLabel: document.getElementById('dtLabel'), tidalLabel: document.getElementById('tidalLabel'), haloLabel: document.getElementById('haloLabel'), fricLabel: document.getElementById('fricLabel'), softLabel: document.getElementById('softLabel'), presetLabel: document.getElementById('presetLabel'),
+  fps: document.getElementById('fps'), timeStat: document.getElementById('timeStat'), sepStat: document.getElementById('sepStat'), tailStat: document.getElementById('tailStat'), speedStat: document.getElementById('speedStat'), sepBar: document.getElementById('sepBar'), tailBar: document.getElementById('tailBar'), overlay: document.getElementById('overlay'), topOverlay: document.getElementById('topOverlay')
+};
+
+const presets = {
+  antennae: { label:'Antennae-like', impact:0.65, vin:0.62, radius:0.95, q:1.00, spin:'0', morph0:'0', morph1:'0', tidal:1.15, halo:0.55, friction:0.012, soft:0.11, n:20000 },
+  retro:    { label:'Prograde-retrograde', impact:0.75, vin:0.58, radius:0.92, q:0.95, spin:'1', morph0:'0', morph1:'0', tidal:1.05, halo:0.60, friction:0.010, soft:0.11, n:22000 },
+  minor:    { label:'Minor merger', impact:0.55, vin:0.70, radius:0.96, q:0.38, spin:'0', morph0:'0', morph1:'0', tidal:1.25, halo:0.65, friction:0.018, soft:0.12, n:24000 },
+  headon:   { label:'Quasi frontale', impact:0.12, vin:0.54, radius:0.88, q:0.90, spin:'2', morph0:'0', morph1:'0', tidal:0.95, halo:0.50, friction:0.016, soft:0.12, n:20000 },
+  elliptic: { label:'Ellittica-spirale', impact:0.48, vin:0.60, radius:0.90, q:0.75, spin:'0', morph0:'1', morph1:'0', tidal:1.05, halo:0.68, friction:0.018, soft:0.13, n:22000 }
+};
+
+function fmt(x, d=2){ return Number(x).toFixed(d); }
+function val(id){ return Number(ui[id].value); }
+
+function updateLabels(){
+  ui.nLabel.textContent = Number(ui.nPart.value).toLocaleString('it-IT');
+  ui.impactLabel.textContent = fmt(ui.impact.value,2);
+  ui.vinLabel.textContent = fmt(ui.vin.value,2);
+  ui.radLabel.textContent = fmt(ui.radius.value,2);
+  ui.qLabel.textContent = fmt(ui.massRatio.value,2);
+  ui.spinLabel.textContent = ui.spinMode.options[ui.spinMode.selectedIndex].textContent;
+  ui.morphPrimaryLabel.textContent = ui.morphPrimary.options[ui.morphPrimary.selectedIndex].textContent;
+  ui.morphSecondaryLabel.textContent = ui.morphSecondary.options[ui.morphSecondary.selectedIndex].textContent;
+  ui.dtLabel.textContent = fmt(ui.dt.value,4);
+  ui.tidalLabel.textContent = fmt(ui.tidal.value,2);
+  ui.haloLabel.textContent = fmt(ui.halo.value,2);
+  ui.fricLabel.textContent = fmt(ui.friction.value,3);
+  ui.softLabel.textContent = fmt(ui.soft.value,3);
+  ui.presetLabel.textContent = presets[ui.preset.value].label;
+}
+
+function applyPreset(name){
+  const p = presets[name];
+  ui.nPart.value = p.n;
+  ui.impact.value = p.impact;
+  ui.vin.value = p.vin;
+  ui.radius.value = p.radius;
+  ui.massRatio.value = p.q;
+  ui.spinMode.value = p.spin;
+  ui.morphPrimary.value = p.morph0;
+  ui.morphSecondary.value = p.morph1;
+  ui.tidal.value = p.tidal;
+  ui.halo.value = p.halo;
+  ui.friction.value = p.friction;
+  ui.soft.value = p.soft;
+  updateLabels();
+}
+
+function resizeCanvas(){
+  const wrap = canvas.parentElement;
+  const rect = wrap.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR_LIMIT);
+  const w = Math.max(320, Math.floor(rect.width));
+  const h = Math.max(360, Math.floor(rect.height));
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function setupWasm(mod){
+  Module = mod;
+  cwraps = {
+    init: Module.cwrap('sim_init', null, ['number','number','number','number','number','number','number','number','number']),
+    step: Module.cwrap('sim_step', null, ['number']),
+    setParams: Module.cwrap('sim_set_params', null, ['number','number','number','number','number']),
+    pause: Module.cwrap('sim_pause', null, ['number']),
+    getCount: Module.cwrap('sim_get_count', 'number', []),
+    getStatePtr: Module.cwrap('sim_get_state_ptr', 'number', []),
+    getCorePtr: Module.cwrap('sim_get_core_ptr', 'number', []),
+    getDiagPtr: Module.cwrap('sim_get_diag_ptr', 'number', [])
+  };
+  wasmReady = true;
+  ui.loadBadge.innerHTML = 'Modulo: <strong>pronto</strong>';
+  resetSim();
+  draw();
+  scheduleNextFrame();
+  if(!fallbackTimer){
+    fallbackTimer = setInterval(() => {
+      const now = performance.now();
+      if(wasmReady && now - lastFrame > 420){
+        if(rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        loop(now);
+      }
+    }, 240);
+  }
+}
+
+function pushRuntimeParams(){
+  if(!wasmReady) return;
+  cwraps.setParams(val('dt'), val('tidal'), val('halo'), val('friction'), val('soft'));
+}
+
+function resetSim(){
+  if(!wasmReady) return;
+  pushRuntimeParams();
+  const seed = (Date.now() >>> 0) ^ Math.floor(Math.random()*1e9);
+  cwraps.init(val('nPart'), val('impact'), val('vin'), val('radius'), val('massRatio'), Number(ui.spinMode.value), Number(ui.morphPrimary.value), Number(ui.morphSecondary.value), seed);
+  running = true;
+  cwraps.pause(0);
+  ui.btnPause.textContent = 'Pausa';
+}
+
+function worldToScreen(x,y,w,h){
+  return [w*0.5 + (x - viewCenterX)*viewScale, h*0.5 - (y - viewCenterY)*viewScale];
+}
+
+function drawBackground(w,h){
+  const grad = ctx.createRadialGradient(w*0.48,h*0.52,10,w*0.5,h*0.5,Math.max(w,h)*0.65);
+  grad.addColorStop(0,'#11172a');
+  grad.addColorStop(0.45,'#070912');
+  grad.addColorStop(1,'#02030a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,w,h);
+
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  for(let i=0;i<130;i++){
+    const x = (i*173.3 % w);
+    const y = (i*91.7 % h);
+    const r = (i%7===0) ? 1.25 : 0.65;
+    ctx.fillStyle = i%5===0 ? '#dbe8ff' : '#ffffff';
+    ctx.fillRect(x,y,r,r);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  drawBackground(w,h);
+  if(!wasmReady || !cwraps) return;
+
+  const n = cwraps.getCount();
+  const sptr = cwraps.getStatePtr() >> 2;
+  const cptr = cwraps.getCorePtr() >> 2;
+  const dptr = cwraps.getDiagPtr() >> 2;
+  const heap = Module.HEAPF32;
+
+  const sep = heap[dptr+1];
+  const tailFrac = heap[dptr+2];
+  const rmax = heap[dptr+3];
+  viewScale = Math.min(132, Math.max(62, Math.min(w,h) / Math.max(7.1, rmax*2.05)));
+  viewCenterX = 0.5*(heap[cptr+0] + heap[cptr+6]);
+  viewCenterY = 0.5*(heap[cptr+1] + heap[cptr+7]);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  const stride = 5;
+  if (fpsSmooth && fpsSmooth < 34 && n > 30000) renderStride = Math.min(3, renderStride + 1);
+  else if (fpsSmooth && fpsSmooth > 50) renderStride = Math.max(1, renderStride - 1);
+
+  const particleStep = Math.max(1, renderStride | 0);
+  const pointSize = n > 36000 ? 0.72 : (n > 22000 ? 0.88 : 1.05);
+
+  for(let i=0;i<n;i+=particleStep){
+    const k = sptr + i*stride;
+    const x = heap[k], y = heap[k+1], gal = heap[k+2], e = heap[k+3];
+    const s = worldToScreen(x,y,w,h);
+    if(s[0] < -4 || s[0] > w+4 || s[1] < -4 || s[1] > h+4) continue;
+
+    const hot = Math.min(1, e);
+    let r,g,b,a;
+    if(gal < 0.5){
+      r = 85 + 125*hot; g = 145 + 80*hot; b = 255;
+      a = 0.24 + 0.42*hot;
+    } else {
+      r = 255; g = 130 + 95*hot; b = 72 + 150*hot;
+      a = 0.22 + 0.44*hot;
+    }
+    if(hot > 0.72){ r = 245; g = 235; b = 200; a = 0.62; }
+
+    ctx.fillStyle = `rgba(${r|0},${g|0},${b|0},${a})`;
+    ctx.fillRect(s[0], s[1], pointSize, pointSize);
+  }
+  ctx.restore();
+
+  for(let j=0;j<2;j++){
+    const k = cptr + j*6;
+    const s = worldToScreen(heap[k], heap[k+1], w, h);
+    const grd = ctx.createRadialGradient(s[0],s[1],0,s[0],s[1],18);
+    grd.addColorStop(0,'rgba(255,255,255,1)');
+    grd.addColorStop(0.35, j===0 ? 'rgba(130,180,255,.85)' : 'rgba(255,178,112,.85)');
+    grd.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(s[0],s[1],18,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s[0],s[1],3.8,0,Math.PI*2); ctx.fill();
+  }
+
+  ui.timeStat.textContent = fmt(heap[dptr+0],2);
+  ui.sepStat.textContent = fmt(sep,2);
+  ui.tailStat.textContent = fmt(tailFrac*100,1) + '%';
+  ui.speedStat.textContent = fmt(heap[dptr+4],2);
+  ui.sepBar.style.width = `${Math.max(0, Math.min(100, sep/5.7*100))}%`;
+  ui.tailBar.style.width = `${Math.max(0, Math.min(100, tailFrac*100))}%`;
+  ui.topOverlay.textContent = `t = ${fmt(heap[dptr+0],2)} · N = ${n.toLocaleString('it-IT')} · scala = ${fmt(viewScale,0)} px/u`;
+  ui.overlay.innerHTML = `Separazione nuclei: ${fmt(sep,2)}<br>Frazione in code mareali: ${fmt(tailFrac*100,1)}%<br>Raggio massimo: ${fmt(rmax,2)}`;
+}
+
+function loop(now){
+  rafId = 0;
+  const dtms = Math.max(1, now - lastFrame);
+  lastFrame = now;
+  const fps = 1000 / dtms;
+  fpsSmooth = fpsSmooth ? fpsSmooth*0.9 + fps*0.1 : fps;
+  ui.fps.textContent = fmt(fpsSmooth,0);
+
+  if(wasmReady && running){
+    const n = cwraps.getCount();
+    const substeps = n > 36000 ? 1 : (n > 22000 ? 2 : 3);
+    cwraps.step(substeps);
+  }
+  draw();
+  scheduleNextFrame();
+}
+
+function scheduleNextFrame(){
+  if(rafId) return;
+  rafId = requestAnimationFrame(loop);
+}
+
+ui.btnStart.onclick = () => { if(!wasmReady) return; running = true; cwraps.pause(0); };
+ui.btnPause.onclick = () => { if(!wasmReady) return; running = !running; cwraps.pause(running ? 0 : 1); ui.btnPause.textContent = running ? 'Pausa' : 'Riprendi'; };
+ui.btnReset.onclick = resetSim;
+ui.preset.onchange = () => applyPreset(ui.preset.value);
+
+['nPart','impact','vin','radius','massRatio','spinMode','morphPrimary','morphSecondary','dt','tidal','halo','friction','soft'].forEach(id => {
+  ui[id].addEventListener('input', () => { updateLabels(); pushRuntimeParams(); });
+  ui[id].addEventListener('change', () => { updateLabels(); pushRuntimeParams(); });
+});
+
+window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+resizeCanvas();
+updateLabels();
+draw();
+
+async function loadWasmModule(){
+  ui.loadBadge.innerHTML = 'Modulo: <strong>caricamento…</strong>';
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `./scontro-galassie.js?v=${WASM_CACHE}`;
+    script.onerror = () => reject(new Error('scontro-galassie.js non trovato nella stessa cartella.'));
+    script.onload = async () => {
+      try {
+        const factory = window.GalaxyCollisionModule;
+        if (typeof factory !== 'function') {
+          throw new Error('GalaxyCollisionModule non definita in scontro-galassie.js.');
+        }
+        const mod = await factory({
+          locateFile: path => path.endsWith('.wasm') ? `./scontro-galassie.wasm?v=${WASM_CACHE}` : path,
+          print: text => console.log(text),
+          printErr: text => console.error(text)
+        });
+        resolve(mod);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    document.body.appendChild(script);
+  });
+}
+
+loadWasmModule()
+  .then(setupWasm)
+  .catch(err => {
+    console.error(err);
+    ui.loadBadge.innerHTML = 'Modulo: <strong>errore</strong>';
+    ui.overlay.innerHTML = `Errore caricamento WASM:<br>${err.message}<br>Compila scontro-galassie.c in scontro-galassie.js/.wasm.`;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+Comando Emscripten per macOS
+
+cd "/Users/roberto/Library/CloudStorage/OneDrive-Personale/Desktop/Simulazioni/WIP/scontro-galassie"
+
+# Se emcc non e' gia' nel PATH, attiva prima emsdk:
+# source "$HOME/emsdk/emsdk_env.sh"
+
+emcc scontro-galassie.c -O3 -std=c99 -o scontro-galassie.js \
+  -s MODULARIZE=1 \
+  -s EXPORT_NAME=GalaxyCollisionModule \
+  -s EXPORTED_FUNCTIONS='["_sim_set_params","_sim_pause","_sim_init","_sim_step","_sim_get_count","_sim_get_time","_sim_get_state_ptr","_sim_get_core_ptr","_sim_get_diag_ptr","_sim_get_max_particles"]' \
+  -s EXPORTED_RUNTIME_METHODS='["cwrap","HEAPF32"]' \
+  -s ALLOW_MEMORY_GROWTH=1 \
+  -s INITIAL_MEMORY=67108864 \
+  -s ENVIRONMENT=web \
+  -s NO_EXIT_RUNTIME=1 \
+  -lm
+
+Per test locale dopo la compilazione:
+
+python3 -m http.server 8080
+
+Poi apri:
+http://localhost:8080/scontro-galassie.html

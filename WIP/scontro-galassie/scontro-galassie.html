@@ -89,6 +89,7 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
           <option value="minor">Minor merger: satellite meno massivo</option>
           <option value="headon">Quasi frontale: anelli e ponte</option>
           <option value="elliptic">Ellittica-spirale: ponte compatto</option>
+          <option value="inclined">Piani inclinati: dischi incrociati</option>
         </select>
       </div>
       <div class="control">
@@ -131,6 +132,15 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
         <select id="morphSecondary">
           <option value="0">spirale</option>
           <option value="1">ellittica</option>
+        </select>
+      </div>
+      <div class="control">
+        <label class="lab">Piani dei dischi <span id="planeLabel">complanari</span></label>
+        <select id="planeMode">
+          <option value="0">complanari / face-on</option>
+          <option value="1">secondaria inclinata</option>
+          <option value="2">piani incrociati</option>
+          <option value="3">incontro obliquo</option>
         </select>
       </div>
 
@@ -218,7 +228,8 @@ header p{margin-top:8px;color:#c9beac;font-family:var(--mono);font-size:.78rem;l
       $$v_c^2(r)=G M_c\frac{r^2}{(r^2+\epsilon_c^2)^{3/2}}+G M_h\frac{r^2}{(r^2+\epsilon_h^2)^{3/2}}$$
     </div>
     <p>Qui $M_c$ e $M_h$ sono rispettivamente massa compatta e massa dell'alone, mentre $\epsilon_c$ ed $\epsilon_h$ sono i due softening associati. Questo evita di inizializzare dischi troppo caldi o con velocità periferiche non coerenti con il potenziale effettivamente usato.</p>
-    <p>Il selettore di morfologia modifica solo le condizioni iniziali dei traccianti: una galassia a spirale parte da un disco rotante con bracci logaritmici a due pattern, mentre una galassia ellittica parte da una distribuzione proiettata piu compatta, schiacciata e sostenuta in gran parte da dispersione di velocita. In entrambi i casi il campo gravitazionale globale resta il modello nucleo+alone usato per mantenere il costo circa lineare in $N$.</p>
+    <p>Il selettore di morfologia modifica solo le condizioni iniziali dei traccianti: una galassia a spirale parte da un disco rotante con bracci logaritmici aperti e diffusi, mentre una galassia ellittica parte da una distribuzione proiettata piu compatta, schiacciata e sostenuta in gran parte da dispersione di velocita. In entrambi i casi il campo gravitazionale globale resta il modello nucleo+alone usato per mantenere il costo circa lineare in $N$.</p>
+    <p>Il selettore dei piani dei dischi introduce una proiezione inclinata dei dischi iniziali. Non è ancora un integratore tridimensionale completo: le orbite evolvono nel piano della simulazione, ma la geometria iniziale e le velocita tangenziali vengono proiettate come se i dischi avessero assi di rotazione non paralleli. Questo permette di confrontare incontri complanari, secondarie inclinate e configurazioni incrociate senza cambiare il costo numerico.</p>
 
     <h3>2. Perché compaiono code e ponti mareali</h3>
     <p>Il punto essenziale non è l'intensità assoluta della gravità, ma la sua variazione spaziale. Le stelle nella parte del disco più vicina alla galassia compagna subiscono un'accelerazione diversa rispetto alle stelle nella parte opposta. Questa accelerazione differenziale deforma il disco e può estrarre stelle dalle orbite quasi circolari iniziali.</p>
@@ -270,7 +281,7 @@ let fallbackTimer = null;
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d', { alpha:false });
 const DPR_LIMIT = 2;
-const WASM_CACHE = '20260609b';
+const WASM_CACHE = '20260609c';
 
 const ui = {
   loadBadge: document.getElementById('loadBadge'),
@@ -279,17 +290,18 @@ const ui = {
   btnReset: document.getElementById('btnReset'),
   preset: document.getElementById('preset'),
   nPart: document.getElementById('nPart'), impact: document.getElementById('impact'), vin: document.getElementById('vin'), radius: document.getElementById('radius'),
-  massRatio: document.getElementById('massRatio'), spinMode: document.getElementById('spinMode'), morphPrimary: document.getElementById('morphPrimary'), morphSecondary: document.getElementById('morphSecondary'), dt: document.getElementById('dt'), tidal: document.getElementById('tidal'), halo: document.getElementById('halo'), friction: document.getElementById('friction'), soft: document.getElementById('soft'),
-  nLabel: document.getElementById('nLabel'), impactLabel: document.getElementById('impactLabel'), vinLabel: document.getElementById('vinLabel'), radLabel: document.getElementById('radLabel'), qLabel: document.getElementById('qLabel'), spinLabel: document.getElementById('spinLabel'), morphPrimaryLabel: document.getElementById('morphPrimaryLabel'), morphSecondaryLabel: document.getElementById('morphSecondaryLabel'), dtLabel: document.getElementById('dtLabel'), tidalLabel: document.getElementById('tidalLabel'), haloLabel: document.getElementById('haloLabel'), fricLabel: document.getElementById('fricLabel'), softLabel: document.getElementById('softLabel'), presetLabel: document.getElementById('presetLabel'),
+  massRatio: document.getElementById('massRatio'), spinMode: document.getElementById('spinMode'), morphPrimary: document.getElementById('morphPrimary'), morphSecondary: document.getElementById('morphSecondary'), planeMode: document.getElementById('planeMode'), dt: document.getElementById('dt'), tidal: document.getElementById('tidal'), halo: document.getElementById('halo'), friction: document.getElementById('friction'), soft: document.getElementById('soft'),
+  nLabel: document.getElementById('nLabel'), impactLabel: document.getElementById('impactLabel'), vinLabel: document.getElementById('vinLabel'), radLabel: document.getElementById('radLabel'), qLabel: document.getElementById('qLabel'), spinLabel: document.getElementById('spinLabel'), morphPrimaryLabel: document.getElementById('morphPrimaryLabel'), morphSecondaryLabel: document.getElementById('morphSecondaryLabel'), planeLabel: document.getElementById('planeLabel'), dtLabel: document.getElementById('dtLabel'), tidalLabel: document.getElementById('tidalLabel'), haloLabel: document.getElementById('haloLabel'), fricLabel: document.getElementById('fricLabel'), softLabel: document.getElementById('softLabel'), presetLabel: document.getElementById('presetLabel'),
   fps: document.getElementById('fps'), timeStat: document.getElementById('timeStat'), sepStat: document.getElementById('sepStat'), tailStat: document.getElementById('tailStat'), speedStat: document.getElementById('speedStat'), sepBar: document.getElementById('sepBar'), tailBar: document.getElementById('tailBar'), overlay: document.getElementById('overlay'), topOverlay: document.getElementById('topOverlay')
 };
 
 const presets = {
-  antennae: { label:'Antennae-like', impact:0.65, vin:0.62, radius:0.95, q:1.00, spin:'0', morph0:'0', morph1:'0', tidal:1.15, halo:0.55, friction:0.012, soft:0.11, n:20000 },
-  retro:    { label:'Prograde-retrograde', impact:0.75, vin:0.58, radius:0.92, q:0.95, spin:'1', morph0:'0', morph1:'0', tidal:1.05, halo:0.60, friction:0.010, soft:0.11, n:22000 },
-  minor:    { label:'Minor merger', impact:0.55, vin:0.70, radius:0.96, q:0.38, spin:'0', morph0:'0', morph1:'0', tidal:1.25, halo:0.65, friction:0.018, soft:0.12, n:24000 },
-  headon:   { label:'Quasi frontale', impact:0.12, vin:0.54, radius:0.88, q:0.90, spin:'2', morph0:'0', morph1:'0', tidal:0.95, halo:0.50, friction:0.016, soft:0.12, n:20000 },
-  elliptic: { label:'Ellittica-spirale', impact:0.48, vin:0.60, radius:0.90, q:0.75, spin:'0', morph0:'1', morph1:'0', tidal:1.05, halo:0.68, friction:0.018, soft:0.13, n:22000 }
+  antennae: { label:'Antennae-like', impact:0.65, vin:0.62, radius:0.95, q:1.00, spin:'0', morph0:'0', morph1:'0', plane:'0', tidal:1.15, halo:0.55, friction:0.012, soft:0.11, n:20000 },
+  retro:    { label:'Prograde-retrograde', impact:0.75, vin:0.58, radius:0.92, q:0.95, spin:'1', morph0:'0', morph1:'0', plane:'0', tidal:1.05, halo:0.60, friction:0.010, soft:0.11, n:22000 },
+  minor:    { label:'Minor merger', impact:0.55, vin:0.70, radius:0.96, q:0.38, spin:'0', morph0:'0', morph1:'0', plane:'1', tidal:1.25, halo:0.65, friction:0.018, soft:0.12, n:24000 },
+  headon:   { label:'Quasi frontale', impact:0.12, vin:0.54, radius:0.88, q:0.90, spin:'2', morph0:'0', morph1:'0', plane:'0', tidal:0.95, halo:0.50, friction:0.016, soft:0.12, n:20000 },
+  elliptic: { label:'Ellittica-spirale', impact:0.48, vin:0.60, radius:0.90, q:0.75, spin:'0', morph0:'1', morph1:'0', plane:'1', tidal:1.05, halo:0.68, friction:0.018, soft:0.13, n:22000 },
+  inclined: { label:'Piani inclinati', impact:0.72, vin:0.58, radius:0.96, q:0.88, spin:'0', morph0:'0', morph1:'0', plane:'2', tidal:1.10, halo:0.58, friction:0.012, soft:0.11, n:24000 }
 };
 
 function fmt(x, d=2){ return Number(x).toFixed(d); }
@@ -304,6 +316,7 @@ function updateLabels(){
   ui.spinLabel.textContent = ui.spinMode.options[ui.spinMode.selectedIndex].textContent;
   ui.morphPrimaryLabel.textContent = ui.morphPrimary.options[ui.morphPrimary.selectedIndex].textContent;
   ui.morphSecondaryLabel.textContent = ui.morphSecondary.options[ui.morphSecondary.selectedIndex].textContent;
+  ui.planeLabel.textContent = ui.planeMode.options[ui.planeMode.selectedIndex].textContent;
   ui.dtLabel.textContent = fmt(ui.dt.value,4);
   ui.tidalLabel.textContent = fmt(ui.tidal.value,2);
   ui.haloLabel.textContent = fmt(ui.halo.value,2);
@@ -322,6 +335,7 @@ function applyPreset(name){
   ui.spinMode.value = p.spin;
   ui.morphPrimary.value = p.morph0;
   ui.morphSecondary.value = p.morph1;
+  ui.planeMode.value = p.plane;
   ui.tidal.value = p.tidal;
   ui.halo.value = p.halo;
   ui.friction.value = p.friction;
@@ -345,7 +359,7 @@ function resizeCanvas(){
 function setupWasm(mod){
   Module = mod;
   cwraps = {
-    init: Module.cwrap('sim_init', null, ['number','number','number','number','number','number','number','number','number']),
+    init: Module.cwrap('sim_init', null, ['number','number','number','number','number','number','number','number','number','number']),
     step: Module.cwrap('sim_step', null, ['number']),
     setParams: Module.cwrap('sim_set_params', null, ['number','number','number','number','number']),
     pause: Module.cwrap('sim_pause', null, ['number']),
@@ -380,7 +394,7 @@ function resetSim(){
   if(!wasmReady) return;
   pushRuntimeParams();
   const seed = (Date.now() >>> 0) ^ Math.floor(Math.random()*1e9);
-  cwraps.init(val('nPart'), val('impact'), val('vin'), val('radius'), val('massRatio'), Number(ui.spinMode.value), Number(ui.morphPrimary.value), Number(ui.morphSecondary.value), seed);
+  cwraps.init(val('nPart'), val('impact'), val('vin'), val('radius'), val('massRatio'), Number(ui.spinMode.value), Number(ui.morphPrimary.value), Number(ui.morphSecondary.value), Number(ui.planeMode.value), seed);
   running = true;
   cwraps.pause(0);
   ui.btnPause.textContent = 'Pausa';
@@ -511,7 +525,7 @@ ui.btnPause.onclick = () => { if(!wasmReady) return; running = !running; cwraps.
 ui.btnReset.onclick = resetSim;
 ui.preset.onchange = () => applyPreset(ui.preset.value);
 
-['nPart','impact','vin','radius','massRatio','spinMode','morphPrimary','morphSecondary','dt','tidal','halo','friction','soft'].forEach(id => {
+['nPart','impact','vin','radius','massRatio','spinMode','morphPrimary','morphSecondary','planeMode','dt','tidal','halo','friction','soft'].forEach(id => {
   ui[id].addEventListener('input', () => { updateLabels(); pushRuntimeParams(); });
   ui[id].addEventListener('change', () => { updateLabels(); pushRuntimeParams(); });
 });

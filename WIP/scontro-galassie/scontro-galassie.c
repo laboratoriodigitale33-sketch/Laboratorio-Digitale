@@ -56,6 +56,8 @@ static float cvx[CORE_COUNT], cvy[CORE_COUNT];
 static float cax[CORE_COUNT], cay[CORE_COUNT];
 static float cmass[CORE_COUNT];
 static float cspin[CORE_COUNT];
+static float disk_inclination[CORE_COUNT];
+static float disk_view_angle[CORE_COUNT];
 static float core_buf[CORE_COUNT * 6];
 static float diag_buf[12];
 
@@ -113,6 +115,39 @@ static float circular_speed(float r, float mass) {
     float core = g_G * mass * r2 / fmaxf(powf(r2 + g_core_soft*g_core_soft, 1.5f), 1e-6f);
     float halo = g_G * mass * g_halo_strength * r2 / fmaxf(powf(r2 + g_halo_soft*g_halo_soft, 1.5f), 1e-6f);
     return sqrtf(fmaxf(core + halo, 0.0f));
+}
+
+static void set_disk_planes(float plane_mode) {
+    int mode = (int)(plane_mode + 0.5f);
+    disk_inclination[0] = 0.0f;
+    disk_inclination[1] = 0.0f;
+    disk_view_angle[0] = 0.0f;
+    disk_view_angle[1] = 0.0f;
+
+    if (mode == 1) {
+        disk_inclination[1] = 0.85f;
+        disk_view_angle[1] = -0.65f;
+    } else if (mode == 2) {
+        disk_inclination[0] = 0.68f;
+        disk_inclination[1] = 0.98f;
+        disk_view_angle[0] = 0.55f;
+        disk_view_angle[1] = -0.85f;
+    } else if (mode == 3) {
+        disk_inclination[0] = 1.02f;
+        disk_inclination[1] = 0.55f;
+        disk_view_angle[0] = 0.18f;
+        disk_view_angle[1] = 1.34f;
+    }
+}
+
+static void project_disk_point(int gal, float dx, float dy, float *out_x, float *out_y) {
+    float q = cosf(clampf(disk_inclination[gal], 0.0f, 1.25f));
+    float a = disk_view_angle[gal];
+    float ca = cosf(a);
+    float sa = sinf(a);
+    float pyq = dy * q;
+    *out_x = ca * dx - sa * pyq;
+    *out_y = sa * dx + ca * pyq;
 }
 
 static void compute_core_accel(void) {
@@ -217,18 +252,23 @@ static void seed_spiral_disk(int offset, int n, int gal, float disk_radius, floa
         float r = disk_radius * powf(u, 0.72f);
         float theta = 2.0f * M_PI * frand();
 
-        if (frand() < 0.72f) {
+        if (r > 0.16f * disk_radius && frand() < 0.52f) {
             float arm_id = frand() < 0.5f ? 0.0f : M_PI;
             float rr = fmaxf(r / fmaxf(disk_radius, 0.05f), 0.08f);
-            theta = arm_id + 3.4f * logf(rr) + (float)gal * 1.25f + 0.22f * randn();
+            float width = 0.20f + 0.22f * rr;
+            theta = arm_id + 1.55f * logf(fmaxf(rr, 0.18f)) + (float)gal * 1.25f + width * randn();
         }
 
-        float arm = 0.055f * sinf(2.0f * theta + 4.8f * r + (float)gal * 1.7f);
+        float arm = 0.030f * sinf(2.0f * theta + 2.7f * r + (float)gal * 1.7f);
         r *= 1.0f + arm;
         float zeta = thickness * randn();
 
-        px[i] = center_x + r * cosf(theta) + zeta * cosf(theta + M_PI*0.5f);
-        py[i] = center_y + r * sinf(theta) + zeta * sinf(theta + M_PI*0.5f);
+        float dx = r * cosf(theta) + zeta * cosf(theta + M_PI*0.5f);
+        float dy = r * sinf(theta) + zeta * sinf(theta + M_PI*0.5f);
+        float rx, ry;
+        project_disk_point(gal, dx, dy, &rx, &ry);
+        px[i] = center_x + rx;
+        py[i] = center_y + ry;
 
         /* Velocità circolare coerente con il potenziale nucleo + alone usato nelle forze. */
         float vc = circular_speed(fmaxf(r, 0.01f), mass);
@@ -237,14 +277,16 @@ static void seed_spiral_disk(int offset, int n, int gal, float disk_radius, floa
 
         float tx = -sinf(theta);
         float ty =  cosf(theta);
-        vx[i] = base_vx + vc * tx + noise * 0.35f * randn();
-        vy[i] = base_vy + vc * ty + noise * 0.35f * randn();
+        float tvx, tvy;
+        project_disk_point(gal, vc * tx, vc * ty, &tvx, &tvy);
+        vx[i] = base_vx + tvx + noise * 0.35f * randn();
+        vy[i] = base_vy + tvy + noise * 0.35f * randn();
 
         ax[i] = ay[i] = 0.0f;
         tag[i] = (float)gal;
         seed_radius[i] = fmaxf(r, 0.04f);
-        seed_gal_x[i] = px[i] - center_x;
-        seed_gal_y[i] = py[i] - center_y;
+        seed_gal_x[i] = rx;
+        seed_gal_y[i] = ry;
         tracer_energy[i] = 0.0f;
     }
 }
@@ -312,7 +354,7 @@ void sim_pause(int paused) {
 }
 
 EMSCRIPTEN_KEEPALIVE
-void sim_init(int n_req, float impact, float v_in, float disk_radius, float mass_ratio, float spin_mode, float morph_primary, float morph_secondary, unsigned int seed) {
+void sim_init(int n_req, float impact, float v_in, float disk_radius, float mass_ratio, float spin_mode, float morph_primary, float morph_secondary, float plane_mode, unsigned int seed) {
     if (n_req < 1000) n_req = 1000;
     if (n_req > MAX_PARTICLES) n_req = MAX_PARTICLES;
     g_N = n_req;
@@ -326,6 +368,7 @@ void sim_init(int n_req, float impact, float v_in, float disk_radius, float mass
     float b = clampf(impact, 0.0f, 1.6f);
     float vin = clampf(v_in, 0.05f, 1.6f);
     float d0 = 2.85f;
+    set_disk_planes(plane_mode);
 
     cx[0] = -d0;
     cy[0] = -0.5f * b;

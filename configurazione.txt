@@ -7,9 +7,14 @@ poi manda il comando i compilazione Emscritpen nel file comandi terminale
 
 
 SISTEMARE:
+-grzvitazione
+	non va
 diffrazione 2D:
 	non vengono delle frange ben definite
 -sistemare metadati: macchina fotografica, effetto toelettrico, oscillatore armonico (forse fatto da codex), FARADAY sicuro manca
+-diagramma hr:
+	forse da introdurre fattore rotazione
+	quando si cambia la metallicità la massa mi modifica automaticamente
 diffrazione:
 	fare compilare da codex controllando che vada tutto bene
 -sistemi caotici(claude lab):
@@ -79,7 +84,15 @@ Diagrammi Feymann(cluade web):
 
 
 DA FARE:
+-consigli di chat gpt in C: 
+	Fluidodinamica:turbolenza, instabilità di Kelvin–Helmholtz, instabilità di Rayleigh–Taylor, vortici, shedding di von Kármán dietro un ostacolo, propagazione di onde in fluidi comprimibili, shock e onde d’urto.
+	N-body:gas ideale con molte particelle e urti, gas con interazioni tipo Lennard-Jones, plasma semplificato con interazioni coulombiane, granular media, N-corpi gravitazionali con moltissimi corpi.
+	equazioni d'onda: equazione delle onde in una o due dimensioni, vibrazione di membrane o piastre, propagazione del suono in mezzi complessi, onde elettromagnetiche con metodi numerici tipo FDTD (Finite-Difference Time-Domain, metodo alle differenze finite nel dominio del tempo), interferenza e diffrazione calcolate in modo numerico sul campo, non solo visualizzate con formule chiuse.
+	meccanica orbitale: problema degli N-corpi gravitazionali, formazione di sistemi planetari, ammassi stellari, collisioni gravitazionali, simulazioni di galassie semplificate.
 -conduzione ed induzione
+	fisica statistica: modello di Ising su reticolo grande, transizioni di fase, random walk massivi, percolazione,decadimento radioattivo di campioni molto grandi con statistica dettagliata,trasporto di particelle tramite Monte Carlo.
+	meccanica quantistica: evoluzione di pacchetti d’onda con l’equazione di Schrödinger dipendente dal tempo, tunneling numerico,scattering su potenziali arbitrari,oscillazioni di neutrini in mezzi non uniformi, problemi su griglia con diagonalizzazione o integrazione temporale.
+	fisica nucleare: catene di decadimento complesse,trasporto semplificato di fotoni o particelle in materia, attenuazione con scattering multiplo, shower elettromagnetici semplificati, rivelatori con molte interazioni successive.
 -meccanica lagrangina
 -meccanica statistica
 -altre meccaniche
@@ -140,7 +153,7 @@ DA FARE:
 -serie di Fourier
 -trasformata di Fourier
 -spazio delle fasi
--sistemi caotici
+-sistemi caotici (iniziati su Claude lab, però guardare video YouTube che spiega esempi più interessanti)
 -numeri complessi
 -analisi dimensionale con il teorema di Buckingham-Pi
 -diagrammi di stabilità e attrattori per sistemi dinamici
@@ -157,6 +170,9 @@ Fondamenti:
 - Grandezze vettoriali
 - Costanti della fisica
 - Campi scalari e vettoriali
+
+Matematica per la Fisica:
+- Gradiente, divergenza e rotore
 
 Meccanica:
 - Moto rettilineo uniforme
@@ -186,13 +202,14 @@ Ottica:
 
 Elettromagnetismo:
 - Campo elettrico
+- Elettrostatica
 - Magnetismo
 
 Astrofisica:
+- Diagramma H-R interattivo con griglia MIST
 - Traiettorie di missioni spaziali
-
-Matematica per la Fisica:
-- Gradiente, divergenza e rotore
+- Meccanismi di Radiazione Astrofisica
+- Spettri a Righe di Emissione e Assorbimento
 
 WIP:
 - Curvatura dello spazio-tempo
@@ -209,11 +226,16 @@ WIP:
 - Tensione di una fune
 - Calore e capacità termica
 - Collasso stellare
+- Diagrammi di Feynman
 - Trasporto di particelle
 - Circuiti
+- Diffrazione 2D
 - Moto Browniano
-- Onde di Faraday
 - Trasformazioni cicliche
 - Entropia
+- Onde di Faraday
+- Scontro tra galassie
+- Espansione dell'Universo
+- Sistemi caotici
 - Traiettorie Orbitali
 - Onde gravitazionali

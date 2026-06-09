@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --cream: #f5f0e8;
+  --cream-dark: #ede6d4;
+  --light: var(--cream-dark);
+  --ink: #1a1610;
+  --ink-light: #3d3428;
+  --ink-faint: #6b5e4e;
+  --ink2: var(--ink-light);
+  --ink3: var(--ink-faint);
+  --ink-soft: var(--ink-light);
+  --ink-mid: #4e4337;
+  --ink-muted: var(--ink-faint);
+  --accent: #8b3a1a;
+  --accent-warm: #c4622d;
+  --accent-gold: #b8922a;
+  --accent-soft: rgba(139, 58, 26, 0.12);
+  --accent-light: #d88a55;
+  --accent-2: #1a3a6b;
+  --border: #d4c9b0;
+  --border-light: #e8dfc8;
+  --border2: var(--border-light);
+  --border-hi: #bba985;
+
+  --bg: var(--cream);
+  --bg2: var(--cream-dark);
+  --bg3: #e3d7c0;
+  --bg4: #d8cbb4;
+  --bg-soft: #fffaf0;
+  --bg-0: var(--cream);
+  --bg-2: var(--cream-dark);
+  --panel: #fffaf0;
+  --panel-2: #f8f0df;
+  --panel2: var(--panel-2);
+  --panel-soft: #fff6e8;
+  --panel-bg: var(--panel);
+  --panel-border: var(--border);
+  --panel-w: var(--panel);
+  --panel-b: var(--border);
+  --card: #fffaf0;
+  --card2: #f8f0df;
+  --card-bg: #fffaf0;
+  --card-soft: var(--cream-dark);
+  --surface: #fffaf0;
+  --surface2: #f8f0df;
+  --surf: var(--surface);
+  --surf2: var(--surface2);
+  --paper: #fffaf0;
+  --parchment: #f7efdf;
+  --line: var(--border);
+  --text: var(--ink);
+  --text2: var(--ink-light);
+  --text3: var(--ink-faint);
+  --text-soft: var(--ink-light);
+  --text-mid: #4e4337;
+  --muted: var(--ink-faint);
+  --text-dim: var(--ink-faint);
+  --dim: var(--ink-faint);
+  --acc: var(--accent);
+  --acc2: var(--accent-warm);
+  --accent1: var(--accent);
+  --accent2: #1a3a6b;
+  --accent3: #2d6b4a;
+  --accent4: var(--accent-gold);
+  --blue: #1a3a6b;
+  --blue2: #2d5d93;
+  --green: #2d6b4a;
+  --green2: #3d8a62;
+  --red: #8b2d1a;
+  --amber: #b8922a;
+  --amber-pale: #e4cf8a;
+  --warm: #c4622d;
+  --warm-mid: #9f5127;
+  --hot: #b34a2b;
+  --cool: #1a3a6b;
+  --cold: #2d6b73;
+  --gold: var(--accent-gold);
+  --gold-light: #d7bd63;
+  --gold-dim: #8f772a;
+  --warn: var(--accent);
+  --good: #2d6b4a;
+  --pos: #2d6b4a;
+  --neg: #8b2d1a;
+  --body1: #1a3a6b;
+  --body2: #8b3a1a;
+  --canvas-bg: #fffdf8;
+  --plot-bg: #0f0d0a;
+  --grid: rgba(26, 22, 16, 0.12);
+  --rule: var(--border);
+  --rule2: var(--border-light);
+  --bord: var(--border);
+  --radius: 6px;
+  --radius-md: 6px;
+  --r: 6px;
+  --shadow: none;
+  --serif: "EB Garamond", Georgia, serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: var(--serif);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+}
+
+html {
+  background: var(--cream);
+}
+
+body.sim-theme {
+  background: var(--cream) !important;
+  color: var(--ink);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.7;
+}
+
+body.sim-theme :where(h1, h2, h3, h4) {
+  letter-spacing: 0;
+}
+
+body.sim-theme :where(h1, h2, .section-heading, .theory-heading, .theory-head h2, .card-name) {
+  font-family: "EB Garamond", Georgia, serif;
+  font-weight: 500;
+}
+
+body.sim-theme :where(code, kbd, pre, .tag, .badge, .chip, .formula, .eq, .eq-block, .stat-value, .param-value, .section-kicker, .header-label, .subtitle, .section-sub, label) {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+body.sim-theme :where(body > header, main > header, .page > header.hero, header.hero) {
+  background: var(--ink) !important;
+  color: var(--cream) !important;
+  border: 0 !important;
+  border-bottom: 1px solid #2a2218 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+body.sim-theme :where(header h1, header.hero h1, body > header h1, main > header h1) {
+  color: var(--cream) !important;
+}
+
+body.sim-theme :where(header p, header .subtitle, header .header-sub, header.hero p) {
+  color: #b8aa98 !important;
+}
+
+body.sim-theme :where(.header-label, .hero-label, .section-kicker, .tag, .th-kicker, .card-k) {
+  color: var(--accent-warm) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+body.sim-theme :where(.panel, .card, .chart-card, .viewer-card, .control-group, .mechanism-card, .stats-card, .chart-box, .note-box, .info-card, .theory-card, .theory-block, .ps, .meter, .th-section, .fc, .formula-card, .aside, .readout, .notice) {
+  background-color: #fffaf0;
+  border-color: var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+}
+
+body.sim-theme :where(.canvas-container, .graph-container, .canvas-wrap, .viewer-card, .canvas-area) {
+  border-color: var(--border) !important;
+}
+
+body.sim-theme :where(button, .btn, .tab-btn, .primary, .secondary, .bp, .bs, .bd, .type-tab, .mb, .cpb) {
+  border-radius: 4px !important;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.05em;
+}
+
+body.sim-theme :where(button, .btn, button.secondary, .secondary, .bs, .bd, .btn.warn, .type-tab, .mb, .cpb) {
+  background: var(--cream-dark) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border) !important;
+}
+
+body.sim-theme :where(button:hover, .btn:hover, .primary:hover, .secondary:hover, .bp:hover, .bs:hover, .type-tab:hover, .mb:hover, .cpb:hover) {
+  border-color: var(--accent-warm) !important;
+  color: var(--cream) !important;
+  background: var(--ink) !important;
+}
+
+body.sim-theme :where(.tab-btn, .axis-toggle button, .mode-pills button) {
+  background: transparent !important;
+  color: var(--ink-faint) !important;
+  border-color: transparent !important;
+}
+
+body.sim-theme header :where(.tab-btn) {
+  color: rgba(245, 240, 232, 0.72) !important;
+}
+
+body.sim-theme :where(button.primary, .primary, .bp, button.active, .btn.active, .tab-btn.active, .type-tab.active, .mb.active, .cpb.active) {
+  background: var(--accent) !important;
+  color: #fffaf0 !important;
+  border-color: var(--accent) !important;
+}
+
+body.sim-theme :where(input, select, textarea) {
+  border-color: var(--border) !important;
+  background-color: #fffdf8 !important;
+  color: var(--ink) !important;
+  border-radius: 4px !important;
+}
+
+body.sim-theme input[type="range"] {
+  accent-color: var(--accent-warm);
+}
+
+body.sim-theme :where(.view-tabs, .tabs, .tab-nav, .tabbar) {
+  background: var(--cream-dark) !important;
+  border-color: var(--border) !important;
+  border-radius: 4px !important;
+}
+
+body.sim-theme .sim-theme-tabs {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 0.75rem 0 0;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--cream);
+}
+
+body.sim-theme .sim-theme-tab {
+  appearance: none;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--ink-faint) !important;
+  padding: 0.72rem 1rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+}
+
+body.sim-theme .sim-theme-tab:hover {
+  color: var(--ink) !important;
+  background: transparent !important;
+  border-bottom-color: var(--border) !important;
+}
+
+body.sim-theme .sim-theme-tab.is-active {
+  color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+}
+
+body.sim-theme .sim-theme-shell {
+  width: 100%;
+}
+
+body.sim-theme .sim-theme-panel[hidden] {
+  display: none !important;
+}
+
+body.sim-theme .sim-theme-panel {
+  width: 100%;
+}
+
+body.sim-theme .sim-theme-panel--theory {
+  padding-bottom: 3rem;
+}
+
+body.sim-theme .sim-theme-model-note {
+  max-width: 780px;
+  margin: 1.2rem 0 1.6rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--cream-dark);
+  color: var(--ink-light);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+body.sim-theme .sim-theme-model-note strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+body.sim-theme .sim-theme-theory-extra {
+  display: none !important;
+}
+
+body.sim-theme .sim-theme-compact-heading {
+  margin-bottom: 0.6rem !important;
+}
+
+body.sim-theme .sim-theme-panel--theory :where(.intro-block, .theory-section, .theory) {
+  margin-top: 2rem;
+}
+
+body.sim-theme :where(.theory-section, .theory, .theory-card, .theory-block, .th-section) {
+  color: var(--ink-light);
+}
+
+body.sim-theme :where(.theory-section h2, .theory h2, .theory-heading, .th-head h2) {
+  color: var(--ink);
+}
+
+body.sim-theme :where(.eq, .eq-block, .formula, .formula-box, .formula-card) {
+  background: var(--cream-dark) !important;
+  border-color: var(--border) !important;
+  color: var(--ink) !important;
+}
+
+body.sim-theme :where(table, th, td) {
+  border-color: var(--border) !important;
+}
+
+body.sim-theme :where(th) {
+  background: var(--cream-dark) !important;
+  color: var(--ink-faint) !important;
+}
+
+@media (max-width: 720px) {
+  body.sim-theme .sim-theme-tabs {
+    width: calc(100% - 24px);
+    overflow-x: auto;
+  }
+
+  body.sim-theme .sim-theme-tab {
+    flex: 1 0 auto;
+    padding: 0.68rem 0.8rem;
+  }
+}

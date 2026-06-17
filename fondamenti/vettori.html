@@ -177,7 +177,7 @@ hr.thin{border:none;border-top:1px solid var(--border);margin:2rem 0}
         <div class="card">
           <div class="card-title">Visualizzazione</div>
           <label class="check-row"><input type="checkbox" id="showGrid" checked onchange="draw()"> Griglia</label>
-          <label class="check-row"><input type="checkbox" id="showComponents" checked onchange="draw()"> Componenti (tratteggiato)</label>
+          <label class="check-row"><input type="checkbox" id="showComponents" checked onchange="draw()"> Costruzioni tratteggiate</label>
           <label class="check-row"><input type="checkbox" id="showAngles" checked onchange="draw()"> Angoli</label>
           <label class="check-row"><input type="checkbox" id="showLabels" checked onchange="draw()"> Etichette</label>
         </div>
@@ -289,7 +289,7 @@ hr.thin{border:none;border-top:1px solid var(--border);margin:2rem 0}
     <h2>2. Somma e differenza di vettori</h2>
     <p>La <strong>somma vettoriale</strong> si esegue componente per componente. Se $\vec{A}=(A_x,A_y)$ e $\vec{B}=(B_x,B_y)$:</p>
     <div class="math-box">$$\vec{A} + \vec{B} = (A_x + B_x,\; A_y + B_y)$$</div>
-    <p>Geometricamente si visualizza con la <strong>regola del parallelogramma</strong> (i due vettori dall'origine, la somma è la diagonale) o con la <strong>regola testa-coda</strong>: si porta la coda di $\vec{B}$ sulla punta di $\vec{A}$; la freccia che chiude il triangolo è la somma. La somma è commutativa e associativa. La <strong>differenza</strong> $\vec{A}-\vec{B} = \vec{A}+(-\vec{B})$, dove $-\vec{B}$ ha stesso modulo e direzione di $\vec{B}$ ma verso invertito. Se $\vec{A}$ e $\vec{B}$ sono disegnati come vettori di posizione con la stessa origine, $\vec{A}-\vec{B}$ si rappresenta in modo equivalente come il vettore applicato alla punta di $\vec{B}$ e diretto verso la punta di $\vec{A}$: le sue componenti sono $(A_x-B_x,\,A_y-B_y)$.</p>
+    <p>Geometricamente si visualizza con la <strong>regola del parallelogramma</strong> (i due vettori dall'origine, la somma è la diagonale) o con la <strong>regola testa-coda</strong>: si porta la coda di $\vec{B}$ sulla punta di $\vec{A}$; la freccia che chiude il triangolo è la somma. La somma è commutativa e associativa. La <strong>differenza</strong> $\vec{A}-\vec{B} = \vec{A}+(-\vec{B})$, dove $-\vec{B}$ ha stesso modulo e direzione di $\vec{B}$ ma verso invertito. Se $\vec{A}$ e $\vec{B}$ sono disegnati come vettori di posizione con la stessa origine, $\vec{A}-\vec{B}$ si rappresenta in modo equivalente come il vettore applicato alla punta di $\vec{B}$ e diretto verso la punta di $\vec{A}$: le sue componenti sono $(A_x-B_x,\,A_y-B_y)$. La costruzione $\vec{A}+(-\vec{B})$ produce lo stesso vettore libero, ma applicato all'origine: per questo nella simulazione è mostrata solo come costruzione ausiliaria tratteggiata.</p>
     <div class="example-box">
       <div class="ex-title">Esempio fisico — Forze in equilibrio</div>
       <p>Un oggetto è appeso a due corde. Prima esercita $\vec{F}_1 = (3,\, 5)\,\text{N}$ e la seconda $\vec{F}_2 = (-3,\, 2)\,\text{N}$. La risultante è $(0,\,7)\,\text{N}$, verticale, che bilancia il peso $\vec{P}=(0,-7)\,\text{N}$: equilibrio.</p>
@@ -515,33 +515,43 @@ function draw() {
 
   } else if(S.op==='diff'){
     const rx=ax-bx, ry=ay-by;
-    const [cornerX,cornerY]=toC(ox,oy,z,ax,by);
+    const [r0x,r0y]=toC(ox,oy,z,rx,ry);
+    const [nbx,nby]=toC(ox,oy,z,-bx,-by);
+
+    // Costruzione ausiliaria: A - B = A + (-B).
+    // È disegnata in modo leggero e tratteggiato: il vettore verde principale resta
+    // quello applicato dalla punta di B alla punta di A.
+    if(SC){
+      mctx.save();
+      mctx.fillStyle='rgba(39,174,96,.055)';
+      mctx.strokeStyle='#6f7f75';
+      mctx.lineWidth=1.05;
+      mctx.setLineDash([5,5]);
+      mctx.globalAlpha=.72;
+      mctx.beginPath();
+      mctx.moveTo(osx,osy);
+      mctx.lineTo(ax2,ay2);
+      mctx.lineTo(r0x,r0y);
+      mctx.lineTo(nbx,nby);
+      mctx.closePath();
+      mctx.fill();
+      mctx.stroke();
+      mctx.restore();
+
+      // -B applicato all'origine e sua copia traslata sulla punta di A.
+      arrowOn(mctx,osx,osy,nbx,nby,'#2980b9',1.45,.30,true);
+      arrowOn(mctx,ax2,ay2,r0x,r0y,'#2980b9',1.45,.24,true);
+
+      // Copia traslata di A e risultante ottenuta dalla regola del parallelogramma.
+      arrowOn(mctx,nbx,nby,r0x,r0y,'#c0392b',1.25,.20,true);
+      arrowOn(mctx,osx,osy,r0x,r0y,'#27ae60',1.8,.28,true);
+    }
 
     // A e B restano vettori di posizione applicati all'origine comune.
     arrowOn(mctx,osx,osy,ax2,ay2,'#c0392b',3);
     arrowOn(mctx,osx,osy,bx2,by2,'#2980b9',3);
 
     // La differenza A - B è il vettore che collega la punta di B alla punta di A.
-    // Componenti: (A_x-B_x, A_y-B_y). Questa è la visualizzazione corretta
-    // quando A e B sono disegnati con la stessa origine.
-    if(SC){
-      arrowOn(mctx,bx2,by2,cornerX,cornerY,'#27ae60',1.35,.38,true);
-      arrowOn(mctx,cornerX,cornerY,ax2,ay2,'#27ae60',1.35,.38,true);
-    }
-
-    mctx.save();
-    mctx.strokeStyle='#7f8c8d';
-    mctx.lineWidth=1.1;
-    mctx.setLineDash([5,4]);
-    mctx.globalAlpha=.38;
-    mctx.beginPath();
-    mctx.moveTo(ax2,ay2);
-    mctx.lineTo(cornerX,cornerY);
-    mctx.moveTo(bx2,by2);
-    mctx.lineTo(cornerX,cornerY);
-    mctx.stroke();
-    mctx.restore();
-
     arrowOn(mctx,bx2,by2,ax2,ay2,'#27ae60',3.2,.96,false);
 
     // Piccoli marcatori sulle punte rendono espliciti inizio e fine del vettore differenza.
@@ -557,6 +567,10 @@ function draw() {
       lbl(mctx,'A',ax2,ay2,'#c0392b',15,8,-8);
       lbl(mctx,'B',bx2,by2,'#2980b9',14,6,-6);
       lbl(mctx,'R=A-B', (bx2+ax2)/2, (by2+ay2)/2, '#27ae60',14,8,-8);
+      if(SC){
+        lbl(mctx,'−B',nbx,nby,'#2980b9',12,8,14);
+        lbl(mctx,'R traslato',r0x,r0y,'#27ae60',11,8,14);
+      }
     }
 
   } else if(S.op==='dot'){
@@ -681,7 +695,7 @@ function updateResults(){
     `|B| = <span class="val">${mB.toFixed(3)}</span>  &theta;<sub>B</sub> = <span class="val">${tB.toFixed(1)}&deg;</span>`;
   let html='';
   if(S.op==='sum'){const rx=ax+bx,ry=ay+by;html=`R = A + B<br>R<sub>x</sub>=<span class="rv">${rx.toFixed(3)}</span><br>R<sub>y</sub>=<span class="rv">${ry.toFixed(3)}</span><br>|R|=<span class="rv">${Math.hypot(rx,ry).toFixed(3)}</span>`;}
-  else if(S.op==='diff'){const rx=ax-bx,ry=ay-by;html=`R = A &minus; B<br>R<sub>x</sub>=<span class="rv">${rx.toFixed(3)}</span><br>R<sub>y</sub>=<span class="rv">${ry.toFixed(3)}</span><br>|R|=<span class="rv">${Math.hypot(rx,ry).toFixed(3)}</span><br><span style="color:var(--ink3);font-size:.76rem">coda sulla punta di B, punta sulla punta di A</span>`;}
+  else if(S.op==='diff'){const rx=ax-bx,ry=ay-by;html=`R = A &minus; B<br>R<sub>x</sub>=<span class="rv">${rx.toFixed(3)}</span><br>R<sub>y</sub>=<span class="rv">${ry.toFixed(3)}</span><br>|R|=<span class="rv">${Math.hypot(rx,ry).toFixed(3)}</span><br><span style="color:var(--ink3);font-size:.76rem">verde pieno: da punta B a punta A<br>tratteggio: costruzione A + (&minus;B)</span>`;}
   else if(S.op==='dot'){
     const dot=ax*bx+ay*by;
     const ang=(mA>0&&mB>0)?Math.acos(Math.max(-1,Math.min(1,dot/(mA*mB))))*180/Math.PI:0;
